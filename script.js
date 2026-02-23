@@ -6,7 +6,8 @@
 
 // 1. KONFIGURASI SUPABASE
 const SB_URL = "https://ulmwpmzcaiuyubgehptt.supabase.co";
-const SB_KEY = "sb_publishable_FnzrCPHBpyy4KyvEUy__UA_dTwVsrdz"; // Pastikan ini adalah Anon Public Key Anda
+const SB_KEY =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVsbXdwbXpjYWl1eXViZ2VocHR0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE4MzI2MjUsImV4cCI6MjA4NzQwODYyNX0._Y2MkIiRDM52CVMsZEp-lSRBQ93ZYGkwkFbmxfZ5tFo"; // Pastikan ini adalah Anon Public Key Anda
 const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
 
 const OFFICE_IP = "103.108.130.34";
