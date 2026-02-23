@@ -183,26 +183,27 @@ async function prosesAbsen(tipe) {
 
 // --- LOGIKA ADMIN ---
 function switchTab(tab) {
-  // Sembunyikan semua tab dulu
+  // 1. Sembunyikan semua konten tab
   document.getElementById("tabLog").style.display = "none";
   document.getElementById("tabKaryawan").style.display = "none";
 
-  // Tampilkan tab yang dipilih
+  // 2. Logika untuk memunculkan tab dan mengisi data
   if (tab === "log") {
     document.getElementById("tabLog").style.display = "block";
-    renderTabel(); // Gambar ulang tabel log
-  } else if (tab === "kar") {
+    renderTabel(); // Fungsi gambar tabel log
+  } else if (tab === "karyawan") {
+    // Sesuaikan dengan isi onclick di HTML
     document.getElementById("tabKaryawan").style.display = "block";
-    renderKaryawanTable(); // <--- INI KUNCINYA: Gambar ulang tabel karyawan
+    renderKaryawanTable(); // Fungsi gambar tabel karyawan
   }
 
-  // Update tampilan tombol navigasi (opsional)
+  // 3. Update warna tombol aktif
   document
     .getElementById("btnTabLog")
     .classList.toggle("nav-active", tab === "log");
   document
     .getElementById("btnTabKaryawan")
-    .classList.toggle("nav-active", tab === "kar");
+    .classList.toggle("nav-active", tab === "karyawan");
 }
 
 function renderTabel() {
