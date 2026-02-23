@@ -1,5 +1,5 @@
 /**
- * KOBOI PRESENSI - FULL CLOUD VERSION
+ * KOBOI PRESENSI - FULL CLOUD VERSION (REVISED)
  * Fitur: Cloud Sync, Absensi, Manajemen Karyawan, & Payroll PDF
  * PT. Kola Borasi Indonesia - Februari 2026
  */
@@ -7,7 +7,7 @@
 // 1. KONFIGURASI SUPABASE
 const SB_URL = "https://ulmwpmzcaiuyubgehptt.supabase.co";
 const SB_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVsbXdwbXpjYWl1eXViZ2VocHR0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE4MzI2MjUsImV4cCI6MjA4NzQwODYyNX0._Y2MkIiRDM52CVMsZEp-lSRBQ93ZYGkwkFbmxfZ5tFo"; // Pastikan ini adalah Anon Public Key Anda
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVsbXdwbXpjYWl1eXViZ2VocHR0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE4MzI2MjUsImV4cCI6MjA4NzQwODYyNX0._Y2MkIiRDM52CVMsZEp-lSRBQ93ZYGkwkFbmxfZ5tFo";
 const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
 
 const OFFICE_IP = "103.108.130.34";
@@ -74,13 +74,20 @@ function hitungDetailGaji(gapok, namaKaryawan) {
   const gajiHarian = g / standarHari;
 
   const dataLogKaryawan = logs.filter((l) => l.nama === namaKaryawan);
-  const hadir = dataLogKaryawan.filter((l) => l.status === "MASUK").length;
+
+  // Hitung kehadiran unik (berdasarkan tanggal unik)
+  const hariHadirUnik = [
+    ...new Set(
+      dataLogKaryawan.map((l) => new Date(l.waktu).toLocaleDateString("id-ID")),
+    ),
+  ].length;
+
   const jumlahTelat = dataLogKaryawan.filter(
     (l) => l.status === "MASUK" && l.isLate === true,
   ).length;
 
+  const gajiPro = (hariHadirUnik / standarHari) * g;
   const potonganTelat = jumlahTelat * (gajiHarian * 0.02);
-  const gajiPro = (hadir / standarHari) * g;
 
   const bpjsKes = gajiPro * 0.01;
   const jht = gajiPro * 0.02;
@@ -93,7 +100,7 @@ function hitungDetailGaji(gapok, namaKaryawan) {
   return {
     gapok: g,
     gajiPro,
-    hadir,
+    hadir: hariHadirUnik,
     jumlahTelat,
     potonganTelat,
     standarHari,
@@ -102,7 +109,7 @@ function hitungDetailGaji(gapok, namaKaryawan) {
     jp,
     pph21,
     totalPotongan,
-    thp,
+    thp: thp > 0 ? thp : 0,
   };
 }
 
@@ -145,7 +152,6 @@ async function prosesAbsen(tipe) {
   const sekarang = new Date();
   const tglHariIni = sekarang.toLocaleDateString("id-ID");
 
-  // Pengecekan Duplikat Absen
   const sudahAbsen = logs.find(
     (l) =>
       l.nama === nama &&
@@ -154,7 +160,6 @@ async function prosesAbsen(tipe) {
   );
   if (sudahAbsen) return alert(`Anda SUDAH absen ${tipe} hari ini!`);
 
-  // Ambil Foto
   const v = document.getElementById("video");
   const c = document.getElementById("canvas");
   c.width = v.videoWidth;
@@ -172,7 +177,7 @@ async function prosesAbsen(tipe) {
   const newLog = {
     nama: info.nama,
     dept: info.dept,
-    waktu: sekarang.toISOString(), // Simpan format ISO agar sorting di Cloud benar
+    waktu: sekarang.toISOString(),
     status: tipe,
     foto: c.toDataURL("image/webp", 0.3),
     isLate: telat,
@@ -245,9 +250,9 @@ function renderKaryawanTable() {
                 <td><strong>${k.nama}</strong><br><small>${k.nik || "-"}</small></td>
                 <td>${k.jabatan || k.dept}<br><small>Hadir: ${d.hadir}/22</small></td>
                 <td>Rp ${d.gapok.toLocaleString("id-ID")}</td>
-                <td style="color:#15803d;font-weight:bold;">Rp ${d.thp.toLocaleString("id-ID")}</td>
+                <td style="color:#15803d;font-weight:bold;">Rp ${Math.floor(d.thp).toLocaleString("id-ID")}</td>
                 <td>
-                    <button onclick="cetakSlip(${index})" style="color:#4f46e5; border:none; background:none; cursor:pointer; font-weight:bold;">SLIP</button> 
+                    <button onclick="cetakSlip(${index})" style="color:#4f46e5; border:none; background:none; cursor:pointer; font-weight:bold; margin-right:10px;">SLIP</button> 
                     <button onclick="hapusKaryawan('${k.id}')" style="color:#ef4444; border:none; background:none; cursor:pointer;">HAPUS</button>
                 </td>
             </tr>`;
@@ -329,12 +334,13 @@ function cetakSlip(index) {
             <div style="display:flex; justify-content:space-between; color:red; font-weight:bold;"><span>Gaji Pro-rata</span><span>Rp ${d.gajiPro.toLocaleString("id-ID")}</span></div>
         </div>
         <div style="border-top:1px dashed #000; padding:10px 0;">
-            <div style="display:flex; justify-content:space-between; color:red;"><span>Potongan Telat</span><span>-Rp ${d.potonganTelat.toLocaleString("id-ID")}</span></div>
-            <div style="display:flex; justify-content:space-between;"><span>BPJS/Pajak</span><span>-Rp ${(d.totalPotongan - d.potonganTelat).toLocaleString("id-ID")}</span></div>
+            <div style="display:flex; justify-content:space-between; color:red;"><span>Potongan Telat (${d.jumlahTelat}x)</span><span>-Rp ${d.potonganTelat.toLocaleString("id-ID")}</span></div>
+            <div style="display:flex; justify-content:space-between;"><span>Potongan BPJS/Pajak</span><span>-Rp ${(d.totalPotongan - d.potonganTelat).toLocaleString("id-ID")}</span></div>
         </div>
         <div style="border-top:2px solid #000; padding:10px 0; display:flex; justify-content:space-between; font-weight:bold; font-size:1.1rem; background:#f0f0f0;">
-            <span>TAKE HOME PAY</span><span>Rp ${d.thp.toLocaleString("id-ID")}</span>
+            <span>TAKE HOME PAY</span><span>Rp ${Math.floor(d.thp).toLocaleString("id-ID")}</span>
         </div>
+        <p style="text-align:center; font-size:0.7rem; margin-top:20px;">Dicetak otomatis melalui KOBOI Apps</p>
     </div>`;
 
   const w = window.open("", "_blank");
@@ -360,9 +366,9 @@ function exportData() {
 function zoomFoto(url) {
   const v = document.createElement("div");
   v.style =
-    "position:fixed;inset:0;background:rgba(0,0,0,0.8);display:flex;justify-content:center;align-items:center;z-index:9999;";
+    "position:fixed;inset:0;background:rgba(0,0,0,0.8);display:flex;justify-content:center;align-items:center;z-index:9999;cursor:pointer;";
   v.onclick = () => v.remove();
-  v.innerHTML = `<img src="${url}" style="max-width:90%; border: 3px solid white; border-radius:10px;">`;
+  v.innerHTML = `<img src="${url}" style="max-width:90%; max-height:90%; border: 3px solid white; border-radius:10px;">`;
   document.body.appendChild(v);
 }
 
