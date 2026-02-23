@@ -220,21 +220,27 @@ function renderTabel() {
   logs.forEach((l) => {
     if (filter !== "ALL" && l.dept !== filter) return;
     count++;
+
     const sClass = l.status === "MASUK" ? "status-masuk" : "status-pulang";
     const waktuTampil = new Date(l.waktu).toLocaleString("id-ID");
     const telatBadge = l.isLate
       ? '<br><small style="color:red;font-weight:bold;">(TELAT)</small>'
       : "";
 
+    // PERBAIKAN: Menambahkan tombol hapus di kolom terakhir
     body.innerHTML += `
             <tr>
                 <td><strong>${l.nama}</strong></td>
                 <td>${l.dept}</td>
                 <td>${waktuTampil}</td>
                 <td><span class="status-tag ${sClass}">${l.status}</span>${telatBadge}</td>
-                <td><img src="${l.foto}" class="img-prev" onclick="zoomFoto('${l.foto}')"></td>
+                <td>
+                    <img src="${l.foto}" class="img-prev" onclick="zoomFoto('${l.foto}')" style="cursor:pointer;">
+                    <button onclick="hapusSatuLog(${l.id})" style="display:block; margin-top:5px; color:#ef4444; border:none; background:none; cursor:pointer; font-size:0.7rem; font-weight:bold;">[HAPUS LOG]</button>
+                </td>
             </tr>`;
   });
+
   if (document.getElementById("countAbsen"))
     document.getElementById("countAbsen").innerText = count;
 }
@@ -382,4 +388,38 @@ function showModal() {
 }
 function hideModal() {
   document.getElementById("modalKaryawan").style.display = "none";
+}
+
+// --- FITUR HAPUS LOG (CLOUD VERSION) ---
+
+// 1. Hapus SEMUA Log (Tombol Clear All)
+async function clearData() {
+  if (
+    confirm(
+      "PERINGATAN! Anda akan menghapus SELURUH data absensi di Cloud. Lanjutkan?",
+    )
+  ) {
+    const { error } = await supabaseClient.from("logs").delete().neq("id", 0); // Trik SQL untuk menghapus semua baris
+
+    if (!error) {
+      alert("Seluruh log berhasil dihapus!");
+      await syncData(); // Segarkan tampilan
+    } else {
+      alert("Gagal menghapus: " + error.message);
+    }
+  }
+}
+
+// 2. Hapus Satu Baris Log (Opsional, jika Anda ingin menambah tombol hapus di tiap baris)
+async function hapusSatuLog(id) {
+  if (confirm("Hapus data absensi ini dari Cloud?")) {
+    const { error } = await supabaseClient.from("logs").delete().eq("id", id);
+
+    if (!error) {
+      alert("Log berhasil dihapus!");
+      await syncData(); // Segarkan data dan tabel
+    } else {
+      alert("Gagal menghapus: " + error.message);
+    }
+  }
 }
