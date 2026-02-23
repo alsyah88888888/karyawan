@@ -76,10 +76,10 @@ function hitungDetailGaji(gapok, namaKaryawan) {
   const standarHari = 22;
   const gajiHarian = g / standarHari;
 
-  // Ambil log untuk karyawan ini
+  // Filter log untuk karyawan spesifik
   const dataLogKaryawan = logs.filter((l) => l.nama === namaKaryawan);
 
-  // Hitung hadir (unik per tanggal)
+  // Hitung hadir unik berdasarkan tanggal (hanya status MASUK)
   const hariHadir = [
     ...new Set(
       dataLogKaryawan
@@ -88,27 +88,38 @@ function hitungDetailGaji(gapok, namaKaryawan) {
     ),
   ].length;
 
-  // Hitung telat (Gunakan perlindungan jika kolom isLate undefined)
+  // Hitung jumlah telat (proteksi jika kolom isLate/is_late berbeda)
   const jumlahTelat = dataLogKaryawan.filter(
     (l) => l.status === "MASUK" && (l.isLate === true || l.is_late === true),
   ).length;
 
+  // RUMUS PERHITUNGAN
   const gajiPro = (hariHadir / standarHari) * g;
-  const potonganTelat = jumlahTelat * (gajiHarian * 0.02);
+  const potonganTelat = jumlahTelat * (gajiHarian * 0.02); // Potongan 2% dari gaji harian per telat
 
-  // Total Take Home Pay
-  const thp = gajiPro - potonganTelat;
+  // Potongan Statis (Total 5.5% dari gaji pro-rata)
+  const bpjsKes = gajiPro * 0.01;
+  const jht = gajiPro * 0.02;
+  const jp = gajiPro * 0.01;
+  const pph21 = gajiPro * 0.015;
+
+  const totalPotongan = bpjsKes + jht + jp + pph21 + potonganTelat;
+  const thp = gajiPro - totalPotongan;
 
   return {
     gapok: g,
-    gajiPro: gajiPro,
+    gajiPro,
     hadir: hariHadir,
-    jumlahTelat: jumlahTelat,
-    potonganTelat: potonganTelat,
+    jumlahTelat,
+    potonganTelat,
+    bpjsKes,
+    jht,
+    jp,
+    pph21,
+    totalPotongan,
     thp: thp > 0 ? thp : 0,
   };
 }
-
 // --- LOGIKA USER & ABSENSI ---
 async function initUser() {
   navigator.mediaDevices
@@ -324,42 +335,61 @@ async function hapusKaryawan(id) {
 // --- FITUR SLIP GAJI ---
 function cetakSlip(index) {
   const k = KARYAWAN[index];
-  if (!k) return alert("Data karyawan tidak ditemukan!");
-
   const d = hitungDetailGaji(k.gaji, k.nama);
   const tgl = new Date();
-  const bulan = tgl
-    .toLocaleString("id-ID", { month: "long", year: "numeric" })
-    .toUpperCase();
+  const bulanIndo = [
+    "JANUARI",
+    "FEBRUARI",
+    "MARET",
+    "APRIL",
+    "MEI",
+    "JUNI",
+    "JULI",
+    "AGUSTUS",
+    "SEPTEMBER",
+    "OKTOBER",
+    "NOVEMBER",
+    "DESEMBER",
+  ];
 
   const isiSlip = `
-    <div style="width: 400px; padding: 20px; border: 2px solid #000; font-family: monospace;">
-        <center>
-            <h3 style="margin:0;">PT. KOLA BORASI INDONESIA</h3>
-            <p>SLIP GAJI PERIODE: ${bulan}</p>
-            <hr>
-        </center>
-        <pre>
-NAMA    : ${k.nama}
-JABATAN : ${k.jabatan || k.dept}
-HADIR   : ${d.hadir} / 22 Hari
---------------------------------
-GAJI POKOK     : Rp ${d.gapok.toLocaleString("id-ID")}
-GAJI PRO-RATA  : Rp ${Math.floor(d.gajiPro).toLocaleString("id-ID")}
-POTONGAN TELAT : Rp ${Math.floor(d.potonganTelat).toLocaleString("id-ID")}
---------------------------------
-TAKE HOME PAY  : Rp ${Math.floor(d.thp).toLocaleString("id-ID")}
-        </pre>
-        <center><p style="font-size:10px;">Dicetak pada: ${tgl.toLocaleString("id-ID")}</p></center>
+    <div style="width: 450px; padding: 30px; border: 1px solid #000; font-family: 'Courier New', monospace; background: #fff; color: #000;">
+        <h2 style="text-align:center; margin:0;">PT. KOLA BORASI INDONESIA</h2>
+        <p style="text-align:center; border-bottom: 2px solid #000; padding-bottom:10px; font-weight:bold;">SLIP GAJI - ${bulanIndo[tgl.getMonth()]} ${tgl.getFullYear()}</p>
+        
+        <div style="display:grid; grid-template-columns: 120px 10px 1fr; line-height: 1.6;">
+            <span>NIK</span><span>:</span><span>${k.nik || "-"}</span>
+            <span>NAMA</span><span>:</span><span>${k.nama}</span>
+            <span>JABATAN</span><span>:</span><span>${k.jabatan || k.dept}</span>
+            <span>KEHADIRAN</span><span>:</span><span>${d.hadir} / 22 Hari</span>
+        </div>
+
+        <div style="border-top:1px dashed #000; margin-top:15px; padding-top:10px;">
+            <div style="display:flex; justify-content:space-between;"><span>Gaji Pokok Full</span><span>Rp ${d.gapok.toLocaleString("id-ID")}</span></div>
+            <div style="display:flex; justify-content:space-between; font-weight:bold;"><span>Gaji Pro-rata</span><span>Rp ${Math.floor(d.gajiPro).toLocaleString("id-ID")}</span></div>
+        </div>
+
+        <p style="margin: 10px 0 5px 0; font-weight:bold; text-decoration: underline;">POTONGAN</p>
+        <div style="line-height: 1.4;">
+            <div style="display:flex; justify-content:space-between;"><span>BPJS Kesehatan (1%)</span><span>-Rp ${Math.floor(d.bpjsKes).toLocaleString("id-ID")}</span></div>
+            <div style="display:flex; justify-content:space-between;"><span>JHT (2%)</span><span>-Rp ${Math.floor(d.jht).toLocaleString("id-ID")}</span></div>
+            <div style="display:flex; justify-content:space-between;"><span>JP (1%)</span><span>-Rp ${Math.floor(d.jp).toLocaleString("id-ID")}</span></div>
+            <div style="display:flex; justify-content:space-between;"><span>PPh 21 (1.5%)</span><span>-Rp ${Math.floor(d.pph21).toLocaleString("id-ID")}</span></div>
+            <div style="display:flex; justify-content:space-between; color: red;"><span>Potongan Telat (${d.jumlahTelat}x)</span><span>-Rp ${Math.floor(d.potonganTelat).toLocaleString("id-ID")}</span></div>
+        </div>
+
+        <div style="border-top:2px solid #000; margin-top:15px; padding:10px 0; display:flex; justify-content:space-between; font-weight:bold; font-size:1.1rem; background:#f9f9f9;">
+            <span>TAKE HOME PAY</span><span>Rp ${Math.floor(d.thp).toLocaleString("id-ID")}</span>
+        </div>
+        
+        <p style="text-align:center; font-size:0.7rem; margin-top:20px; font-style: italic;">Dicetak melalui KOBOI Apps pada ${tgl.toLocaleString("id-ID")}</p>
     </div>`;
 
-  const w = window.open("", "_blank", "width=500,height=600");
+  const w = window.open("", "_blank");
   w.document.write(
-    `<html><head><title>Slip Gaji - ${k.nama}</title></head><body style="display:flex;justify-content:center;padding:20px;">${isiSlip}</body></html>`,
+    `<html><body style="display:flex;justify-content:center;padding:20px;">${isiSlip}</body></html>`,
   );
-
-  // Jangan langsung ditutup, biarkan user melihat atau menekan Ctrl+P sendiri
-  // w.document.close();
+  w.document.close();
 }
 
 // --- UTILITAS ---
