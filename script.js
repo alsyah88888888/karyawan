@@ -74,36 +74,26 @@ window.onload = async () => {
 function hitungDetailGaji(gapok, namaKaryawan) {
   const g = parseFloat(gapok) || 0;
   const standarHari = 22;
-  const gajiHarian = g / standarHari;
 
-  const dataLogKaryawan = logs.filter((l) => l.nama === namaKaryawan);
-
-  // Hitung hadir berdasarkan tanggal unik di status 'MASUK'
+  // Hitung berapa hari karyawan ini masuk (berdasarkan logs)
   const hariHadir = [
     ...new Set(
-      dataLogKaryawan
-        .filter((l) => l.status === "MASUK")
+      logs
+        .filter((l) => l.nama === namaKaryawan && l.status === "MASUK")
         .map((l) => new Date(l.waktu).toLocaleDateString()),
     ),
   ].length;
 
-  const jumlahTelat = dataLogKaryawan.filter(
-    (l) => l.status === "MASUK" && l.isLate === true,
-  ).length;
-
-  // PERBAIKAN RUMUS: Gaji = (Hadir / 22) * Gaji Pokok
+  // Gaji prorata: (Hadir / 22) * Gaji Pokok
   const gajiPro = (hariHadir / standarHari) * g;
-  const potonganTelat = jumlahTelat * (gajiHarian * 0.02);
 
-  const bpjsPajak = gajiPro * 0.055; // Total BPJS + PPh21 (sekitar 5.5%)
-  const thp = gajiPro - potonganTelat - bpjsPajak;
+  // Potongan sederhana (misal BPJS & Pajak 5%)
+  const potongan = gajiPro * 0.05;
+  const thp = gajiPro - potongan;
 
   return {
     gapok: g,
-    gajiPro,
     hadir: hariHadir,
-    jumlahTelat,
-    potonganTelat,
     thp: thp > 0 ? thp : 0,
   };
 }
