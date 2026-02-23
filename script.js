@@ -75,10 +75,12 @@ function hitungDetailGaji(gapok, namaKaryawan) {
 
   const dataLogKaryawan = logs.filter((l) => l.nama === namaKaryawan);
 
-  // Hitung kehadiran unik (berdasarkan tanggal unik)
-  const hariHadirUnik = [
+  // Hitung hadir berdasarkan tanggal unik di status 'MASUK'
+  const hariHadir = [
     ...new Set(
-      dataLogKaryawan.map((l) => new Date(l.waktu).toLocaleDateString("id-ID")),
+      dataLogKaryawan
+        .filter((l) => l.status === "MASUK")
+        .map((l) => new Date(l.waktu).toLocaleDateString()),
     ),
   ].length;
 
@@ -86,29 +88,19 @@ function hitungDetailGaji(gapok, namaKaryawan) {
     (l) => l.status === "MASUK" && l.isLate === true,
   ).length;
 
-  const gajiPro = (hariHadirUnik / standarHari) * g;
+  // PERBAIKAN RUMUS: Gaji = (Hadir / 22) * Gaji Pokok
+  const gajiPro = (hariHadir / standarHari) * g;
   const potonganTelat = jumlahTelat * (gajiHarian * 0.02);
 
-  const bpjsKes = gajiPro * 0.01;
-  const jht = gajiPro * 0.02;
-  const jp = gajiPro * 0.01;
-  const pph21 = gajiPro * 0.015;
-
-  const totalPotongan = bpjsKes + jht + jp + pph21 + potonganTelat;
-  const thp = gajiPro - totalPotongan;
+  const bpjsPajak = gajiPro * 0.055; // Total BPJS + PPh21 (sekitar 5.5%)
+  const thp = gajiPro - potonganTelat - bpjsPajak;
 
   return {
     gapok: g,
     gajiPro,
-    hadir: hariHadirUnik,
+    hadir: hariHadir,
     jumlahTelat,
     potonganTelat,
-    standarHari,
-    bpjsKes,
-    jht,
-    jp,
-    pph21,
-    totalPotongan,
     thp: thp > 0 ? thp : 0,
   };
 }
@@ -248,18 +240,39 @@ function renderTabel() {
 function renderKaryawanTable() {
   const body = document.getElementById("karyawanTableBody");
   if (!body) return;
+
   body.innerHTML = "";
+
+  // Jika data KARYAWAN masih kosong, beri keterangan
+  if (KARYAWAN.length === 0) {
+    body.innerHTML =
+      "<tr><td colspan='5' style='text-align:center; padding:20px;'>Data kosong atau gagal memuat dari Cloud...</td></tr>";
+    return;
+  }
+
   KARYAWAN.forEach((k, index) => {
     const d = hitungDetailGaji(k.gaji || 0, k.nama);
+
+    // Pastikan kita menggunakan k.id yang benar dari Supabase
+    const idKaryawan = k.id;
+
     body.innerHTML += `
             <tr>
-                <td><strong>${k.nama}</strong><br><small>${k.nik || "-"}</small></td>
-                <td>${k.jabatan || k.dept}<br><small>Hadir: ${d.hadir}/22</small></td>
+                <td>
+                    <strong>${k.nama}</strong><br>
+                    <small style="color:#64748b">${k.nik || "-"}</small>
+                </td>
+                <td>
+                    ${k.jabatan || k.dept}<br>
+                    <small>Hadir: ${d.hadir}/22</small>
+                </td>
                 <td>Rp ${d.gapok.toLocaleString("id-ID")}</td>
-                <td style="color:#15803d;font-weight:bold;">Rp ${Math.floor(d.thp).toLocaleString("id-ID")}</td>
+                <td style="color:#15803d; font-weight:bold;">
+                    Rp ${Math.floor(d.thp).toLocaleString("id-ID")}
+                </td>
                 <td>
                     <button onclick="cetakSlip(${index})" style="color:#4f46e5; border:none; background:none; cursor:pointer; font-weight:bold; margin-right:10px;">SLIP</button> 
-                    <button onclick="hapusKaryawan('${k.id}')" style="color:#ef4444; border:none; background:none; cursor:pointer;">HAPUS</button>
+                    <button onclick="hapusKaryawan(${idKaryawan})" style="color:#ef4444; border:none; background:none; cursor:pointer;">HAPUS</button>
                 </td>
             </tr>`;
   });
