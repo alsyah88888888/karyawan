@@ -312,7 +312,10 @@ async function hapusKaryawan(id) {
 
 // --- FITUR SLIP GAJI ---
 function cetakSlip(index) {
+  // Ambil data karyawan berdasarkan index yang diklik
   const k = KARYAWAN[index];
+  if (!k) return alert("Data karyawan tidak ditemukan!");
+
   const d = hitungDetailGaji(k.gaji, k.nama);
   const bulanIndo = [
     "JANUARI",
@@ -342,23 +345,28 @@ function cetakSlip(index) {
         </div>
         <div style="border-top:1px dashed #000; margin-top:10px; padding:10px 0;">
             <div style="display:flex; justify-content:space-between;"><span>Gaji Pokok</span><span>Rp ${d.gapok.toLocaleString("id-ID")}</span></div>
-            <div style="display:flex; justify-content:space-between; color:red; font-weight:bold;"><span>Gaji Pro-rata</span><span>Rp ${d.gajiPro.toLocaleString("id-ID")}</span></div>
         </div>
         <div style="border-top:1px dashed #000; padding:10px 0;">
-            <div style="display:flex; justify-content:space-between; color:red;"><span>Potongan Telat (${d.jumlahTelat}x)</span><span>-Rp ${d.potonganTelat.toLocaleString("id-ID")}</span></div>
-            <div style="display:flex; justify-content:space-between;"><span>Potongan BPJS/Pajak</span><span>-Rp ${(d.totalPotongan - d.potonganTelat).toLocaleString("id-ID")}</span></div>
+            <div style="display:flex; justify-content:space-between; color:red;"><span>Potongan Telat</span><span>-Rp ${d.potonganTelat.toLocaleString("id-ID")}</span></div>
         </div>
         <div style="border-top:2px solid #000; padding:10px 0; display:flex; justify-content:space-between; font-weight:bold; font-size:1.1rem; background:#f0f0f0;">
             <span>TAKE HOME PAY</span><span>Rp ${Math.floor(d.thp).toLocaleString("id-ID")}</span>
         </div>
-        <p style="text-align:center; font-size:0.7rem; margin-top:20px;">Dicetak otomatis melalui KOBOI Apps</p>
     </div>`;
 
   const w = window.open("", "_blank");
+  if (!w)
+    return alert("Pop-up diblokir! Izinkan pop-up untuk melihat slip gaji.");
+
   w.document.write(
-    `<html><body style="display:flex;justify-content:center;padding:20px;">${isiSlip}<script>window.onload=function(){window.print();window.close();}<\/script></body></html>`,
+    `<html><body style="display:flex;justify-content:center;padding:20px;">${isiSlip}</body></html>`,
   );
-  w.document.close();
+
+  // Beri sedikit jeda agar konten terisi sebelum print
+  setTimeout(() => {
+    w.print();
+    w.close();
+  }, 500);
 }
 
 // --- UTILITAS ---
