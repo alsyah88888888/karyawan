@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>KOBOI - Admin Dashboard</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="admin-container">
+      <aside class="sidebar">
+        <h2>KOBOI ADMIN</h2>
+
+        <nav class="admin-nav">
+          <button onclick="switchTab('log')" id="btnTabLog" class="nav-active">
+            Log Absensi
+          </button>
+          <button onclick="switchTab('karyawan')" id="btnTabKaryawan">
+            Kelola Karyawan
+          </button>
+        </nav>
+
+        <div class="stat-box">
+          <p>Total Absensi Hari Ini</p>
+          <h3 id="countAbsen">0</h3>
+        </div>
+
+        <button class="btn-download" onclick="exportData()">
+          Download CSV
+        </button>
+        <button class="btn-danger" onclick="clearData()">
+          Hapus Semua Log
+        </button>
+
+        <a href="index.html" class="btn-exit">Keluar</a>
+      </aside>
+
+      <main class="content">
+        <section id="tabLog">
+          <div class="header-content">
+            <h2>Log Presensi Real-time</h2>
+            <select id="filterDept" onchange="renderTabel()">
+              <option value="ALL">Semua Departemen</option>
+              <option value="FINANCE">Finance</option>
+              <option value="OPERASIONAL">Operasional</option>
+            </select>
+          </div>
+
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>NAMA</th>
+                  <th>DEPT</th>
+                  <th>WAKTU</th>
+                  <th>STATUS</th>
+                  <th>FOTO</th>
+                </tr>
+              </thead>
+              <tbody id="logTableBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="tabKaryawan" style="display: none">
+          <div
+            class="header-content"
+            style="
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+            "
+          >
+            <h2>Daftar Karyawan & Payroll</h2>
+            <button
+              onclick="showModal()"
+              class="btn-m"
+              style="background: #10b981"
+            >
+              + Tambah Karyawan
+            </button>
+          </div>
+
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>NAMA KARYAWAN</th>
+                  <th>DEPARTEMEN</th>
+                  <th>GAJI POKOK</th>
+                  <th>ESTIMASI THP</th>
+                  <th>AKSI</th>
+                </tr>
+              </thead>
+              <tbody id="karyawanTableBody"></tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <div id="modalKaryawan" class="modal-overlay" style="display: none">
+      <div class="modal-content">
+        <h3>Tambah Karyawan Baru</h3>
+
+        <div style="margin-top: 15px">
+          <label>Nama Lengkap</label>
+          <input type="text" id="inpNama" placeholder="Contoh: BUDI UTOMO" />
+        </div>
+
+        <div style="margin-top: 15px">
+          <label>Departemen</label>
+          <select id="inpDept">
+            <option value="FINANCE">FINANCE</option>
+            <option value="OPERASIONAL">OPERASIONAL</option>
+          </select>
+        </div>
+
+        <div style="margin-top: 15px">
+          <label>Gaji Pokok (Rp)</label>
+          <input type="number" id="inpGaji" placeholder="Contoh: 6500000" />
+        </div>
+
+        <div class="btn-group" style="margin-top: 25px">
+          <button onclick="simpanKaryawan()" class="btn-m">Simpan</button>
+          <button
+            onclick="hideModal()"
+            class="btn-danger"
+            style="background: #f1f5f9; color: #475569; border: none"
+          >
+            Batal
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>

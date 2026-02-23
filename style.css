@@ -1,0 +1,666 @@
+/* GLOBAL SETTINGS */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family:
+    "Inter",
+    -apple-system,
+    sans-serif;
+  background: #f0f2f5;
+  color: #1e293b;
+  overflow-x: hidden;
+  line-height: 1.5;
+}
+
+/* ==========================================
+   USER INTERFACE (index.html) STYLING
+   ========================================== */
+
+.user-layout {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 20px;
+  width: 100%;
+}
+
+.wifi-badge {
+  padding: 10px 20px;
+  border-radius: 50px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.wifi-badge.checking {
+  background: #e2e8f0;
+  color: #64748b;
+}
+.wifi-badge.connected {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #86efac;
+}
+.wifi-badge.disconnected {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fca5a5;
+}
+
+.terminal-card {
+  background: white;
+  width: 100%;
+  max-width: 400px;
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow:
+    0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.terminal-card header {
+  padding: 25px 20px;
+  text-align: center;
+  background: #ffffff;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+#liveClock {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: #4f46e5;
+  letter-spacing: -1px;
+}
+
+.terminal-card header p {
+  color: #64748b;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+/* CAMERA BOX */
+.cam-box {
+  width: 100%;
+  aspect-ratio: 1/1;
+  background: #000;
+  position: relative;
+  overflow: hidden;
+}
+
+#video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.scanner-line {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(to bottom, transparent, #4f46e5);
+  box-shadow: 0 0 15px #4f46e5;
+  animation: scan 3s linear infinite;
+  z-index: 10;
+}
+
+@keyframes scan {
+  0% {
+    top: 0;
+  }
+  100% {
+    top: 100%;
+  }
+}
+
+/* INPUT & BUTTONS */
+.input-box {
+  padding: 25px 20px;
+}
+
+#namaSelect {
+  width: 100%;
+  padding: 15px;
+  border-radius: 12px;
+  border: 2px solid #e2e8f0;
+  font-size: 1rem;
+  margin-bottom: 20px;
+  background-color: #f8fafc;
+  transition: border-color 0.2s;
+  outline: none;
+}
+
+#namaSelect:focus {
+  border-color: #4f46e5;
+}
+
+.btn-group {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.btn-m,
+.btn-p {
+  padding: 16px;
+  border-radius: 12px;
+  border: none;
+  font-weight: 700;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.85rem;
+}
+
+.btn-m {
+  background: #10b981;
+  box-shadow: 0 4px 0 #059669;
+}
+.btn-p {
+  background: #4f46e5;
+  box-shadow: 0 4px 0 #3730a3;
+}
+
+.btn-m:active,
+.btn-p:active {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 transparent;
+}
+
+.btn-m:disabled,
+.btn-p:disabled {
+  background: #cbd5e1;
+  box-shadow: none;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.admin-link {
+  margin-top: 25px;
+  font-size: 0.8rem;
+  color: #94a3b8;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+/* ==========================================
+   ADMIN INTERFACE (admin.html) STYLING
+   ========================================== */
+
+.admin-container {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+}
+
+.sidebar {
+  width: 280px;
+  background: #0f172a;
+  color: #f8fafc;
+  padding: 30px 20px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar h2 {
+  font-size: 1.25rem;
+  color: #818cf8;
+  margin-bottom: 30px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #334155;
+}
+
+/* MODIFIKASI: Navigasi Tab di Sidebar */
+.admin-nav {
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.admin-nav button {
+  width: 100%;
+  text-align: left;
+  padding: 12px 15px;
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  font-weight: 600;
+  border-radius: 10px;
+  transition: all 0.2s;
+}
+
+.admin-nav button.nav-active {
+  background: #1e293b;
+  color: #818cf8;
+  box-shadow: inset 4px 0 0 #818cf8;
+}
+
+.stat-box {
+  background: #1e293b;
+  padding: 20px;
+  border-radius: 16px;
+  margin-bottom: 20px;
+}
+
+.stat-box p {
+  font-size: 0.7rem;
+  color: #94a3b8;
+  text-transform: uppercase;
+  margin-bottom: 5px;
+}
+.stat-box h3 {
+  font-size: 2rem;
+}
+
+.sidebar .btn-download,
+.sidebar .btn-danger,
+.btn-exit {
+  width: 100%;
+  padding: 14px;
+  border-radius: 12px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+  text-align: center;
+}
+
+.content {
+  flex: 1;
+  padding: 30px;
+  min-width: 0;
+}
+
+/* Container Header Log */
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #ffffff;
+  padding: 20px 25px;
+  border-radius: 12px 12px 0 0; /* Melengkung di atas saja jika di bawahnya ada tabel */
+  border-bottom: 2px solid #f1f5f9;
+  margin-bottom: 0;
+}
+
+/* Judul H2 */
+.header-content h2 {
+  font-family:
+    "Inter",
+    -apple-system,
+    sans-serif;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1e293b; /* Warna teks gelap yang lembut */
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Memberikan titik indikator "Live" di depan judul */
+.header-content h2::before {
+  content: "";
+  width: 10px;
+  height: 10px;
+  background-color: #10b981; /* Warna hijau */
+  border-radius: 50%;
+  display: inline-block;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+}
+
+/* Styling Dropdown Select */
+#filterDept {
+  appearance: none; /* Menghapus panah default browser */
+  background-color: #f8fafc;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 10px 40px 10px 16px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 180px;
+  outline: none;
+}
+
+/* Hover & Focus state untuk Dropdown */
+#filterDept:hover {
+  border-color: #cbd5e1;
+  background-color: #fff;
+}
+
+#filterDept:focus {
+  border-color: #4f46e5; /* Warna indigo */
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+  background-color: #fff;
+}
+
+/* Responsif untuk HP */
+@media (max-width: 600px) {
+  .header-content {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+    padding: 15px;
+  }
+
+  #filterDept {
+    width: 100%; /* Dropdown jadi lebar penuh di HP */
+  }
+}
+
+.table-scroll {
+  background: white;
+  border-radius: 15px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  width: 100%;
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 600px;
+}
+
+th,
+td {
+  padding: 15px;
+  text-align: left;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+th {
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em; /* Tambahan agar lebih elegan */
+}
+
+/* MODIFIKASI: Status Tag Styles */
+.status-tag {
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  display: inline-block;
+}
+
+.status-masuk {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.status-pulang {
+  background: #e0e7ff;
+  color: #4338ca;
+}
+
+/* TAMBAHAN: Gaya untuk indikator telat di tabel */
+small[style*="color:red"] {
+  display: inline-block;
+  margin-top: 4px;
+  background: #fee2e2; /* Background merah sangat muda */
+  color: #b91c1c !important; /* Merah tegas */
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+}
+
+.img-prev {
+  width: 45px;
+  height: 45px;
+  border-radius: 8px;
+  object-fit: cover;
+  cursor: pointer;
+  border: 1px solid #e2e8f0; /* Tambahan border halus */
+  transition: transform 0.2s;
+}
+
+.img-prev:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+/* Container Tab Karyawan */
+#tabKaryawan {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+  margin-top: 20px;
+}
+
+/* Header Content Inside Tab Karyawan */
+#tabKaryawan .header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 25px;
+  background: #ffffff;
+  border-bottom: 2px solid #f1f5f9;
+}
+
+/* Judul H2 dengan Indikator Biru (Membedakan dengan Log Real-time) */
+#tabKaryawan h2 {
+  font-family: "Inter", sans-serif;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+#tabKaryawan h2::before {
+  content: "";
+  width: 10px;
+  height: 10px;
+  background-color: #3b82f6; /* Warna biru untuk identitas Payroll */
+  border-radius: 2px; /* Kotak sedikit tumpul */
+  display: inline-block;
+}
+
+/* Tombol Tambah Karyawan */
+.btn-m {
+  padding: 10px 20px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
+}
+
+.btn-m:hover {
+  background-color: #059669 !important; /* Hijau lebih gelap */
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px rgba(16, 185, 129, 0.3);
+}
+
+.btn-m:active {
+  transform: translateY(0);
+}
+
+/* Styling Tabel Karyawan */
+.table-scroll {
+  overflow-x: auto;
+  padding: 0;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: "Inter", sans-serif;
+  text-align: left;
+}
+
+/* Header Tabel */
+table thead tr {
+  background-color: #f8fafc;
+}
+
+table th {
+  padding: 15px 25px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748b;
+  border-bottom: 2px solid #f1f5f9;
+}
+
+/* Body Tabel */
+table td {
+  padding: 18px 25px;
+  font-size: 0.9rem;
+  color: #334155;
+  border-bottom: 1px solid #f1f5f9;
+  vertical-align: middle;
+}
+
+/* Menghilangkan border bawah pada baris terakhir */
+table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Efek Hover Baris */
+table tbody tr:hover {
+  background-color: #f1f5f9;
+  transition: background-color 0.2s ease;
+}
+
+/* Style khusus untuk kolom nominal Gaji */
+#karyawanTableBody td:nth-child(3),
+#karyawanTableBody td:nth-child(4) {
+  font-family: "Courier New", monospace; /* Gaya angka finansial */
+  font-weight: 600;
+}
+
+/* Responsive Table */
+@media (max-width: 768px) {
+  #tabKaryawan .header-content {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+  }
+
+  .btn-m {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* ==========================================
+   MODAL OVERLAY (DITAMBAHKAN)
+   ========================================== */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.7);
+  backdrop-filter: blur(4px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modal-content {
+  background: white;
+  padding: 30px;
+  border-radius: 24px;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  animation: modalPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes modalPop {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.modal-content h3 {
+  margin-bottom: 20px;
+  font-size: 1.25rem;
+}
+.modal-content label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #64748b;
+  margin-bottom: 6px;
+}
+.modal-content input,
+.modal-content select {
+  width: 100%;
+  padding: 12px;
+  border-radius: 10px;
+  border: 2px solid #e2e8f0;
+  margin-bottom: 15px;
+  outline: none;
+}
+.modal-content input:focus {
+  border-color: #4f46e5;
+}
+
+/* RESPONSIVE DESIGN */
+@media (max-width: 768px) {
+  .admin-container {
+    flex-direction: column;
+  }
+  .sidebar {
+    width: 100%;
+    height: auto;
+    padding: 20px;
+  }
+  .content {
+    padding: 15px;
+  }
+  .btn-group {
+    grid-template-columns: 1fr;
+  }
+  #liveClock {
+    font-size: 2rem;
+  }
+  .terminal-card {
+    max-width: 100%;
+  }
+}

@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>KOBOI - Terminal Presensi</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="user-layout">
+      <div id="wifiStatus" class="wifi-badge checking">
+        Memverifikasi Koneksi...
+      </div>
+
+      <div class="terminal-card">
+        <header>
+          <h1 id="liveClock">00:00:00</h1>
+          <p>Presensi Karyawan KOBOI</p>
+        </header>
+
+        <div class="cam-box">
+          <video id="video" autoplay muted playsinline></video>
+          <canvas id="canvas" style="display: none"></canvas>
+          <div class="scanner-line"></div>
+        </div>
+
+        <div class="input-box">
+          <select id="namaSelect">
+            <option value="">-- Pilih Nama Anda --</option>
+          </select>
+          <div class="btn-group">
+            <button
+              id="btnMasuk"
+              class="btn-m"
+              onclick="prosesAbsen('MASUK')"
+              disabled
+            >
+              MASUK
+            </button>
+            <button
+              id="btnPulang"
+              class="btn-p"
+              onclick="prosesAbsen('PULANG')"
+              disabled
+            >
+              PULANG
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <span class="admin-link" onclick="loginAdmin()">System Access</span>
+    </div>
+    <script src="script.js"></script>
+  </body>
+</html>
