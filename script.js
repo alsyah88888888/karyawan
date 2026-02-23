@@ -17,27 +17,21 @@ let logs = [];
 // --- FUNGSI CLOUD SYNC ---
 async function syncData() {
   try {
-    console.log("Sinkronisasi data ke Cloud...");
-
-    // Ambil Data Karyawan (Urutkan Nama)
-    const { data: dataKar, error: errKar } = await supabaseClient
+    const { data: dataKar } = await supabaseClient
       .from("karyawan")
       .select("*")
-      .order("nama", { ascending: true });
-    if (errKar) throw errKar;
-    KARYAWAN = dataKar || [];
-
-    // Ambil Data Logs (Terbaru di atas)
-    const { data: dataLog, error: errLog } = await supabaseClient
+      .order("nama");
+    const { data: dataLog } = await supabaseClient
       .from("logs")
       .select("*")
       .order("id", { ascending: false });
-    if (errLog) throw errLog;
+
+    KARYAWAN = dataKar || [];
     logs = dataLog || [];
 
-    refreshAllUI();
+    refreshAllUI(); // Ini akan memanggil renderTabel dan renderKaryawanTable
   } catch (e) {
-    console.error("Gagal sinkronisasi:", e.message);
+    console.error("Gagal sinkron:", e);
   }
 }
 
