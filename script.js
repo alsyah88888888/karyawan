@@ -6,7 +6,7 @@
 
 // 1. KONFIGURASI SUPABASE
 const SB_URL = "https://ulmwpmzcaiuyubgehptt.supabase.co";
-const SB_KEY = "sb_publishable_FnzrCPHBpyy4KyvEUy__UA_dTwVsrdz";
+const SB_KEY = "sb_publishable_FnzrCPHBpyy4KyvEUy__UA_dTwVsrdz"; // Pastikan ini adalah Anon Public Key Anda
 const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
 
 const OFFICE_IP = "103.108.130.34";
@@ -16,20 +16,27 @@ let logs = [];
 // --- FUNGSI CLOUD SYNC ---
 async function syncData() {
   try {
-    // Ambil Data Karyawan dari Cloud
-    const { data: dataKar } = await supabaseClient.from("karyawan").select("*");
-    if (dataKar) KARYAWAN = dataKar;
+    console.log("Sinkronisasi data ke Cloud...");
 
-    // Ambil Data Logs dari Cloud
-    const { data: dataLog } = await supabaseClient
+    // Ambil Data Karyawan (Urutkan Nama)
+    const { data: dataKar, error: errKar } = await supabaseClient
+      .from("karyawan")
+      .select("*")
+      .order("nama", { ascending: true });
+    if (errKar) throw errKar;
+    KARYAWAN = dataKar || [];
+
+    // Ambil Data Logs (Terbaru di atas)
+    const { data: dataLog, error: errLog } = await supabaseClient
       .from("logs")
       .select("*")
       .order("id", { ascending: false });
-    if (dataLog) logs = dataLog;
+    if (errLog) throw errLog;
+    logs = dataLog || [];
 
     refreshAllUI();
   } catch (e) {
-    console.error("Gagal sinkronisasi:", e);
+    console.error("Gagal sinkronisasi:", e.message);
   }
 }
 
@@ -59,7 +66,7 @@ window.onload = async () => {
   if (document.getElementById("namaSelect")) initUser();
 };
 
-// --- LOGIKA PAYROLL (FITUR ASLI ANDA) ---
+// --- LOGIKA PAYROLL ---
 function hitungDetailGaji(gapok, namaKaryawan) {
   const g = parseFloat(gapok) || 0;
   const standarHari = 22;
@@ -103,7 +110,9 @@ async function initUser() {
   navigator.mediaDevices
     .getUserMedia({ video: true })
     .then((s) => (document.getElementById("video").srcObject = s))
-    .catch(() => alert("Izin kamera ditolak!"));
+    .catch(() =>
+      alert("Izin kamera ditolak! Aplikasi membutuhkan kamera untuk absensi."),
+    );
 
   setInterval(() => {
     const clockEl = document.getElementById("liveClock");
@@ -124,7 +133,7 @@ async function initUser() {
     document.getElementById("btnMasuk").disabled = !isOffice;
     document.getElementById("btnPulang").disabled = !isOffice;
   } catch (e) {
-    if (badge) badge.innerText = "Gagal Verifikasi Jaringan";
+    if (badge) badge.innerText = "Gagal Verifikasi Jaringan / Offline";
   }
 }
 
@@ -135,10 +144,21 @@ async function prosesAbsen(tipe) {
   const sekarang = new Date();
   const tglHariIni = sekarang.toLocaleDateString("id-ID");
 
+  // Pengecekan Duplikat Absen
   const sudahAbsen = logs.find(
-    (l) => l.nama === nama && l.waktu.includes(tglHariIni) && l.status === tipe,
+    (l) =>
+      l.nama === nama &&
+      new Date(l.waktu).toLocaleDateString("id-ID") === tglHariIni &&
+      l.status === tipe,
   );
   if (sudahAbsen) return alert(`Anda SUDAH absen ${tipe} hari ini!`);
+
+  // Ambil Foto
+  const v = document.getElementById("video");
+  const c = document.getElementById("canvas");
+  c.width = v.videoWidth;
+  c.height = v.videoHeight;
+  c.getContext("2d").drawImage(v, 0, 0);
 
   let telat = false;
   if (tipe === "MASUK") {
@@ -147,17 +167,11 @@ async function prosesAbsen(tipe) {
     if (jam > 9 || (jam === 9 && menit > 0)) telat = true;
   }
 
-  const v = document.getElementById("video");
-  const c = document.getElementById("canvas");
-  c.width = v.videoWidth;
-  c.height = v.videoHeight;
-  c.getContext("2d").drawImage(v, 0, 0);
-
   const info = KARYAWAN.find((k) => k.nama === nama);
   const newLog = {
     nama: info.nama,
     dept: info.dept,
-    waktu: sekarang.toLocaleString("id-ID"),
+    waktu: sekarang.toISOString(), // Simpan format ISO agar sorting di Cloud benar
     status: tipe,
     foto: c.toDataURL("image/webp", 0.3),
     isLate: telat,
@@ -168,7 +182,9 @@ async function prosesAbsen(tipe) {
     alert("Gagal kirim ke Cloud: " + error.message);
   } else {
     alert(
-      telat ? "Berhasil! Anda telat, potongan 2% diterapkan." : "Berhasil!",
+      telat
+        ? "Berhasil! Anda telat (Potongan 2% otomatis)."
+        : "Berhasil! Selamat Bekerja.",
     );
     await syncData();
   }
@@ -186,7 +202,6 @@ function switchTab(tab) {
   document
     .getElementById("btnTabKaryawan")
     .classList.toggle("nav-active", tab === "kar");
-  tab === "log" ? renderTabel() : renderKaryawanTable();
 }
 
 function renderTabel() {
@@ -200,10 +215,19 @@ function renderTabel() {
     if (filter !== "ALL" && l.dept !== filter) return;
     count++;
     const sClass = l.status === "MASUK" ? "status-masuk" : "status-pulang";
+    const waktuTampil = new Date(l.waktu).toLocaleString("id-ID");
     const telatBadge = l.isLate
       ? '<br><small style="color:red;font-weight:bold;">(TELAT)</small>'
       : "";
-    body.innerHTML += `<tr><td><strong>${l.nama}</strong></td><td>${l.dept}</td><td>${l.waktu}</td><td><span class="status-tag ${sClass}">${l.status}</span>${telatBadge}</td><td><img src="${l.foto}" class="img-prev" onclick="zoomFoto('${l.foto}')"></td></tr>`;
+
+    body.innerHTML += `
+            <tr>
+                <td><strong>${l.nama}</strong></td>
+                <td>${l.dept}</td>
+                <td>${waktuTampil}</td>
+                <td><span class="status-tag ${sClass}">${l.status}</span>${telatBadge}</td>
+                <td><img src="${l.foto}" class="img-prev" onclick="zoomFoto('${l.foto}')"></td>
+            </tr>`;
   });
   if (document.getElementById("countAbsen"))
     document.getElementById("countAbsen").innerText = count;
@@ -215,14 +239,27 @@ function renderKaryawanTable() {
   body.innerHTML = "";
   KARYAWAN.forEach((k, index) => {
     const d = hitungDetailGaji(k.gaji || 0, k.nama);
-    body.innerHTML += `<tr><td><strong>${k.nama}</strong><br><small>${k.nik || "-"}</small></td><td>${k.jabatan || k.dept}<br><small>Hadir: ${d.hadir}/22</small></td><td>Rp ${d.gapok.toLocaleString("id-ID")}</td><td style="color:#15803d;font-weight:bold;">Rp ${d.thp.toLocaleString("id-ID")}</td><td><button onclick="cetakSlip(${index})" style="color:#4f46e5;border:none;background:none;cursor:pointer;font-weight:bold;">SLIP</button> <button onclick="hapusKaryawan('${k.nik}')" style="color:#ef4444;border:none;background:none;cursor:pointer;">HAPUS</button></td></tr>`;
+    body.innerHTML += `
+            <tr>
+                <td><strong>${k.nama}</strong><br><small>${k.nik || "-"}</small></td>
+                <td>${k.jabatan || k.dept}<br><small>Hadir: ${d.hadir}/22</small></td>
+                <td>Rp ${d.gapok.toLocaleString("id-ID")}</td>
+                <td style="color:#15803d;font-weight:bold;">Rp ${d.thp.toLocaleString("id-ID")}</td>
+                <td>
+                    <button onclick="cetakSlip(${index})" style="color:#4f46e5; border:none; background:none; cursor:pointer; font-weight:bold;">SLIP</button> 
+                    <button onclick="hapusKaryawan('${k.id}')" style="color:#ef4444; border:none; background:none; cursor:pointer;">HAPUS</button>
+                </td>
+            </tr>`;
   });
 }
 
 async function simpanKaryawan() {
   const nama = document.getElementById("inpNama").value.toUpperCase();
   const gaji = document.getElementById("inpGaji").value;
-  const nik = document.getElementById("inpNik")?.value || Date.now().toString();
+  const nik =
+    document.getElementById("inpNik")?.value ||
+    "KBI-" + Date.now().toString().slice(-6);
+
   if (!nama || !gaji) return alert("Isi Nama & Gaji!");
 
   const newKar = {
@@ -240,17 +277,23 @@ async function simpanKaryawan() {
     alert("Karyawan ditambahkan!");
     hideModal();
     await syncData();
+  } else {
+    alert("Gagal menyimpan: " + error.message);
   }
 }
 
-async function hapusKaryawan(nik) {
-  if (confirm("Hapus karyawan?")) {
-    await supabaseClient.from("karyawan").delete().eq("nik", nik);
-    await syncData();
+async function hapusKaryawan(id) {
+  if (confirm("Hapus data karyawan ini dari Cloud?")) {
+    const { error } = await supabaseClient
+      .from("karyawan")
+      .delete()
+      .eq("id", id);
+    if (!error) await syncData();
+    else alert("Gagal menghapus: " + error.message);
   }
 }
 
-// --- FITUR SLIP GAJI ASLI ANDA ---
+// --- FITUR SLIP GAJI ---
 function cetakSlip(index) {
   const k = KARYAWAN[index];
   const d = hitungDetailGaji(k.gaji, k.nama);
@@ -269,6 +312,7 @@ function cetakSlip(index) {
     "DESEMBER",
   ];
   const tgl = new Date();
+
   const isiSlip = `
     <div style="width: 450px; padding: 30px; border: 1px solid #000; font-family: 'Courier New', monospace; background: #fff;">
         <h2 style="text-align:center; margin:0;">PT. KOLA BORASI INDONESIA</h2>
@@ -301,11 +345,14 @@ function cetakSlip(index) {
 
 // --- UTILITAS ---
 function exportData() {
-  let csv = "Nama,Departemen,Waktu,Status\n";
-  logs.forEach((l) => (csv += `${l.nama},${l.dept},${l.waktu},${l.status}\n`));
+  let csv = "Nama,Departemen,Waktu,Status,Telat\n";
+  logs.forEach(
+    (l) =>
+      (csv += `${l.nama},${l.dept},${new Date(l.waktu).toLocaleString("id-ID")},${l.status},${l.isLate}\n`),
+  );
   const a = document.createElement("a");
   a.href = window.URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
-  a.download = `Rekap_Absensi_KOBOI.csv`;
+  a.download = `Rekap_Absensi_KOBOI_${new Date().toLocaleDateString()}.csv`;
   a.click();
 }
 
@@ -322,6 +369,7 @@ function loginAdmin() {
   if (prompt("Password Admin:") === "mautaubanget")
     window.location.href = "admin.html";
 }
+
 function showModal() {
   document.getElementById("modalKaryawan").style.display = "flex";
 }
