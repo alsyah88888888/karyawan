@@ -244,41 +244,29 @@ function renderTabel() {
 function renderKaryawanTable() {
   const body = document.getElementById("karyawanTableBody");
   if (!body) return;
-
   body.innerHTML = "";
 
-  // Jika data KARYAWAN masih kosong, beri keterangan
   if (KARYAWAN.length === 0) {
     body.innerHTML =
-      "<tr><td colspan='5' style='text-align:center; padding:20px;'>Data kosong atau gagal memuat dari Cloud...</td></tr>";
+      "<tr><td colspan='5' style='text-align:center;'>Memuat data...</td></tr>";
     return;
   }
 
   KARYAWAN.forEach((k, index) => {
+    // Hitung detail untuk ditampilkan di tabel
     const d = hitungDetailGaji(k.gaji || 0, k.nama);
 
-    // Pastikan kita menggunakan k.id yang benar dari Supabase
-    const idKaryawan = k.id;
-
     body.innerHTML += `
-            <tr>
-                <td>
-                    <strong>${k.nama}</strong><br>
-                    <small style="color:#64748b">${k.nik || "-"}</small>
-                </td>
-                <td>
-                    ${k.jabatan || k.dept}<br>
-                    <small>Hadir: ${d.hadir}/22</small>
-                </td>
-                <td>Rp ${d.gapok.toLocaleString("id-ID")}</td>
-                <td style="color:#15803d; font-weight:bold;">
-                    Rp ${Math.floor(d.thp).toLocaleString("id-ID")}
-                </td>
-                <td>
-                    <button onclick="cetakSlip(${index})" style="color:#4f46e5; border:none; background:none; cursor:pointer; font-weight:bold; margin-right:10px;">SLIP</button> 
-                    <button onclick="hapusKaryawan(${idKaryawan})" style="color:#ef4444; border:none; background:none; cursor:pointer;">HAPUS</button>
-                </td>
-            </tr>`;
+      <tr>
+        <td><strong>${k.nama}</strong><br><small>${k.nik || "-"}</small></td>
+        <td>${k.jabatan || k.dept}<br><small>Hadir: ${d.hadir}/22</small></td>
+        <td>Rp ${(k.gaji || 0).toLocaleString("id-ID")}</td>
+        <td style="color:#15803d; font-weight:bold;">Rp ${Math.floor(d.thp).toLocaleString("id-ID")}</td>
+        <td>
+          <button onclick="cetakSlip(${index})" style="color:#4f46e5; border:none; background:none; cursor:pointer; font-weight:bold; text-decoration:underline;">SLIP</button>
+          <button onclick="hapusKaryawan('${k.id}')" style="color:#ef4444; border:none; background:none; cursor:pointer; margin-left:10px;">HAPUS</button>
+        </td>
+      </tr>`;
   });
 }
 
