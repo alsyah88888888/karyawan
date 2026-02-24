@@ -196,7 +196,7 @@ async function prosesAbsen(tipe) {
   } else {
     alert(
       telat
-        ? "Berhasil! Anda telat (Potongan 2% otomatis)."
+        ? "Berhasil! Anda telat."
         : "Berhasil! Selamat Bekerja.",
     );
     await syncData();
