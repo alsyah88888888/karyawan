@@ -674,6 +674,48 @@ tr:hover td {
   margin-bottom: 20px;
 }
 
+.modal-body label {
+  display: block;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.modal-body input,
+.modal-body select {
+  width: 100%;
+  padding: 14px 18px;
+  border-radius: 14px;
+  border: 2px solid #e2e8f0;
+  background: #f8fafc;
+  font-family: inherit;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--text-main);
+  margin-bottom: 20px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  outline: none;
+}
+
+.modal-body input:focus,
+.modal-body select:focus {
+  border-color: var(--primary);
+  background: #fff;
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+}
+
+.modal-body input::placeholder {
+  color: #94a3b8;
+}
+
+.modal-body .grid-fields input,
+.modal-body .grid-fields select {
+  margin-bottom: 0;
+}
+
 /* ANIMATIONS */
 @keyframes fadeIn {
   from {
