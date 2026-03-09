@@ -77,7 +77,6 @@ function refreshAllUI() {
 function toggleDriverButtons() {
   const sel = document.getElementById("namaSelect");
   const btnMasuk = document.getElementById("btnMasuk");
-  const extraButtons = document.getElementById("extraButtons");
   if (!sel || !btnMasuk) return;
 
   const nama = sel.value;
@@ -87,17 +86,15 @@ function toggleDriverButtons() {
   // Reset Default
   btnMasuk.innerText = "MASUK";
   btnMasuk.setAttribute("onclick", "prosesAbsen('MASUK')");
-  if (extraButtons) extraButtons.style.display = "grid";
 
   // Perlakuan Khusus Driver / Helper
   if (info && (info.dept === "OPERASIONAL" && (info.jabatan === "DRIVER" || info.jabatan === "Helper"))) {
     btnMasuk.innerText = "BERANGKAT";
     btnMasuk.setAttribute("onclick", "prosesAbsen('BERANGKAT')");
-    if (extraButtons) extraButtons.style.display = "none";
   }
 
   // Aktifkan tombol berdasarkan seleksi user
-  const basicButtons = ["btnMasuk", "btnPulang", "btnSakit", "btnIzin"];
+  const basicButtons = ["btnMasuk", "btnPulang"];
   basicButtons.forEach(id => {
     const btn = document.getElementById(id);
     if (btn) btn.disabled = !hasUser;
