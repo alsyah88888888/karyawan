@@ -76,29 +76,32 @@ function refreshAllUI() {
 
 function toggleDriverButtons() {
   const sel = document.getElementById("namaSelect");
-  const btnBerangkat = document.getElementById("btnBerangkat");
   const btnMasuk = document.getElementById("btnMasuk");
+  const extraButtons = document.getElementById("extraButtons");
   if (!sel || !btnMasuk) return;
 
   const nama = sel.value;
   const info = KARYAWAN.find(k => k.nama === nama);
   const hasUser = nama !== "";
 
-  // Aktifkan tombol HANYA berdasarkan seleksi user (IP cek bersifat informatif)
+  // Reset Default
+  btnMasuk.innerText = "MASUK";
+  btnMasuk.setAttribute("onclick", "prosesAbsen('MASUK')");
+  if (extraButtons) extraButtons.style.display = "grid";
+
+  // Perlakuan Khusus Driver / Helper
+  if (info && (info.dept === "OPERASIONAL" && (info.jabatan === "DRIVER" || info.jabatan === "Helper"))) {
+    btnMasuk.innerText = "BERANGKAT";
+    btnMasuk.setAttribute("onclick", "prosesAbsen('BERANGKAT')");
+    if (extraButtons) extraButtons.style.display = "none";
+  }
+
+  // Aktifkan tombol berdasarkan seleksi user
   const basicButtons = ["btnMasuk", "btnPulang", "btnSakit", "btnIzin"];
   basicButtons.forEach(id => {
     const btn = document.getElementById(id);
     if (btn) btn.disabled = !hasUser;
   });
-
-  if (btnBerangkat) {
-    if (info && (info.dept === "OPERASIONAL" && (info.jabatan === "DRIVER" || info.jabatan === "Helper"))) {
-      btnBerangkat.style.display = "block";
-      btnBerangkat.disabled = !hasUser;
-    } else {
-      btnBerangkat.style.display = "none";
-    }
-  }
 }
 
 // --- INISIALISASI ---
