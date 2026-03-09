@@ -315,7 +315,7 @@ function downloadSlip(index) {
         <p style="text-align:center; border-bottom: 2px solid #000; padding-bottom:10px; font-weight:bold;">SLIP GAJI - ${bulanIndo[tgl.getMonth()]} ${tgl.getFullYear()}</p>
         
         <div style="display:grid; grid-template-columns: 120px 10px 1fr; line-height: 1.6;">
-            <span>NIK</span><span>:</span><span>${k.nik || "-"}</span>
+            <span>ID KARYAWAN</span><span>:</span><span>${k.nik || "-"}</span>
             <span>NAMA</span><span>:</span><span>${k.nama}</span>
             <span>JABATAN</span><span>:</span><span>${k.jabatan || k.dept}</span>
             <span>KEHADIRAN</span><span>:</span><span>${d.hadir} / 22 Hari</span>
@@ -378,7 +378,7 @@ async function simpanKaryawan() {
     const nama = namaEl.value.trim().toUpperCase();
     const gaji = gajiEl.value;
     const dept = deptEl.value;
-    const nik = nikEl?.value.trim() || "KBI-" + Date.now().toString().slice(-6);
+    const nik = nikEl?.value.trim() || "KBI-" + Math.floor(100000 + Math.random() * 900000);
     const jabatan = jabEl?.value.trim() || dept;
 
     if (!nama || !gaji) {
@@ -458,7 +458,7 @@ function cetakSlip(index) {
         <p style="text-align:center; border-bottom: 2px solid #000; padding-bottom:10px; font-weight:bold;">SLIP GAJI - ${bulanIndo[tgl.getMonth()]} ${tgl.getFullYear()}</p>
         
         <div style="display:grid; grid-template-columns: 120px 10px 1fr; line-height: 1.6;">
-            <span>NIK</span><span>:</span><span>${k.nik || "-"}</span>
+            <span>ID KARYAWAN</span><span>:</span><span>${k.nik || "-"}</span>
             <span>NAMA</span><span>:</span><span>${k.nama}</span>
             <span>JABATAN</span><span>:</span><span>${k.jabatan || k.dept}</span>
             <span>KEHADIRAN</span><span>:</span><span>${d.hadir} / 22 Hari</span>
