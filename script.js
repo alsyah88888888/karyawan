@@ -73,21 +73,27 @@ function refreshAllUI() {
 
 function toggleDriverButtons() {
   const sel = document.getElementById("namaSelect");
+  const btnBerangkat = document.getElementById("btnBerangkat");
   const btnMasuk = document.getElementById("btnMasuk");
   if (!sel || !btnMasuk) return;
 
   const nama = sel.value;
   const info = KARYAWAN.find(k => k.nama === nama);
 
-  if (info && (info.dept === "OPERASIONAL" && (info.jabatan === "DRIVER" || info.jabatan === "Helper"))) {
-    // Jika Driver/Helper Operasional, ubah Masuk jadi Berangkat
-    btnMasuk.innerText = "BERANGKAT";
-    btnMasuk.style.background = "var(--brand-orange)";
-    btnMasuk.style.boxShadow = "0 4px 0 #b45309";
-  } else {
-    btnMasuk.innerText = "MASUK";
-    btnMasuk.style.background = "var(--secondary)";
-    btnMasuk.style.boxShadow = "0 4px 0 #003a6e";
+  // Jika ada seleksi, aktifkan tombol dasar
+  const hasUser = nama !== "";
+  btnMasuk.disabled = !hasUser;
+  document.getElementById("btnPulang").disabled = !hasUser;
+  if (document.getElementById("btnSakit")) document.getElementById("btnSakit").disabled = !hasUser;
+  if (document.getElementById("btnIzin")) document.getElementById("btnIzin").disabled = !hasUser;
+
+  if (btnBerangkat) {
+    if (info && (info.dept === "OPERASIONAL" && (info.jabatan === "DRIVER" || info.jabatan === "Helper"))) {
+      btnBerangkat.style.display = "block";
+      btnBerangkat.disabled = !hasUser;
+    } else {
+      btnBerangkat.style.display = "none";
+    }
   }
 }
 
@@ -172,8 +178,13 @@ async function initUser() {
     badge.className = isOffice
       ? "wifi-badge connected"
       : "wifi-badge disconnected";
-    document.getElementById("btnMasuk").disabled = !isOffice;
-    document.getElementById("btnPulang").disabled = !isOffice;
+
+    // Aktifkan tombol utama jika di kantor
+    const buttons = ["btnMasuk", "btnPulang", "btnBerangkat", "btnSakit", "btnIzin"];
+    buttons.forEach(id => {
+      const btn = document.getElementById(id);
+      if (btn) btn.disabled = !isOffice;
+    });
   } catch (e) {
     if (badge) badge.innerText = "Gagal Verifikasi Jaringan / Offline";
   }
@@ -209,17 +220,11 @@ async function prosesAbsen(tipe) {
 
   const info = KARYAWAN.find((k) => k.nama === nama);
 
-  // Penanganan khusus status untuk Driver
-  let finalStatus = tipe;
-  if (tipe === "MASUK" && (info.dept === "DRIVER" || info.jabatan?.toUpperCase() === "DRIVER")) {
-    finalStatus = "BERANGKAT";
-  }
-
   const newLog = {
     nama: info.nama,
     dept: info.dept,
     waktu: sekarang.toISOString(),
-    status: finalStatus,
+    status: tipe,
     foto: c.toDataURL("image/webp", 0.3),
     isLate: telat,
   };
@@ -229,7 +234,7 @@ async function prosesAbsen(tipe) {
     alert("Gagal kirim ke Cloud: " + error.message);
   } else {
     alert(
-      telat
+      tipe === "MASUK" && telat
         ? "Berhasil! Anda telat."
         : "Berhasil! Selamat Bekerja.",
     );
@@ -726,3 +731,91 @@ async function generateMissingIDs() {
     }
   }
 }
+function switchTab(target) {
+  const tabLog = document.getElementById("tabLog");
+  const tabKar = document.getElementById("tabKaryawan");
+  const bLog = document.getElementById("btnTabLog");
+  const bKar = document.getElementById("btnTabKaryawan");
+
+  if (!tabLog || !tabKar) return;
+
+  if (target === "log") {
+    tabLog.style.display = "flex";
+    tabKar.style.display = "none";
+    bLog.classList.add("nav-active");
+    bKar.classList.remove("nav-active");
+  } else {
+    tabLog.style.display = "none";
+    tabKar.style.display = "flex";
+    bLog.classList.remove("nav-active");
+    bKar.classList.add("nav-active");
+  }
+}
+
+function showEditModal(index) {
+  const k = KARYAWAN[index];
+  if (!k) return;
+  document.getElementById("editOriginalNik").value = k.nik;
+  document.getElementById("editNik").value = k.nik;
+  document.getElementById("editNama").value = k.nama;
+  document.getElementById("editDept").value = k.dept;
+  document.getElementById("editJabatan").value = k.jabatan || "";
+  document.getElementById("editGaji").value = k.gaji || 0;
+  document.getElementById("editTahun").value = k.tahun_bergabung || "";
+
+  document.getElementById("modalEdit").classList.add("active");
+}
+
+function hideEditModal() {
+  document.getElementById("modalEdit").classList.remove("active");
+}
+
+async function updateKaryawan() {
+  try {
+    const originalNik = document.getElementById("editOriginalNik").value;
+    const nik = document.getElementById("editNik").value.trim();
+    const nama = document.getElementById("editNama").value.trim().toUpperCase();
+    const dept = document.getElementById("editDept").value;
+    const jabatan = document.getElementById("editJabatan").value;
+    const gaji = parseFloat(document.getElementById("editGaji").value) || 0;
+    const tahun = document.getElementById("editTahun").value.trim();
+
+    if (!nama || !gaji) return alert("Nama dan Gaji tidak boleh kosong!");
+
+    const updatedData = {
+      nik,
+      nama,
+      dept,
+      jabatan,
+      gaji,
+      tahun_bergabung: tahun
+    };
+
+    const { error } = await supabaseClient
+      .from("karyawan")
+      .update(updatedData)
+      .eq("nik", originalNik);
+
+    if (error) throw error;
+
+    alert("Data berhasil diperbarui!");
+    hideEditModal();
+    await syncData();
+  } catch (e) {
+    console.error(e);
+    alert("Gagal update: " + e.message);
+  }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  const editModal = document.getElementById("modalEdit");
+  if (editModal) {
+    editModal.addEventListener("click", (e) => {
+      if (e.target === editModal) hideEditModal();
+    });
+  }
+});
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") hideEditModal();
+});

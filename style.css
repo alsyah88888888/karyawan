@@ -236,7 +236,8 @@ body {
 
 .btn-m:disabled,
 .btn-p:disabled {
-  background: #cbd5e1;
+  background: #f1f5f9;
+  color: #94a3b8;
   box-shadow: none;
   cursor: not-allowed;
   opacity: 0.5;
@@ -477,6 +478,14 @@ body {
   display: flex;
   flex-direction: column;
   height: 100vh;
+  overflow: hidden;
+}
+
+#tabLog,
+#tabKaryawan {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
 }
 
