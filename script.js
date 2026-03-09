@@ -13,6 +13,7 @@ const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
 const OFFICE_IP = "103.108.130.44";
 let KARYAWAN = [];
 let logs = [];
+let isOfficeGlobal = false;
 
 // --- FUNGSI CLOUD SYNC ---
 async function syncData() {
@@ -79,18 +80,19 @@ function toggleDriverButtons() {
 
   const nama = sel.value;
   const info = KARYAWAN.find(k => k.nama === nama);
-
-  // Jika ada seleksi, aktifkan tombol dasar
   const hasUser = nama !== "";
-  btnMasuk.disabled = !hasUser;
-  document.getElementById("btnPulang").disabled = !hasUser;
-  if (document.getElementById("btnSakit")) document.getElementById("btnSakit").disabled = !hasUser;
-  if (document.getElementById("btnIzin")) document.getElementById("btnIzin").disabled = !hasUser;
+
+  // Update status disable HANYA jika di kantor DAN user dipilih
+  const basicButtons = ["btnMasuk", "btnPulang", "btnSakit", "btnIzin"];
+  basicButtons.forEach(id => {
+    const btn = document.getElementById(id);
+    if (btn) btn.disabled = !(isOfficeGlobal && hasUser);
+  });
 
   if (btnBerangkat) {
     if (info && (info.dept === "OPERASIONAL" && (info.jabatan === "DRIVER" || info.jabatan === "Helper"))) {
       btnBerangkat.style.display = "block";
-      btnBerangkat.disabled = !hasUser;
+      btnBerangkat.disabled = !(isOfficeGlobal && hasUser);
     } else {
       btnBerangkat.style.display = "none";
     }
@@ -171,20 +173,16 @@ async function initUser() {
   try {
     const res = await fetch("https://api.ipify.org?format=json");
     const data = await res.json();
-    const isOffice = data.ip === OFFICE_IP;
-    badge.innerText = isOffice
+    isOfficeGlobal = data.ip === OFFICE_IP;
+    badge.innerText = isOfficeGlobal
       ? "Terhubung WiFi Kantor ✅"
       : `Gunakan WiFi Kantor ❌ (${data.ip})`;
-    badge.className = isOffice
+    badge.className = isOfficeGlobal
       ? "wifi-badge connected"
       : "wifi-badge disconnected";
 
-    // Aktifkan tombol utama jika di kantor
-    const buttons = ["btnMasuk", "btnPulang", "btnBerangkat", "btnSakit", "btnIzin"];
-    buttons.forEach(id => {
-      const btn = document.getElementById(id);
-      if (btn) btn.disabled = !isOffice;
-    });
+    // Sinkronkan status tombol pertama kali
+    toggleDriverButtons();
   } catch (e) {
     if (badge) badge.innerText = "Gagal Verifikasi Jaringan / Offline";
   }
