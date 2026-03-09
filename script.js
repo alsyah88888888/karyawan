@@ -396,11 +396,11 @@ async function simpanKaryawan() {
 
     console.log("Menyimpan karyawan baru:", newKar);
 
-    const { data, error } = await supabaseClient.from("karyawan").insert([newKar]).select();
+    const { error } = await supabaseClient.from("karyawan").insert([newKar]);
 
     if (error) throw error;
 
-    console.log("Karyawan berhasil disimpan:", data);
+    console.log("Karyawan berhasil disimpan");
     alert("Karyawan berhasil ditambahkan!");
     hideModal();
 
@@ -538,6 +538,7 @@ if (sessionStorage.getItem("adminAuth") === "true") {
   if (loginEl && panelEl) {
     loginEl.style.display = "none";
     panelEl.style.display = "flex";
+    syncData(); // Tambahkan sync data saat auto-login
   }
 }
 
