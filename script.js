@@ -258,7 +258,7 @@ function renderTabel() {
                 <td><span class="status-tag ${sClass}">${l.status}</span>${telatBadge}</td>
                 <td>
                     <img src="${l.foto}" class="img-prev" onclick="zoomFoto('${l.foto}')" style="cursor:pointer;">
-                    <button onclick="hapusSatuLog(${l.id})" style="display:block; margin-top:5px; color:#ef4444; border:none; background:none; cursor:pointer; font-size:0.7rem; font-weight:bold;">[HAPUS LOG]</button>
+                    <button onclick="hapusSatuLog('${l.waktu}')" style="display:block; margin-top:5px; color:#ef4444; border:none; background:none; cursor:pointer; font-size:0.7rem; font-weight:bold;">[HAPUS LOG]</button>
                 </td>
             </tr>`;
   });
@@ -283,7 +283,7 @@ function renderKaryawanTable() {
         <td>
           <button onclick="cetakSlip(${index})" style="color:#4f46e5; border:none; background:none; cursor:pointer; font-weight:bold;">SLIP</button>
           <button onclick="downloadSlip(${index})" style="color:#10b981; border:none; background:none; cursor:pointer; font-weight:bold; margin-left:10px;">DOWNLOAD</button> 
-          <button onclick="hapusKaryawan('${k.id}')" style="color:#ef4444; border:none; background:none; cursor:pointer; margin-left:10px;">HAPUS</button>
+          <button onclick="hapusKaryawan('${k.nik}')" style="color:#ef4444; border:none; background:none; cursor:pointer; margin-left:10px;">HAPUS</button>
         </td>
       </tr>`;
   });
@@ -421,12 +421,12 @@ async function simpanKaryawan() {
   }
 }
 
-async function hapusKaryawan(id) {
+async function hapusKaryawan(idKaryawan) {
   if (confirm("Hapus data karyawan ini dari Cloud?")) {
     const { error } = await supabaseClient
       .from("karyawan")
       .delete()
-      .eq("id", id);
+      .eq("nik", idKaryawan);
     if (!error) await syncData();
     else alert("Gagal menghapus: " + error.message);
   }
@@ -576,7 +576,7 @@ async function clearData() {
       "PERINGATAN! Anda akan menghapus SELURUH data absensi di Cloud. Lanjutkan?",
     )
   ) {
-    const { error } = await supabaseClient.from("logs").delete().neq("id", 0); // Trik SQL untuk menghapus semua baris
+    const { error } = await supabaseClient.from("logs").delete().neq("nama", ""); // Menghapus semua karena logs juga tidak punya id 0
 
     if (!error) {
       alert("Seluruh log berhasil dihapus!");
@@ -588,9 +588,9 @@ async function clearData() {
 }
 
 // 2. Hapus Satu Baris Log (Opsional, jika Anda ingin menambah tombol hapus di tiap baris)
-async function hapusSatuLog(id) {
+async function hapusSatuLog(waktu) {
   if (confirm("Hapus data absensi ini dari Cloud?")) {
-    const { error } = await supabaseClient.from("logs").delete().eq("id", id);
+    const { error } = await supabaseClient.from("logs").delete().eq("waktu", waktu);
 
     if (!error) {
       alert("Log berhasil dihapus!");
@@ -622,7 +622,7 @@ async function generateMissingIDs() {
         const { error } = await supabaseClient
           .from("karyawan")
           .update({ nik: newNik })
-          .eq("id", k.id);
+          .eq("nama", k.nama);
 
         if (!error) successCount++;
       }
