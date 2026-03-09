@@ -1,27 +1,26 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
 
 :root {
-  /* Premium Color Palette */
-  --primary: #6366f1;
-  /* Indigo 500 */
-  --primary-hover: #4f46e5;
-  /* Indigo 600 */
-  --secondary: #10b981;
-  /* Emerald 500 */
-  --secondary-hover: #059669;
-  /* Emerald 600 */
+  /* PT. Kola Borasi Indonesia Refined Palette */
+  --brand-bg: #FF4400;
+  --brand-text: #134E8E;
+  --brand-btn: #FFB33F;
+  --brand-btn-hover: #e6a135;
+
+  --primary: var(--brand-bg);
+  --primary-hover: #e63d00;
+  --secondary: var(--brand-text);
+  --secondary-hover: #0f3d70;
+  --accent: var(--brand-btn);
   --danger: #ef4444;
-  /* Red 500 */
-  --bg-gradient: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-  --dark-bg: #0f172a;
-  /* Slate 900 */
-  --text-main: #1e293b;
-  /* Slate 800 */
-  --text-muted: #64748b;
-  /* Slate 500 */
-  --glass-bg: rgba(255, 255, 255, 0.7);
-  --glass-border: rgba(255, 255, 255, 0.4);
-  --shadow-premium: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+
+  --bg-gradient: linear-gradient(135deg, var(--brand-bg) 0%, #e63d00 100%);
+  --dark-bg: var(--brand-bg);
+  --text-main: var(--brand-text);
+  --text-muted: rgba(19, 78, 142, 0.7);
+  --glass-bg: rgba(255, 255, 255, 0.9);
+  --glass-border: rgba(19, 78, 142, 0.2);
+  --shadow-premium: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
 }
 
 * {
@@ -32,9 +31,10 @@
 
 body {
   font-family: 'Outfit', sans-serif;
-  background: var(--bg-gradient);
-  color: var(--text-main);
-  min-height: 100vh;
+  background: var(--brand-bg);
+  color: var(--brand-text);
+  height: 100vh;
+  overflow: hidden;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
 }
@@ -48,9 +48,9 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 100vh;
-  padding: 40px 20px;
-  background: radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.05) 0%, transparent 100%);
+  height: 100vh;
+  padding: 20px;
+  background: radial-gradient(circle at 50% 50%, rgba(255, 68, 0, 0.1) 0%, transparent 100%);
 }
 
 .wifi-badge {
@@ -107,7 +107,7 @@ body {
 #liveClock {
   font-size: 3.5rem;
   font-weight: 800;
-  color: var(--primary);
+  color: var(--brand-text);
   letter-spacing: -2px;
   margin-bottom: 8px;
   line-height: 1;
@@ -205,19 +205,21 @@ body {
 }
 
 .btn-m {
-  background: var(--secondary);
-  box-shadow: 0 4px 0 #059669;
+  background: var(--brand-btn);
+  color: var(--brand-text);
+  box-shadow: 0 4px 0 #b45309;
 }
 
 .btn-m:hover:not(:disabled) {
-  background: var(--secondary-hover);
+  background: var(--brand-btn-hover);
   transform: translateY(-2px);
-  box-shadow: 0 6px 0 #059669;
+  box-shadow: 0 6px 0 #b45309;
 }
 
 .btn-p {
-  background: var(--primary);
-  box-shadow: 0 4px 0 #3730a3;
+  background: var(--brand-btn);
+  color: var(--brand-text);
+  box-shadow: 0 4px 0 #b45309;
 }
 
 .btn-p:hover:not(:disabled) {
@@ -315,8 +317,8 @@ body {
 }
 
 .login-form input:focus {
-  border-color: var(--primary);
-  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--brand-btn);
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .back-home {
@@ -355,7 +357,7 @@ body {
 
 .sidebar {
   width: 280px;
-  background: linear-gradient(180deg, var(--brand-red) 0%, #8b0000 100%);
+  background: linear-gradient(180deg, var(--brand-bg) 0%, #b33000 100%);
   color: #fff;
   padding: 30px 20px;
   flex-shrink: 0;
@@ -367,7 +369,7 @@ body {
 .sidebar h2 {
   font-size: 1.25rem;
   font-weight: 800;
-  color: var(--brand-yellow);
+  color: var(--brand-btn);
   margin-bottom: 30px;
   letter-spacing: 1px;
 }
@@ -398,9 +400,9 @@ body {
 }
 
 .admin-nav button.nav-active {
-  background: var(--brand-yellow);
-  color: var(--brand-red);
-  box-shadow: 0 4px 12px rgba(255, 189, 69, 0.3);
+  background: var(--brand-btn);
+  color: var(--brand-text);
+  box-shadow: 0 4px 12px rgba(255, 179, 63, 0.3);
 }
 
 .stat-box {
@@ -698,12 +700,12 @@ tr:hover td {
   width: 100%;
   padding: 14px 18px;
   border-radius: 14px;
-  border: 2px solid #e2e8f0;
-  background: #f8fafc;
+  border: 2px solid rgba(19, 78, 142, 0.2);
+  background: #fff;
   font-family: inherit;
   font-size: 0.9375rem;
   font-weight: 500;
-  color: var(--text-main);
+  color: var(--brand-text);
   margin-bottom: 20px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   outline: none;
@@ -711,9 +713,9 @@ tr:hover td {
 
 .modal-body input:focus,
 .modal-body select:focus {
-  border-color: var(--primary);
+  border-color: var(--brand-btn);
   background: #fff;
-  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+  box-shadow: 0 0 0 4px rgba(255, 179, 63, 0.1);
 }
 
 .modal-body input::placeholder {

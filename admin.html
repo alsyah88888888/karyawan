@@ -91,8 +91,7 @@
         <div class="header-content">
           <h2>Daftar Karyawan</h2>
           <div style="display: flex; gap: 10px;">
-            <button onclick="generateMissingIDs()" class="btn-m"
-              style="background: var(--primary); box-shadow: 0 4px 0 #3730a3;">
+            <button onclick="generateMissingIDs()" class="btn-m">
               Lengkapi ID
             </button>
             <button onclick="showModal()" class="btn-m">
@@ -122,7 +121,7 @@
   <!-- MODAL SECTION - PREMIUM POP-UP -->
   <div id="modalKaryawan" class="modal-overlay">
     <div class="modal-content">
-      <div class="modal-header">
+      <div class="modal-header" style="background: linear-gradient(to right, var(--brand-bg), var(--brand-btn))">
         <h3>Tambah Karyawan</h3>
         <p>Lengkapi formulir di bawah untuk menambah data baru.</p>
         <button class="btn-close-modal" onclick="hideModal()">&times;</button>
@@ -178,7 +177,7 @@
   <!-- MODAL SECTION - EDIT -->
   <div id="modalEdit" class="modal-overlay">
     <div class="modal-content">
-      <div class="modal-header" style="background: linear-gradient(to right, #10b981, #059669)">
+      <div class="modal-header" style="background: linear-gradient(to right, var(--brand-bg), var(--brand-btn))">
         <h3>Edit Data Karyawan</h3>
         <p>Perbarui informasi karyawan terpilih.</p>
         <button class="btn-close-modal" onclick="hideEditModal()">&times;</button>
@@ -228,8 +227,7 @@
         <button onclick="hideEditModal()" class="btn-exit" style="background: #f1f5f9; color: #475569;">
           Batal
         </button>
-        <button onclick="updateKaryawan()" class="btn-p"
-          style="background: #10b981; box-shadow: 0 4px 0 #059669;">Update Data</button>
+        <button onclick="updateKaryawan()" class="btn-p">Update Data</button>
       </div>
     </div>
   </div>
