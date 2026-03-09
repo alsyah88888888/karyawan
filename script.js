@@ -82,17 +82,17 @@ function toggleDriverButtons() {
   const info = KARYAWAN.find(k => k.nama === nama);
   const hasUser = nama !== "";
 
-  // Update status disable HANYA jika di kantor DAN user dipilih
+  // Aktifkan tombol HANYA berdasarkan seleksi user (IP cek bersifat informatif)
   const basicButtons = ["btnMasuk", "btnPulang", "btnSakit", "btnIzin"];
   basicButtons.forEach(id => {
     const btn = document.getElementById(id);
-    if (btn) btn.disabled = !(isOfficeGlobal && hasUser);
+    if (btn) btn.disabled = !hasUser;
   });
 
   if (btnBerangkat) {
     if (info && (info.dept === "OPERASIONAL" && (info.jabatan === "DRIVER" || info.jabatan === "Helper"))) {
       btnBerangkat.style.display = "block";
-      btnBerangkat.disabled = !(isOfficeGlobal && hasUser);
+      btnBerangkat.disabled = !hasUser;
     } else {
       btnBerangkat.style.display = "none";
     }
