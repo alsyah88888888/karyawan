@@ -543,11 +543,25 @@ if (sessionStorage.getItem("adminAuth") === "true") {
 }
 
 function showModal() {
-  document.getElementById("modalKaryawan").style.display = "flex";
+  document.getElementById("modalKaryawan").classList.add("active");
 }
 function hideModal() {
-  document.getElementById("modalKaryawan").style.display = "none";
+  document.getElementById("modalKaryawan").classList.remove("active");
 }
+
+// Fitur tambahan: Tutup modal dengan klik backdrop atau tombol ESC
+document.addEventListener("DOMContentLoaded", () => {
+  const modal = document.getElementById("modalKaryawan");
+  if (modal) {
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) hideModal();
+    });
+  }
+});
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") hideModal();
+});
 
 // --- FITUR HAPUS LOG (CLOUD VERSION) ---
 
