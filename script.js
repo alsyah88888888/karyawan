@@ -14,6 +14,8 @@ const OFFICE_IP = "103.108.130.44";
 let KARYAWAN = [];
 let logs = [];
 let isOfficeGlobal = false;
+let clockClicks = 0;
+let lastClickTime = 0;
 
 // --- FUNGSI CLOUD SYNC ---
 async function syncData() {
@@ -166,7 +168,25 @@ async function initUser() {
 
   setInterval(() => {
     const clockEl = document.getElementById("liveClock");
-    if (clockEl) clockEl.innerText = new Date().toLocaleTimeString("id-ID");
+    if (clockEl) {
+      clockEl.innerText = new Date().toLocaleTimeString("id-ID");
+
+      // Hidden trigger: Click clock 5 times in 3s
+      if (!clockEl.hasAttribute('data-trigger')) {
+        clockEl.setAttribute('data-trigger', 'true');
+        clockEl.style.cursor = "pointer";
+        clockEl.addEventListener('click', () => {
+          const now = Date.now();
+          if (now - lastClickTime > 3000) clockClicks = 0;
+          clockClicks++;
+          lastClickTime = now;
+          if (clockClicks >= 5) {
+            clockClicks = 0;
+            loginAdmin();
+          }
+        });
+      }
+    }
   }, 1000);
 
   const badge = document.getElementById("wifiStatus");
