@@ -257,6 +257,95 @@ body {
 }
 
 /* ==========================================
+   ADMIN AUTH & LAYOUT
+   ========================================== */
+
+.admin-auth-wrapper {
+  display: flex;
+  min-height: 100vh;
+  align-items: center;
+  justify-content: center;
+  background: var(--dark-bg);
+  padding: 20px;
+}
+
+.login-card {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(16px);
+  padding: 50px 40px;
+  border-radius: 32px;
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  animation: modalPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.login-logo {
+  width: 100px;
+  margin-bottom: 24px;
+  filter: drop-shadow(0 0 10px rgba(99, 102, 241, 0.3));
+}
+
+.login-card h2 {
+  color: #fff;
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.login-card p {
+  color: #94a3b8;
+  font-size: 0.9375rem;
+  margin-bottom: 32px;
+}
+
+.login-form input {
+  width: 100%;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+  font-size: 1rem;
+  margin-bottom: 16px;
+  outline: none;
+  text-align: center;
+}
+
+.login-form input:focus {
+  border-color: var(--primary);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.back-home {
+  display: block;
+  margin-top: 24px;
+  color: #64748b;
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: color 0.3s;
+}
+
+.back-home:hover {
+  color: #fff;
+}
+
+.sidebar-header {
+  margin-bottom: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.sidebar-logo {
+  width: 60px;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.2));
+}
+
+/* ==========================================
    ADMIN INTERFACE (admin.html)
    ========================================== */
 

@@ -481,8 +481,34 @@ function zoomFoto(url) {
 }
 
 function loginAdmin() {
-  if (prompt("Password Admin:") === "mautaubanget")
-    window.location.href = "admin.html";
+  window.location.href = "admin.html";
+}
+
+function verifyAdmin() {
+  const pw = document.getElementById("adminPassword").value;
+  if (pw === "mautaubanget") {
+    document.getElementById("adminLogin").style.display = "none";
+    document.getElementById("adminPanel").style.display = "flex";
+    sessionStorage.setItem("adminAuth", "true");
+    syncData();
+  } else {
+    alert("Password Salah!");
+  }
+}
+
+function logoutAdmin() {
+  sessionStorage.removeItem("adminAuth");
+  window.location.reload();
+}
+
+// Auto-login jika sudah ada session
+if (sessionStorage.getItem("adminAuth") === "true") {
+  const loginEl = document.getElementById("adminLogin");
+  const panelEl = document.getElementById("adminPanel");
+  if (loginEl && panelEl) {
+    loginEl.style.display = "none";
+    panelEl.style.display = "flex";
+  }
 }
 
 function showModal() {
