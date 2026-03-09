@@ -53,7 +53,8 @@ function refreshAllUI() {
     const currentVal = sel.value;
     sel.innerHTML = '<option value="">-- Pilih Nama Anda --</option>';
     KARYAWAN.forEach((k) => {
-      sel.innerHTML += `<option value="${k.nama}">${k.nama}</option>`;
+      const idKaryawan = k.nik ? ` (${k.nik})` : "";
+      sel.innerHTML += `<option value="${k.nama}">${k.nama}${idKaryawan}</option>`;
     });
     sel.value = currentVal;
   }
@@ -239,6 +240,9 @@ function renderTabel() {
     if (filter !== "ALL" && l.dept !== filter) return;
     count++;
 
+    const info = KARYAWAN.find(k => k.nama === l.nama);
+    const displayID = info && info.nik ? `<br><small>${info.nik}</small>` : "";
+
     const sClass = l.status === "MASUK" ? "status-masuk" : "status-pulang";
     const waktuTampil = new Date(l.waktu).toLocaleString("id-ID");
     const telatBadge = l.isLate
@@ -248,7 +252,7 @@ function renderTabel() {
     // PERBAIKAN: Menambahkan tombol hapus di kolom terakhir
     body.innerHTML += `
             <tr>
-                <td><strong>${l.nama}</strong></td>
+                <td><strong>${l.nama}</strong>${displayID}</td>
                 <td>${l.dept}</td>
                 <td>${waktuTampil}</td>
                 <td><span class="status-tag ${sClass}">${l.status}</span>${telatBadge}</td>
@@ -593,6 +597,41 @@ async function hapusSatuLog(id) {
       await syncData(); // Segarkan data dan tabel
     } else {
       alert("Gagal menghapus: " + error.message);
+    }
+  }
+}
+
+// 3. Lengkapi ID Karyawan yang Kosong
+async function generateMissingIDs() {
+  const missing = KARYAWAN.filter((k) => !k.nik || k.nik === "-");
+  if (missing.length === 0) {
+    return alert("Semua karyawan sudah memiliki ID!");
+  }
+
+  if (
+    confirm(
+      `Terdapat ${missing.length} karyawan tanpa ID. Buat ID otomatis sekarang?`,
+    )
+  ) {
+    try {
+      console.log("Memulai proses pembuatan ID...");
+      let successCount = 0;
+
+      for (const k of missing) {
+        const newNik = "KBI-" + Math.floor(100000 + Math.random() * 900000); // 6 digit random
+        const { error } = await supabaseClient
+          .from("karyawan")
+          .update({ nik: newNik })
+          .eq("id", k.id);
+
+        if (!error) successCount++;
+      }
+
+      alert(`Berhasil melengkapi ${successCount} ID Karyawan!`);
+      await syncData();
+    } catch (err) {
+      console.error("Gagal melengkapi ID:", err);
+      alert("Terjadi kesalahan saat memperbarui database.");
     }
   }
 }

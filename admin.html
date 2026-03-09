@@ -90,9 +90,15 @@
       <section id="tabKaryawan" style="display: none">
         <div class="header-content">
           <h2>Daftar Karyawan</h2>
-          <button onclick="showModal()" class="btn-m">
-            + Tambah Karyawan
-          </button>
+          <div style="display: flex; gap: 10px;">
+            <button onclick="generateMissingIDs()" class="btn-m"
+              style="background: var(--primary); box-shadow: 0 4px 0 #3730a3;">
+              Lengkapi ID
+            </button>
+            <button onclick="showModal()" class="btn-m">
+              + Tambah Karyawan
+            </button>
+          </div>
         </div>
 
         <div class="table-scroll">
