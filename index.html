@@ -1,63 +1,61 @@
 <!doctype html>
 <html lang="id">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>KOBOI - Terminal Karyawan</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css" />
-  </head>
-  <body>
-    <div class="user-layout">
-      <div id="wifiStatus" class="wifi-badge checking">
-        Memverifikasi Koneksi...
-      </div>
 
-      <div class="terminal-card">
-        <header>
-          <h1 id="liveClock">00:00:00</h1>
-          <p>Presensi Karyawan</p>
-        </header>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KOBOI - Terminal Karyawan</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+</head>
 
-        <div class="cam-box">
-          <video id="video" autoplay muted playsinline></video>
-          <canvas id="canvas" style="display: none"></canvas>
-          <div class="scanner-line"></div>
-        </div>
-
-        <div class="input-box">
-          <select id="namaSelect">
-            <option value="">-- Pilih Nama Anda --</option>
-          </select>
-
-          <div class="btn-group">
-            <button
-              id="btnMasuk"
-              class="btn-m"
-              onclick="prosesAbsen('MASUK')"
-              disabled
-            >
-              MASUK
-            </button>
-            <button
-              id="btnPulang"
-              class="btn-p"
-              onclick="prosesAbsen('PULANG')"
-              disabled
-            >
-              PULANG
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <span class="admin-link" onclick="loginAdmin()">System Access</span>
+<body>
+  <div class="user-layout">
+    <div id="wifiStatus" class="wifi-badge checking">
+      Memverifikasi Koneksi...
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <div class="terminal-card">
+      <header>
+        <h1 id="liveClock">00:00:00</h1>
+        <p>Presensi Karyawan</p>
+      </header>
 
-    <script src="script.js"></script>
-  </body>
+      <div class="cam-box">
+        <video id="video" autoplay muted playsinline></video>
+        <canvas id="canvas" style="display: none"></canvas>
+        <div class="scanner-line"></div>
+      </div>
+
+      <div class="input-box">
+        <select id="namaSelect">
+          <option value="">-- Pilih Nama Anda --</option>
+        </select>
+
+        <div class="btn-group">
+          <button id="btnMasuk" class="btn-m" onclick="prosesAbsen('MASUK')" disabled>
+            MASUK
+          </button>
+          <button id="btnPulang" class="btn-p" onclick="prosesAbsen('PULANG')" disabled>
+            PULANG
+          </button>
+        </div>
+        <button id="btnBerangkat" class="btn-m" onclick="prosesAbsen('BERANGKAT')"
+          style="width: 100%; margin-top: 16px; background: #f59e0b; box-shadow: 0 4px 0 #b45309; display: none;">
+          BERANGKAT (DRIVER)
+        </button>
+      </div>
+    </div>
+
+    <span class="admin-link" onclick="loginAdmin()">System Access</span>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <script src="script.js"></script>
+</body>
+
 </html>

@@ -68,6 +68,7 @@
             <option value="ALL">Semua Departemen</option>
             <option value="FINANCE">Finance</option>
             <option value="OPERASIONAL">Operasional</option>
+            <option value="DRIVER">Driver</option>
           </select>
         </div>
 
@@ -107,7 +108,7 @@
               <tr>
                 <th>NAMA KARYAWAN</th>
                 <th>DEPARTEMEN</th>
-                <th>GAJI POKOK</th>
+                <th>JAM KERJA / THN BERGABUNG</th>
                 <th>ESTIMASI THP</th>
                 <th>AKSI</th>
               </tr>
@@ -143,6 +144,7 @@
               <option value="OPERASIONAL">OPERASIONAL</option>
               <option value="MARKETING">MARKETING</option>
               <option value="HRD">HRD</option>
+              <option value="DRIVER">DRIVER</option>
             </select>
           </div>
           <div>
@@ -151,8 +153,16 @@
           </div>
         </div>
 
-        <label>Gaji Pokok (Rp)</label>
-        <input type="number" id="inpGaji" placeholder="Contoh: 6500000" />
+        <div class="grid-fields">
+          <div>
+            <label>Gaji Pokok (Rp)</label>
+            <input type="number" id="inpGaji" placeholder="Gaji Pokok" />
+          </div>
+          <div>
+            <label>Tahun Bergabung</label>
+            <input type="number" id="inpTahun" placeholder="Contoh: 2024" />
+          </div>
+        </div>
       </div>
 
       <div class="modal-footer">
@@ -160,6 +170,63 @@
           Batal
         </button>
         <button onclick="simpanKaryawan()" class="btn-p">Simpan Data</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL SECTION - EDIT -->
+  <div id="modalEdit" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header" style="background: linear-gradient(to right, #10b981, #059669)">
+        <h3>Edit Data Karyawan</h3>
+        <p>Perbarui informasi karyawan terpilih.</p>
+        <button class="btn-close-modal" onclick="hideEditModal()">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <input type="hidden" id="editOriginalNik" />
+
+        <label>ID Karyawan</label>
+        <input type="text" id="editNik" />
+
+        <label>Nama Lengkap</label>
+        <input type="text" id="editNama" />
+
+        <div class="grid-fields">
+          <div>
+            <label>Departemen</label>
+            <select id="editDept">
+              <option value="FINANCE">FINANCE</option>
+              <option value="OPERASIONAL">OPERASIONAL</option>
+              <option value="MARKETING">MARKETING</option>
+              <option value="HRD">HRD</option>
+              <option value="DRIVER">DRIVER</option>
+            </select>
+          </div>
+          <div>
+            <label>Jabatan</label>
+            <input type="text" id="editJabatan" />
+          </div>
+        </div>
+
+        <div class="grid-fields">
+          <div>
+            <label>Gaji Pokok (Rp)</label>
+            <input type="number" id="editGaji" />
+          </div>
+          <div>
+            <label>Tahun Bergabung</label>
+            <input type="number" id="editTahun" />
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button onclick="hideEditModal()" class="btn-exit" style="background: #f1f5f9; color: #475569;">
+          Batal
+        </button>
+        <button onclick="updateKaryawan()" class="btn-p"
+          style="background: #10b981; box-shadow: 0 4px 0 #059669;">Update Data</button>
       </div>
     </div>
   </div>

@@ -53,15 +53,36 @@ function refreshAllUI() {
     const currentVal = sel.value;
     sel.innerHTML = '<option value="">-- Pilih Nama Anda --</option>';
     KARYAWAN.forEach((k) => {
-      const idKaryawan = k.nik ? ` (${k.nik})` : "";
-      sel.innerHTML += `<option value="${k.nama}">${k.nama}${idKaryawan}</option>`;
+      sel.innerHTML += `<option value="${k.nama}">${k.nama}</option>`;
     });
     sel.value = currentVal;
+
+    // Tambahkan event listener untuk kontrol tombol Driver
+    if (!sel.hasAttribute('data-listener')) {
+      sel.setAttribute('data-listener', 'true');
+      sel.addEventListener('change', toggleDriverButtons);
+    }
+    toggleDriverButtons(); // Cek saat render pertama
   }
 
   if (isAdminPage) {
     renderTabel();
     renderKaryawanTable();
+  }
+}
+
+function toggleDriverButtons() {
+  const sel = document.getElementById("namaSelect");
+  const btnBerangkat = document.getElementById("btnBerangkat");
+  if (!sel || !btnBerangkat) return;
+
+  const nama = sel.value;
+  const info = KARYAWAN.find(k => k.nama === nama);
+
+  if (info && (info.dept === "DRIVER" || info.jabatan?.toUpperCase() === "DRIVER")) {
+    btnBerangkat.style.display = "block";
+  } else {
+    btnBerangkat.style.display = "none";
   }
 }
 
@@ -243,8 +264,8 @@ function renderTabel() {
     const info = KARYAWAN.find(k => k.nama === l.nama);
     const displayID = info && info.nik ? `<br><small>${info.nik}</small>` : "";
 
-    const sClass = l.status === "MASUK" ? "status-masuk" : "status-pulang";
-    const waktuTampil = new Date(l.waktu).toLocaleString("id-ID");
+    const sClass = (l.status === "MASUK" || l.status === "BERANGKAT") ? "status-masuk" : "status-pulang";
+    const waktuTampil = l.waktu ? new Date(l.waktu).toLocaleString("id-ID") : "-";
     const telatBadge = l.isLate
       ? '<br><small style="color:red;font-weight:bold;">(TELAT)</small>'
       : "";
@@ -278,11 +299,11 @@ function renderKaryawanTable() {
       <tr>
         <td><strong>${k.nama}</strong><br><small>${k.nik || "-"}</small></td>
         <td>${k.jabatan || k.dept}<br><small>Hadir: ${d.hadir}/22</small></td>
-        <td>Rp ${(k.gaji || 0).toLocaleString("id-ID")}</td>
+        <td>Rp ${(k.gaji || 0).toLocaleString("id-ID")}<br><small>Thn Bergabung: ${k.tahun_bergabung || "-"}</small></td>
         <td style="color:#15803d; font-weight:bold;">Rp ${Math.floor(d.thp).toLocaleString("id-ID")}</td>
         <td>
           <button onclick="cetakSlip(${index})" style="color:#4f46e5; border:none; background:none; cursor:pointer; font-weight:bold;">SLIP</button>
-          <button onclick="downloadSlip(${index})" style="color:#10b981; border:none; background:none; cursor:pointer; font-weight:bold; margin-left:10px;">DOWNLOAD</button> 
+          <button onclick="showEditModal(${index})" style="color:#10b981; border:none; background:none; cursor:pointer; font-weight:bold; margin-left:10px;">EDIT</button> 
           <button onclick="hapusKaryawan('${k.nik}')" style="color:#ef4444; border:none; background:none; cursor:pointer; margin-left:10px;">HAPUS</button>
         </td>
       </tr>`;
@@ -380,6 +401,7 @@ async function simpanKaryawan() {
     const dept = deptEl.value;
     const nik = nikEl?.value.trim() || "KBI-" + Math.floor(100000 + Math.random() * 900000);
     const jabatan = jabEl?.value.trim() || dept;
+    const tahun = document.getElementById("inpTahun")?.value.trim() || "";
 
     if (!nama || !gaji) {
       return alert("Mohon isi Nama dan Gaji!");
@@ -396,6 +418,7 @@ async function simpanKaryawan() {
       dept,
       jabatan,
       gaji: nominalGaji,
+      tahun_bergabung: tahun
     };
 
     console.log("Menyimpan karyawan baru:", newKar);
@@ -413,11 +436,67 @@ async function simpanKaryawan() {
     gajiEl.value = "";
     if (nikEl) nikEl.value = "";
     if (jabEl) jabEl.value = "";
+    if (document.getElementById("inpTahun")) document.getElementById("inpTahun").value = "";
 
     await syncData();
   } catch (err) {
     console.error("Gagal simpan karyawan:", err);
     alert("Gagal menyimpan ke database: " + (err.message || "Unknown Error"));
+  }
+}
+
+// FITUR EDIT KARYAWAN
+function showEditModal(index) {
+  const k = KARYAWAN[index];
+  document.getElementById("editOriginalNik").value = k.nik;
+  document.getElementById("editNik").value = k.nik;
+  document.getElementById("editNama").value = k.nama;
+  document.getElementById("editDept").value = k.dept;
+  document.getElementById("editJabatan").value = k.jabatan || "";
+  document.getElementById("editGaji").value = k.gaji || 0;
+  document.getElementById("editTahun").value = k.tahun_bergabung || "";
+
+  document.getElementById("modalEdit").classList.add("active");
+}
+
+function hideEditModal() {
+  document.getElementById("modalEdit").classList.remove("active");
+}
+
+async function updateKaryawan() {
+  try {
+    const originalNik = document.getElementById("editOriginalNik").value;
+    const nik = document.getElementById("editNik").value.trim();
+    const nama = document.getElementById("editNama").value.trim().toUpperCase();
+    const dept = document.getElementById("editDept").value;
+    const jabatan = document.getElementById("editJabatan").value.trim() || dept;
+    const gaji = parseFloat(document.getElementById("editGaji").value) || 0;
+    const tahun = document.getElementById("editTahun").value.trim();
+
+    if (!nama || !gaji) return alert("Nama dan Gaji tidak boleh kosong!");
+
+    const updatedData = {
+      nik,
+      nama,
+      dept,
+      jabatan,
+      gaji,
+      tahun_bergabung: tahun
+    };
+
+    const { error } = await supabaseClient
+      .from("karyawan")
+      .update(updatedData)
+      .eq("nik", originalNik);
+
+    if (error) throw error;
+
+    alert("Data berhasil diperbarui!");
+    hideEditModal();
+    await syncData();
+  } catch (e) {
+    console.error(e);
+    alert("Gagal update: " + e.message);
   }
 }
 
