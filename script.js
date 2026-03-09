@@ -359,31 +359,61 @@ function downloadSlip(index) {
 }
 
 async function simpanKaryawan() {
-  const nama = document.getElementById("inpNama").value.toUpperCase();
-  const gaji = document.getElementById("inpGaji").value;
-  const nik =
-    document.getElementById("inpNik")?.value ||
-    "KBI-" + Date.now().toString().slice(-6);
+  try {
+    const namaEl = document.getElementById("inpNama");
+    const gajiEl = document.getElementById("inpGaji");
+    const deptEl = document.getElementById("inpDept");
+    const nikEl = document.getElementById("inpNik");
+    const jabEl = document.getElementById("inpJabatan");
 
-  if (!nama || !gaji) return alert("Isi Nama & Gaji!");
+    if (!namaEl || !gajiEl || !deptEl) {
+      console.error("Elemen form tidak ditemukan!");
+      return alert("Terjadi kesalahan sistem: Elemen form tidak ditemukan.");
+    }
 
-  const newKar = {
-    nik,
-    nama,
-    dept: document.getElementById("inpDept").value,
-    jabatan:
-      document.getElementById("inpJabatan")?.value ||
-      document.getElementById("inpDept").value,
-    gaji: parseFloat(gaji),
-  };
+    const nama = namaEl.value.trim().toUpperCase();
+    const gaji = gajiEl.value;
+    const dept = deptEl.value;
+    const nik = nikEl?.value.trim() || "KBI-" + Date.now().toString().slice(-6);
+    const jabatan = jabEl?.value.trim() || dept;
 
-  const { error } = await supabaseClient.from("karyawan").insert([newKar]);
-  if (!error) {
-    alert("Karyawan ditambahkan!");
+    if (!nama || !gaji) {
+      return alert("Mohon isi Nama dan Gaji!");
+    }
+
+    const nominalGaji = parseFloat(gaji);
+    if (isNaN(nominalGaji)) {
+      return alert("Gaji harus berupa angka!");
+    }
+
+    const newKar = {
+      nik,
+      nama,
+      dept,
+      jabatan,
+      gaji: nominalGaji,
+    };
+
+    console.log("Menyimpan karyawan baru:", newKar);
+
+    const { data, error } = await supabaseClient.from("karyawan").insert([newKar]).select();
+
+    if (error) throw error;
+
+    console.log("Karyawan berhasil disimpan:", data);
+    alert("Karyawan berhasil ditambahkan!");
     hideModal();
+
+    // Reset Form
+    namaEl.value = "";
+    gajiEl.value = "";
+    if (nikEl) nikEl.value = "";
+    if (jabEl) jabEl.value = "";
+
     await syncData();
-  } else {
-    alert("Gagal menyimpan: " + error.message);
+  } catch (err) {
+    console.error("Gagal simpan karyawan:", err);
+    alert("Gagal menyimpan ke database: " + (err.message || "Unknown Error"));
   }
 }
 

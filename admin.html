@@ -119,16 +119,26 @@
       <h3>Tambah Karyawan Baru</h3>
 
       <div style="margin-top: 15px">
+        <label>NIK / ID Karyawan</label>
+        <input type="text" id="inpNik" placeholder="Contoh: KBI-123456" />
+      </div>
+
+      <div style="margin-top: 15px">
         <label>Nama Lengkap</label>
         <input type="text" id="inpNama" placeholder="Contoh: BUDI UTOMO" />
       </div>
 
       <div style="margin-top: 15px">
-        <label>Departemen</label>
-        <select id="inpDept">
-          <option value="FINANCE">FINANCE</option>
-          <option value="OPERASIONAL">OPERASIONAL</option>
-        </select>
+        <label>Departemen & Jabatan</label>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <select id="inpDept">
+            <option value="FINANCE">FINANCE</option>
+            <option value="OPERASIONAL">OPERASIONAL</option>
+            <option value="MARKETING">MARKETING</option>
+            <option value="HRD">HRD</option>
+          </select>
+          <input type="text" id="inpJabatan" placeholder="Jabatan" />
+        </div>
       </div>
 
       <div style="margin-top: 15px">
