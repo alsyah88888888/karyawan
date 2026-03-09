@@ -66,9 +66,8 @@
           <h2>Log Presensi Real-time</h2>
           <select id="filterDept" onchange="renderTabel()">
             <option value="ALL">Semua Departemen</option>
-            <option value="FINANCE">Finance</option>
-            <option value="OPERASIONAL">Operasional</option>
-            <option value="DRIVER">Driver</option>
+            <option value="OPERASIONAL">OPERASIONAL</option>
+            <option value="OFFICE">OFFICE</option>
           </select>
         </div>
 
@@ -140,16 +139,18 @@
           <div>
             <label>Departemen</label>
             <select id="inpDept">
-              <option value="FINANCE">FINANCE</option>
               <option value="OPERASIONAL">OPERASIONAL</option>
-              <option value="MARKETING">MARKETING</option>
-              <option value="HRD">HRD</option>
-              <option value="DRIVER">DRIVER</option>
+              <option value="OFFICE">OFFICE</option>
             </select>
           </div>
           <div>
             <label>Jabatan</label>
-            <input type="text" id="inpJabatan" placeholder="Jabatan" />
+            <select id="inpJabatan">
+              <option value="ADMIN">ADMIN</option>
+              <option value="DRIVER">DRIVER</option>
+              <option value="HELPER">HELPER</option>
+              <option value="SALES">SALES</option>
+            </select>
           </div>
         </div>
 
@@ -196,16 +197,18 @@
           <div>
             <label>Departemen</label>
             <select id="editDept">
-              <option value="FINANCE">FINANCE</option>
               <option value="OPERASIONAL">OPERASIONAL</option>
-              <option value="MARKETING">MARKETING</option>
-              <option value="HRD">HRD</option>
-              <option value="DRIVER">DRIVER</option>
+              <option value="OFFICE">OFFICE</option>
             </select>
           </div>
           <div>
             <label>Jabatan</label>
-            <input type="text" id="editJabatan" />
+            <select id="editJabatan">
+              <option value="ADMIN">ADMIN</option>
+              <option value="DRIVER">DRIVER</option>
+              <option value="HELPER">HELPER</option>
+              <option value="SALES">SALES</option>
+            </select>
           </div>
         </div>
 

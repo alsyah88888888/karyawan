@@ -73,16 +73,21 @@ function refreshAllUI() {
 
 function toggleDriverButtons() {
   const sel = document.getElementById("namaSelect");
-  const btnBerangkat = document.getElementById("btnBerangkat");
-  if (!sel || !btnBerangkat) return;
+  const btnMasuk = document.getElementById("btnMasuk");
+  if (!sel || !btnMasuk) return;
 
   const nama = sel.value;
   const info = KARYAWAN.find(k => k.nama === nama);
 
-  if (info && (info.dept === "DRIVER" || info.jabatan?.toUpperCase() === "DRIVER")) {
-    btnBerangkat.style.display = "block";
+  if (info && (info.dept === "OPERASIONAL" && (info.jabatan === "DRIVER" || info.jabatan === "Helper"))) {
+    // Jika Driver/Helper Operasional, ubah Masuk jadi Berangkat
+    btnMasuk.innerText = "BERANGKAT";
+    btnMasuk.style.background = "var(--brand-orange)";
+    btnMasuk.style.boxShadow = "0 4px 0 #b45309";
   } else {
-    btnBerangkat.style.display = "none";
+    btnMasuk.innerText = "MASUK";
+    btnMasuk.style.background = "var(--secondary)";
+    btnMasuk.style.boxShadow = "0 4px 0 #003a6e";
   }
 }
 
@@ -203,11 +208,18 @@ async function prosesAbsen(tipe) {
   }
 
   const info = KARYAWAN.find((k) => k.nama === nama);
+
+  // Penanganan khusus status untuk Driver
+  let finalStatus = tipe;
+  if (tipe === "MASUK" && (info.dept === "DRIVER" || info.jabatan?.toUpperCase() === "DRIVER")) {
+    finalStatus = "BERANGKAT";
+  }
+
   const newLog = {
     nama: info.nama,
     dept: info.dept,
     waktu: sekarang.toISOString(),
-    status: tipe,
+    status: finalStatus,
     foto: c.toDataURL("image/webp", 0.3),
     isLate: telat,
   };
