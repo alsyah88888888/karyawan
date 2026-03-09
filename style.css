@@ -484,10 +484,12 @@ body {
 .content {
   flex: 1;
   padding: 30px;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  overflow: hidden;
+  background: #f8fafc;
+  width: 100%;
+  /* Pastikan lebar penuh */
 }
 
 #tabLog,
@@ -503,6 +505,8 @@ body {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 30px;
+  width: 100%;
+  /* Penyelarasan penuh */
 }
 
 .header-content h2 {
@@ -542,7 +546,8 @@ body {
   flex: 1;
   border: 1px solid rgba(19, 78, 142, 0.1);
   max-height: calc(100vh - 200px);
-  /* Memaksa scroll internal */
+  width: 100%;
+  /* Pastikan tabel memenuhi area */
 }
 
 table {
