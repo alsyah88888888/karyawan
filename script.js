@@ -432,6 +432,8 @@ async function simpanKaryawan() {
     const deptEl = document.getElementById("inpDept");
     const nikEl = document.getElementById("inpNik");
     const jabEl = document.getElementById("inpJabatan");
+    const pinEl = document.getElementById("inpPin");
+    const cutiEl = document.getElementById("inpCuti");
 
     if (!namaEl || !gajiEl || !deptEl) {
       console.error("Elemen form tidak ditemukan!");
@@ -444,6 +446,8 @@ async function simpanKaryawan() {
     const nik = nikEl?.value.trim() || "KBI-" + Math.floor(100000 + Math.random() * 900000);
     const jabatan = jabEl?.value.trim() || dept;
     const tahun = document.getElementById("inpTahun")?.value.trim() || "";
+    const pin = pinEl ? pinEl.value.trim() : "";
+    const sisa_cuti = cutiEl ? parseInt(cutiEl.value) || 12 : 12;
 
     if (!nama || !gaji) {
       return alert("Mohon isi Nama dan Gaji!");
@@ -460,7 +464,9 @@ async function simpanKaryawan() {
       dept,
       jabatan,
       gaji: nominalGaji,
-      tahun_bergabung: tahun
+      tahun_bergabung: tahun,
+      pin,
+      sisa_cuti
     };
 
     console.log("Menyimpan karyawan baru:", newKar);
@@ -479,6 +485,8 @@ async function simpanKaryawan() {
     if (nikEl) nikEl.value = "";
     if (jabEl) jabEl.value = "";
     if (document.getElementById("inpTahun")) document.getElementById("inpTahun").value = "";
+    if (pinEl) pinEl.value = "";
+    if (cutiEl) cutiEl.value = "12";
 
     await syncData();
   } catch (err) {
@@ -497,6 +505,8 @@ function showEditModal(index) {
   document.getElementById("editJabatan").value = k.jabatan || "";
   document.getElementById("editGaji").value = k.gaji || 0;
   document.getElementById("editTahun").value = k.tahun_bergabung || "";
+  document.getElementById("editPin").value = k.pin || "";
+  document.getElementById("editCuti").value = k.sisa_cuti ?? 12;
 
   document.getElementById("modalEdit").classList.add("active");
 }
@@ -514,6 +524,8 @@ async function updateKaryawan() {
     const jabatan = document.getElementById("editJabatan").value.trim() || dept;
     const gaji = parseFloat(document.getElementById("editGaji").value) || 0;
     const tahun = document.getElementById("editTahun").value.trim();
+    const pin = document.getElementById("editPin").value.trim();
+    const sisa_cuti = parseInt(document.getElementById("editCuti").value) || 0;
 
     if (!nama || !gaji) return alert("Nama dan Gaji tidak boleh kosong!");
 
@@ -523,7 +535,9 @@ async function updateKaryawan() {
       dept,
       jabatan,
       gaji,
-      tahun_bergabung: tahun
+      tahun_bergabung: tahun,
+      pin,
+      sisa_cuti
     };
 
     const { error } = await supabaseClient
@@ -790,6 +804,8 @@ function showEditModal(index) {
   document.getElementById("editJabatan").value = k.jabatan || "";
   document.getElementById("editGaji").value = k.gaji || 0;
   document.getElementById("editTahun").value = k.tahun_bergabung || "";
+  document.getElementById("editPin").value = k.pin || "";
+  document.getElementById("editCuti").value = k.sisa_cuti ?? 12;
 
   document.getElementById("modalEdit").classList.add("active");
 }
@@ -807,6 +823,8 @@ async function updateKaryawan() {
     const jabatan = document.getElementById("editJabatan").value;
     const gaji = parseFloat(document.getElementById("editGaji").value) || 0;
     const tahun = document.getElementById("editTahun").value.trim();
+    const pin = document.getElementById("editPin").value.trim();
+    const sisa_cuti = parseInt(document.getElementById("editCuti").value) || 0;
 
     if (!nama || !gaji) return alert("Nama dan Gaji tidak boleh kosong!");
 
@@ -816,7 +834,9 @@ async function updateKaryawan() {
       dept,
       jabatan,
       gaji,
-      tahun_bergabung: tahun
+      tahun_bergabung: tahun,
+      pin,
+      sisa_cuti
     };
 
     const { error } = await supabaseClient
