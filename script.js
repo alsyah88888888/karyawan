@@ -116,18 +116,18 @@ function hitungDetailGaji(gapok, namaKaryawan) {
   // Filter log untuk karyawan spesifik
   const dataLogKaryawan = logs.filter((l) => l.nama === namaKaryawan);
 
-  // Hitung hadir unik berdasarkan tanggal (hanya status MASUK)
+  // Hitung hadir unik berdasarkan tanggal (hanya status MASUK atau BERANGKAT)
   const hariHadir = [
     ...new Set(
       dataLogKaryawan
-        .filter((l) => l.status === "MASUK")
+        .filter((l) => l.status === "MASUK" || l.status === "BERANGKAT")
         .map((l) => new Date(l.waktu).toLocaleDateString()),
     ),
   ].length;
 
   // Hitung jumlah telat (proteksi jika kolom isLate/is_late berbeda)
   const jumlahTelat = dataLogKaryawan.filter(
-    (l) => l.status === "MASUK" && (l.isLate === true || l.is_late === true),
+    (l) => (l.status === "MASUK" || l.status === "BERANGKAT") && (l.isLate === true || l.is_late === true),
   ).length;
 
   // RUMUS PERHITUNGAN
@@ -230,7 +230,7 @@ async function prosesAbsen(tipe) {
   c.getContext("2d").drawImage(v, 0, 0);
 
   let telat = false;
-  if (tipe === "MASUK") {
+  if (tipe === "MASUK" || tipe === "BERANGKAT") {
     const jam = sekarang.getHours();
     const menit = sekarang.getMinutes();
     if (jam > 9 || (jam === 9 && menit > 0)) telat = true;
@@ -252,7 +252,7 @@ async function prosesAbsen(tipe) {
     alert("Gagal kirim ke Cloud: " + error.message);
   } else {
     alert(
-      tipe === "MASUK" && telat
+      (tipe === "MASUK" || tipe === "BERANGKAT") && telat
         ? "Berhasil! Anda telat."
         : "Berhasil! Selamat Bekerja.",
     );
