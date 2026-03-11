@@ -427,6 +427,11 @@ function renderKaryawanTable() {
           KTP: ${k.nik_ktp || "-"}<br>
           NPWP: ${k.npwp || "-"}
         </td>
+        <td>
+          <span style="color: ${k.mou_signed ? '#10b981' : '#f59e0b'}; font-weight:bold; font-size:0.75rem;">
+            ${k.mou_signed ? '✅ SUDAH TTD' : '⏳ BELUM TTD'}
+          </span>
+        </td>
         <td style="text-align:center;">
           <button onclick="cetakSlip(${index})" class="btn-s" style="background:var(--primary); color:white; padding:8px 16px; border-radius:8px; border:none; cursor:pointer; font-weight:700;">
             CETAK SLIP

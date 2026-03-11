@@ -527,9 +527,40 @@
             th:nth-child(3),
             td:nth-child(3) {
                 display: none;
-            }
+        }
+    }
 
-            /* Hide Telat col on mobile */
+    /* MOU Modal & Signature */
+        .mou-content {
+            height: 300px;
+            overflow-y: auto;
+            border: 1px solid #e2e8f0;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            font-size: 0.85rem;
+            line-height: 1.6;
+            background: #fff;
+        }
+        
+        #signaturePad {
+            border: 2px dashed #cbd5e1;
+            border-radius: 12px;
+            cursor: crosshair;
+            background: #f8fafc;
+            width: 100%;
+            height: 150px;
+            touch-action: none;
+        }
+
+        .mou-status-signed {
+            color: var(--portal-accent);
+            font-weight: 700;
+        }
+
+        .mou-status-pending {
+            color: #f59e0b;
+            font-weight: 700;
         }
     </style>
 </head>
@@ -627,6 +658,18 @@
                         <button class="btn-card primary" onclick="bukaModal('modalKasbon')">Ajukan Kasbon</button>
                     </div>
                 </div>
+                <!-- MOU CARD -->
+                <div class="portal-card">
+                    <div>
+                        <span class="label">Dokumen Kontrak</span>
+                        <h2 id="mouStatus" class="mou-status-pending">MEMBACA...</h2>
+                        <p id="mouDateInfo" style="color: var(--portal-subtext); font-size: 0.9rem; margin-top: 5px;">
+                            Harap segera lengkapi</p>
+                    </div>
+                    <div class="action-btns">
+                        <button id="btnBukaMOU" class="btn-card primary" onclick="bukaModalMOU()">Lihat Kontrak</button>
+                    </div>
+                </div>
             </div>
 
             <div class="section-header">
@@ -708,6 +751,32 @@
             <div class="modal-actions">
                 <button class="btn-card outline" onclick="tutupModal('modalKasbon')">BATAL</button>
                 <button class="btn-card primary" onclick="submitKasbon()">AJUKAN SEKARANG</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL MOU -->
+    <div class="modal-overlay" id="modalMOU">
+        <div class="modal-card" style="max-width: 800px;">
+            <h3>Memorandum of Understanding (MOU)</h3>
+            <p>PT. Kola Borasi Indonesia - Perjanjian Hubungan Kerja</p>
+
+            <div class="mou-content" id="mouTextArea">
+                <!-- MOU Text injected by JS -->
+            </div>
+
+            <div id="signatureSection">
+                <label style="font-weight: 700; font-size: 0.85rem; display: block; margin-bottom: 10px;">Goreskan Tanda Tangan Anda di Bawah Ini:</label>
+                <canvas id="signaturePad"></canvas>
+                <div style="display: flex; gap: 10px; margin-top: 10px;">
+                    <button class="btn-card outline" style="padding: 8px;" onclick="clearSignature()">BERSIHKAN</button>
+                    <span style="font-size: 0.75rem; color: #94a3b8; align-self: center;">Dengan menekan simpan, Anda menyetujui seluruh butir dalam MOU ini.</span>
+                </div>
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn-card outline" onclick="tutupModal('modalMOU')">TUTUP</button>
+                <button id="btnSimpanMOU" class="btn-card primary" onclick="saveMOU()">SIMPAN & TANDA TANGAN</button>
             </div>
         </div>
     </div>

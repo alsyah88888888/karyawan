@@ -11,6 +11,9 @@ const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
 let currentUser = null;
 let currentLogs = [];
 let currentKasbon = [];
+let sigCanvas = null;
+let sigContext = null;
+let isDrawing = false;
 
 // 1. INITIALIZATION
 window.onload = () => {
@@ -123,6 +126,7 @@ async function loadDashboard(nik) {
         renderHistory(currentLogs);
         renderEstimasiGaji(user, currentLogs, currentKasbon);
         renderKasbonStatus(currentKasbon);
+        renderMOUStatus(user);
 
     } catch (e) {
         console.error("Dashboard Error:", e);
@@ -385,5 +389,157 @@ function downloadSlipPribadi() {
     if (w) {
         w.document.write(`<html><body style="display:flex;justify-content:center;padding:20px;">${isiSlip}<script>window.onload=function(){window.print();}<\/script></body></html>`);
         w.document.close();
+    }
+}
+// 7. MOU & DIGITAL SIGNATURE
+function renderMOUStatus(user) {
+    const statusEl = document.getElementById("mouStatus");
+    const dateEl = document.getElementById("mouDateInfo");
+    const btnEl = document.getElementById("btnBukaMOU");
+
+    if (user.mou_signed) {
+        statusEl.innerText = "SUDAH TTD";
+        statusEl.className = "mou-status-signed";
+        dateEl.innerText = `Ditandatangani pada ${new Date(user.mou_date).toLocaleDateString('id-ID')}`;
+        btnEl.innerText = "Lihat Kontrak (Signed)";
+    } else {
+        statusEl.innerText = "BELUM TTD";
+        statusEl.className = "mou-status-pending";
+        dateEl.innerText = "Harap segera lengkapi";
+        btnEl.innerText = "Baca & Tanda Tangan";
+    }
+}
+
+function bukaModalMOU() {
+    const user = currentUser;
+    const bodyMOU = `
+        <div style="text-align:justify;">
+            <p style="text-align:center; font-weight:800; font-size:1.1rem;">SURAT PERJANJIAN KERJA (MEMORANDUM OF UNDERSTANDING)</p>
+            <p style="text-align:center; margin-bottom:30px;">Nomor: MOU/KBI/${user.nik}/${new Date().getFullYear()}</p>
+            
+            <p>Yang bertanda tangan di bawah ini:</p>
+            <div style="margin-left:20px; margin-bottom:15px;">
+                <strong>1. PT. KOLA BORASI INDONESIA</strong>, berkedudukan di Jakarta, dalam hal ini diwakili oleh Manajemen HRD, selanjutnya disebut <strong>"PIHAK PERTAMA"</strong>.<br>
+                <strong>2. ${user.nama}</strong>, ID: ${user.nik}, beralamat sesuai data identitas, dalam hal ini bertindak untuk diri sendiri, selanjutnya disebut <strong>"PIHAK KEDUA"</strong>.
+            </div>
+
+            <p>KEDUA BELAH PIHAK dengan ini sepakat untuk mengikatkan diri dalam Perjanjian Hubungan Kerja dengan ketentuan sebagai berikut:</p>
+            
+            <p><strong>PASAL 1: JURUSAN & TANGGUNG JAWAB</strong><br>
+            PIHAK KEDUA bekerja sebagai <strong>${user.jabatan || user.dept}</strong> pada departemen <strong>${user.dept}</strong> dan bersedia melaksanakan tugas dengan penuh tanggung jawab sesuai arahan perusahaan.</p>
+
+            <p><strong>PASAL 2: UPAH & TUNJANGAN</strong><br>
+            PIHAK PERTAMA sepakat memberikan upah pokok sebesar <strong>Rp ${user.gaji.toLocaleString('id-ID')}</strong> per bulan, yang dibayarkan setiap akhir bulan berjalan melalui sistem KOBOI Apps.</p>
+
+            <p><strong>PASAL 3: KEDISIPLINAN</strong><br>
+            PIHAK KEDUA wajib mengikuti aturan jam kerja perusahaan (9 jam kerja) dan sistem absensi real-time. Pelanggaran terhadap jam kerja akan dikenakan sanksi pro-rata atau pemotongan sesuai sistem.</p>
+
+            <p><strong>PASAL 4: JANGKA WAKTU</strong><br>
+            Perjanjian ini berlaku sejak tanggal bergabung hingga diputuskan oleh salah satu pihak sesuai dengan kebijakan internal PT. Kola Borasi Indonesia.</p>
+
+            <p style="margin-top:30px;">Demikian Surat Perjanjian ini dibuat untuk dipatuhi oleh kedua belah pihak secara digital tanpa ada paksaan dari pihak manapun.</p>
+        </div>
+    `;
+
+    document.getElementById("mouTextArea").innerHTML = bodyMOU;
+    bukaModal('modalMOU');
+    initSignaturePad();
+
+    if (user.mou_signed) {
+        document.getElementById("signatureSection").style.display = "none";
+        document.getElementById("btnSimpanMOU").style.display = "none";
+        renderExistingSignature(user.mou_signature);
+    } else {
+        document.getElementById("signatureSection").style.display = "block";
+        document.getElementById("btnSimpanMOU").style.display = "block";
+    }
+}
+
+function initSignaturePad() {
+    sigCanvas = document.getElementById("signaturePad");
+    sigContext = sigCanvas.getContext("2d");
+    
+    // Resize canvas to match display size
+    const dpr = window.devicePixelRatio || 1;
+    const rect = sigCanvas.getBoundingClientRect();
+    sigCanvas.width = rect.width * dpr;
+    sigCanvas.height = rect.height * dpr;
+    sigContext.scale(dpr, dpr);
+    sigCanvas.style.width = rect.width + "px";
+    sigCanvas.style.height = rect.height + "px";
+
+    sigContext.strokeStyle = "#4f46e5";
+    sigContext.lineWidth = 2;
+    sigContext.lineCap = "round";
+
+    // Mouse / Touch events
+    sigCanvas.addEventListener("mousedown", startDrawing);
+    sigCanvas.addEventListener("mousemove", draw);
+    sigCanvas.addEventListener("mouseup", stopDrawing);
+    sigCanvas.addEventListener("touchstart", (e) => {
+        const touch = e.touches[0];
+        startDrawing({ offsetX: touch.clientX - rect.left, offsetY: touch.clientY - rect.top });
+    });
+    sigCanvas.addEventListener("touchmove", (e) => {
+        const touch = e.touches[0];
+        draw({ offsetX: touch.clientX - rect.left, offsetY: touch.clientY - rect.top });
+        e.preventDefault();
+    }, { passive: false });
+    sigCanvas.addEventListener("touchend", stopDrawing);
+}
+
+function startDrawing(e) {
+    isDrawing = true;
+    sigContext.beginPath();
+    sigContext.moveTo(e.offsetX, e.offsetY);
+}
+
+function draw(e) {
+    if (!isDrawing) return;
+    sigContext.lineTo(e.offsetX, e.offsetY);
+    sigContext.stroke();
+}
+
+function stopDrawing() {
+    isDrawing = false;
+}
+
+function clearSignature() {
+    sigContext.clearRect(0, 0, sigCanvas.width, sigCanvas.height);
+}
+
+function renderExistingSignature(base64) {
+    if(!base64) return;
+    const img = new Image();
+    img.src = base64;
+    img.onload = () => {
+        sigContext.drawImage(img, 0, 0, sigCanvas.width / (window.devicePixelRatio || 1), sigCanvas.height / (window.devicePixelRatio || 1));
+    }
+}
+
+async function saveMOU() {
+    if (!confirm("Apakah Anda yakin data tanda tangan sudah benar dan ingin menyetujui MOU ini?")) return;
+
+    showLoading(true);
+    try {
+        const signatureData = sigCanvas.toDataURL("image/png");
+        const { error } = await supabaseClient
+            .from("karyawan")
+            .update({
+                mou_signed: true,
+                mou_signature: signatureData,
+                mou_date: new Date().toISOString()
+            })
+            .eq("nik", currentUser.nik);
+
+        if (error) throw error;
+
+        alert("MOU Berhasil ditandatangani! Terima kasih atas kerjasama Anda.");
+        tutupModal('modalMOU');
+        loadDashboard(currentUser.nik);
+    } catch (e) {
+        alert("Gagal menyimpan tanda tangan: " + e.message);
+    } finally {
+        showLoading(false);
     }
 }
