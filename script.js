@@ -374,7 +374,7 @@ function renderTabel() {
                 <td><span class="status-tag ${sClass}">${l.status}</span>${telatBadge}</td>
                 <td>
                     <img src="${l.foto}" class="img-prev" onclick="zoomFoto('${l.foto}')" style="cursor:pointer;">
-                    <button onclick="hapusSatuLog('${l.waktu}')" style="display:block; margin-top:5px; color:#ef4444; border:none; background:none; cursor:pointer; font-size:0.7rem; font-weight:bold;">[HAPUS LOG]</button>
+                    <button onclick="hapusSatuLog('${l.waktu}')" style="display:block; margin-top:5px; color:var(--danger); border:none; background:none; cursor:pointer; font-size:0.7rem; font-weight:bold;">[HAPUS LOG]</button>
                 </td>
             </tr>`;
   });
@@ -395,11 +395,11 @@ function renderKaryawanTable() {
         <td><strong>${k.nama}</strong><br><small>${k.nik || "-"}</small></td>
         <td>${k.jabatan || k.dept}<br><small>Hadir: ${d.hadir}/22</small></td>
         <td>Rp ${(k.gaji || 0).toLocaleString("id-ID")}<br><small>Thn Bergabung: ${k.tahun_bergabung || "-"}</small></td>
-        <td style="color:#15803d; font-weight:bold;">Rp ${Math.floor(d.thp).toLocaleString("id-ID")}</td>
+        <td style="color:var(--accent); font-weight:bold;">Rp ${Math.floor(d.thp).toLocaleString("id-ID")}</td>
         <td>
-          <button onclick="cetakSlip(${index})" style="color:#4f46e5; border:none; background:none; cursor:pointer; font-weight:bold;">SLIP</button>
-          <button onclick="showEditModal(${index})" style="color:#10b981; border:none; background:none; cursor:pointer; font-weight:bold; margin-left:10px;">EDIT</button> 
-          <button onclick="hapusKaryawan('${k.nik}')" style="color:#ef4444; border:none; background:none; cursor:pointer; margin-left:10px;">HAPUS</button>
+          <button onclick="cetakSlip(${index})" style="color:var(--primary); border:none; background:none; cursor:pointer; font-weight:bold;">SLIP</button>
+          <button onclick="showEditModal(${index})" style="color:var(--accent); border:none; background:none; cursor:pointer; font-weight:bold; margin-left:10px;">EDIT</button> 
+          <button onclick="hapusKaryawan('${k.nik}')" style="color:var(--danger); border:none; background:none; cursor:pointer; margin-left:10px;">HAPUS</button>
         </td>
       </tr>`;
   });

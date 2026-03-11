@@ -1,26 +1,25 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
 
 :root {
-  /* PT. Kola Borasi Indonesia Refined Palette */
-  --brand-bg: #FF4400;
-  --brand-text: #134E8E;
-  --brand-btn: #FFB33F;
-  --brand-btn-hover: #e6a135;
-
-  --primary: var(--brand-bg);
-  --primary-hover: #e63d00;
-  --secondary: var(--brand-text);
-  --secondary-hover: #0f3d70;
-  --accent: var(--brand-btn);
+  /* Modern Casual Palette (Indigo & Slate) */
+  --primary: #6366f1;
+  --primary-hover: #4f46e5;
+  --secondary: #0f172a;
+  --secondary-hover: #1e293b;
+  --accent: #10b981;
   --danger: #ef4444;
+  --brand-bg: #f8fafc;
+  --brand-text: #1e293b;
+  --brand-btn: #6366f1;
+  --brand-btn-hover: #4f46e5;
 
-  --bg-gradient: linear-gradient(135deg, var(--brand-bg) 0%, #e63d00 100%);
-  --dark-bg: var(--brand-bg);
-  --text-main: var(--brand-text);
-  --text-muted: rgba(19, 78, 142, 0.7);
-  --glass-bg: rgba(255, 255, 255, 0.9);
-  --glass-border: rgba(19, 78, 142, 0.2);
-  --shadow-premium: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --bg-gradient: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+  --dark-bg: #0f172a;
+  --text-main: #1e293b;
+  --text-muted: #64748b;
+  --glass-bg: rgba(255, 255, 255, 0.95);
+  --glass-border: rgba(99, 102, 241, 0.1);
+  --shadow-premium: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
 }
 
 * {
@@ -80,7 +79,7 @@ body {
   justify-content: center;
   height: 100%;
   padding: 20px;
-  background: radial-gradient(circle at 50% 50%, rgba(255, 68, 0, 0.1) 0%, transparent 100%);
+  background: radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.05) 0%, transparent 100%);
 }
 
 .wifi-badge {
@@ -241,26 +240,26 @@ body {
 
 .btn-m {
   background: var(--brand-btn);
-  color: var(--brand-text);
-  box-shadow: 0 4px 0 #b45309;
+  color: white;
+  box-shadow: 0 4px 0 #4338ca;
 }
 
 .btn-m:hover:not(:disabled) {
   background: var(--brand-btn-hover);
   transform: translateY(-2px);
-  box-shadow: 0 6px 0 #b45309;
+  box-shadow: 0 6px 0 #4338ca;
 }
 
 .btn-p {
   background: var(--brand-btn);
-  color: var(--brand-text);
-  box-shadow: 0 4px 0 #b45309;
+  color: white;
+  box-shadow: 0 4px 0 #4338ca;
 }
 
 .btn-p:hover:not(:disabled) {
-  background: var(--primary-hover);
+  background: var(--brand-btn-hover);
   transform: translateY(-2px);
-  box-shadow: 0 6px 0 #3730a3;
+  box-shadow: 0 6px 0 #4338ca;
 }
 
 .btn-m:active,
@@ -393,7 +392,7 @@ body {
 
 .sidebar {
   width: 280px;
-  background: linear-gradient(180deg, var(--brand-bg) 0%, #b33000 100%);
+  background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
   color: #fff;
   padding: 30px 20px;
   flex-shrink: 0;
@@ -553,9 +552,9 @@ body {
   content: "";
   width: 12px;
   height: 12px;
-  background-color: var(--secondary);
+  background-color: var(--accent);
   border-radius: 50%;
-  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.2);
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
 }
 
 #filterDept {
