@@ -848,26 +848,6 @@ async function generateMissingIDs() {
     }
   }
 }
-function switchTab(target) {
-  const tabLog = document.getElementById("tabLog");
-  const tabKar = document.getElementById("tabKaryawan");
-  const bLog = document.getElementById("btnTabLog");
-  const bKar = document.getElementById("btnTabKaryawan");
-
-  if (!tabLog || !tabKar) return;
-
-  if (target === "log") {
-    tabLog.style.display = "flex";
-    tabKar.style.display = "none";
-    bLog.classList.add("nav-active");
-    bKar.classList.remove("nav-active");
-  } else {
-    tabLog.style.display = "none";
-    tabKar.style.display = "flex";
-    bLog.classList.remove("nav-active");
-    bKar.classList.add("nav-active");
-  }
-}
 
 function showEditModal(index) {
   const k = KARYAWAN[index];
@@ -929,18 +909,14 @@ async function updateKaryawan() {
   }
 }
 
-function hapusKaryawan(idStr) {
-  if (confirm("Yakin ingin menghapus karyawan ini beserta semua log absennya?")) {
-    const idNum = parseInt(idStr, 10);
-    if (!idNum) return alert("ID Tidak Valid");
-
-    // Cari NIK
-    const target = KARYAWAN.find((k) => k.id === idNum);
+function hapusKaryawan(nik) {
+  if (confirm(`Yakin ingin menghapus karyawan dengan ID ${nik} beserta semua log absennya?`)) {
+    const target = KARYAWAN.find((k) => k.nik === nik);
     if (!target) return alert("Karyawan tidak ditemukan");
 
     Promise.all([
       supabaseClient.from("logs").delete().eq("nama", target.nama),
-      supabaseClient.from("karyawan").delete().eq("id", idNum),
+      supabaseClient.from("karyawan").delete().eq("nik", nik),
     ])
       .then(() => {
         alert("Karyawan dan riwayat log berhasil dihapus!");
@@ -997,11 +973,18 @@ async function updateStatusCuti(id, statusBaru, nikKaryawan, jenis) {
 
     // 2. Jika APPROVED dan jenisnya CUTI, kurangi sisa_cuti karyawan
     if (statusBaru === "APPROVED" && jenis === "CUTI") {
-      // Cari data karyawan ini dulu untuk tau sisa cuti sekarang
-      const kary = KARYAWAN.find(k => k.nik === nikKaryawan);
-      if (kary) {
-        const sisaBaru = (kary.sisa_cuti || 0) - 1; // Simplifikasi: potong 1 hari per pengajuan. (Bisa dipercanggih hitung selisih hari nanti)
-        await supabaseClient.from("karyawan").update({ sisa_cuti: sisaBaru }).eq("nik", nikKaryawan);
+      const dataCuti = cutiData.find(c => c.id === id);
+      if (dataCuti) {
+        const t1 = new Date(dataCuti.tanggal_mulai);
+        const t2 = new Date(dataCuti.tanggal_selesai);
+        const diffTime = Math.abs(t2 - t1);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+
+        const kary = KARYAWAN.find(k => k.nik === nikKaryawan);
+        if (kary) {
+          const sisaBaru = (kary.sisa_cuti || 0) - diffDays;
+          await supabaseClient.from("karyawan").update({ sisa_cuti: sisaBaru }).eq("nik", nikKaryawan);
+        }
       }
     }
 
@@ -1071,12 +1054,21 @@ function renderAkunTable() {
 
   KARYAWAN.forEach((k) => {
     body.innerHTML += `
-      <tr>
+      <tr class="akun-row" data-search="${k.nama.toLowerCase()} ${k.nik.toLowerCase()}">
         <td><strong>${k.nama}</strong></td>
         <td><code style="background:#f1f5f9; padding:4px 8px; border-radius:6px; font-weight:bold;">${k.nik || "-"}</code></td>
         <td><code style="background:#fef3c7; padding:4px 8px; border-radius:6px; font-weight:bold;">${k.pin || "123456"}</code></td>
         <td>${k.dept}</td>
       </tr>`;
+  });
+}
+
+function filterAkun() {
+  const query = document.getElementById("searchAkun").value.toLowerCase();
+  const rows = document.querySelectorAll(".akun-row");
+  rows.forEach(row => {
+    const text = row.getAttribute("data-search");
+    row.style.display = text.includes(query) ? "" : "none";
   });
 }
 
