@@ -82,6 +82,7 @@ function refreshAllUI() {
   if (isAdminPage) {
     renderTabel();
     renderKaryawanTable();
+    renderAkunTable();
     updateBadges();
   }
 }
@@ -1020,11 +1021,10 @@ function renderAkunTable() {
           <code style="background:#fef3c7; padding:4px 8px; border-radius:6px; font-weight:bold;">${k.pin || "123456"}</code><br>
           <small>NPWP: ${k.npwp || "-"}</small>
         </td>
-        <td>${k.dept}</td>
+        <td><span class="status-tag" style="background:#ecfdf5; color:#059669; font-size:0.75rem;">${k.dept}</span></td>
         <td>
-          <button onclick="showEditModal(${index})" class="btn-s" style="background:#6366f1;">EDIT</button>
-          <button onclick="hapusKaryawan('${k.nik}')" class="btn-s" style="background:#ef4444; margin-left:5px;">HAPUS</button>
-          <button onclick="cetakSlip(${index})" class="btn-s" style="background:#10b981; margin-left:5px;">SLIP</button>
+          <button onclick="showEditModal(${index})" class="btn-s" style="background:#6366f1; color:white;">EDIT</button>
+          <button onclick="hapusKaryawan('${k.nik}')" class="btn-s" style="background:#ef4444; color:white; margin-left:5px;">HAPUS</button>
         </td>
       </tr>`;
   });
