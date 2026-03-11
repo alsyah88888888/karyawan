@@ -37,7 +37,6 @@
 
       <nav class="admin-nav">
         <div class="nav-group">
-          <div class="nav-label">UTAMA</div>
           <button onclick="switchTab('log')" id="btnTabLog" class="nav-active">
             Log Presensi
           </button>
@@ -46,8 +45,7 @@
           </button>
         </div>
 
-        <div class="nav-group" style="margin-top:20px;">
-          <div class="nav-label">PENGAJUAN</div>
+        <div class="nav-group" style="margin-top:10px;">
           <button onclick="switchTab('cuti')" id="btnTabCuti">
             Cuti & Izin <span id="badgeCuti" class="nav-badge">0</span>
           </button>
@@ -56,37 +54,34 @@
           </button>
         </div>
 
-        <div class="nav-group" style="margin-top:20px;">
-          <div class="nav-label">PENGATURAN</div>
+        <div class="nav-group" style="margin-top:10px;">
           <button onclick="switchTab('akun')" id="btnTabAkun">
             Daftar Akun
           </button>
-          <button onclick="logoutAdmin()" class="btn-logout-sidebar">
+          <button onclick="logoutAdmin()" class="btn-logout-sidebar" style="margin-top:10px; background:rgba(239,68,68,0.15); color:#ef4444 !important; border-radius:10px;">
             Keluar Panel
           </button>
         </div>
       </nav>
 
-      <div class="stat-box">
-        <p>Absensi Hari Ini</p>
-        <h3 id="countAbsen">0</h3>
+      <div class="stat-box" style="margin: 10px 0; padding: 10px;">
+        <p style="font-size:0.7rem; margin-bottom:2px;">Absensi Hari Ini</p>
+        <h3 id="countAbsen" style="font-size:1.2rem;">0</h3>
       </div>
 
-      <button onclick="syncData()" class="btn-download" style="background:var(--accent); color:white; margin-bottom:10px; width:100%; padding:14px; border-radius:14px; font-weight:700; border:none; cursor:pointer;">
-        Refresh Data
-      </button>
+      <div style="display: flex; flex-direction: column; gap: 5px;">
+        <button onclick="syncData()" class="btn-download" style="background:var(--accent); color:white; width:100%; padding:8px; border-radius:8px; font-size:0.75rem; font-weight:700; border:none; cursor:pointer;">
+          Refresh Data
+        </button>
 
-      <button onclick="exportData()" class="btn-download" style="background:#475569; color:white; margin-bottom:10px; width:100%; padding:14px; border-radius:14px; font-weight:700; border:none; cursor:pointer;">
-        Download CSV Absensi
-      </button>
+        <button onclick="exportData()" class="btn-download" style="background:#475569; color:white; width:100%; padding:8px; border-radius:8px; font-size:0.75rem; font-weight:700; border:none; cursor:pointer;">
+          Export Excel (.xlsx)
+        </button>
 
-      <button onclick="clearData()" class="btn-danger" style="background:rgba(239,68,68,0.1); color:#ef4444; margin-bottom:10px; width:100%; padding:14px; border-radius:14px; font-weight:700; border:none; cursor:pointer;">
-        Hapus Log Absensi
-      </button>
-
-      <button class="btn-exit" onclick="logoutAdmin()" style="background:transparent; color:#94a3b8; width:100%; padding:14px; border:none; cursor:pointer; font-weight:700;">
-        KELUAR ADMIN
-      </button>
+        <button onclick="clearData()" style="background:transparent; color:#ef4444; width:100%; padding:5px; border:none; cursor:pointer; font-size:0.7rem; font-weight:600;">
+          Hapus Log Absensi
+        </button>
+      </div>
     </aside>
 
     <main class="content">
