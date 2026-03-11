@@ -267,11 +267,19 @@ async function prosesAbsen(tipe) {
   if (error) {
     alert("Gagal kirim ke Cloud: " + error.message);
   } else {
-    alert(
-      (tipe === "MASUK" || tipe === "BERANGKAT") && telat
-        ? "Berhasil! Anda telat."
-        : "Berhasil! Selamat Bekerja.",
-    );
+    let pesen = "";
+    if (tipe === "MASUK" || tipe === "BERANGKAT") {
+      if (telat) {
+        pesen = "Jangan diulangi, yuk lebih semangat lagi berangkatnya biar tidak terlambat";
+      } else {
+        pesen = "Berhasil Jangan lupa Do'a dahulu sebelum bekerja, Semangat!!!";
+      }
+    } else {
+      // Untuk PULANG
+      pesen = "Terima Kasih semoga pulang sampai tujuan dan bertemu dengan keluarga kembali";
+    }
+    
+    alert(pesen);
     await syncData();
   }
 }
