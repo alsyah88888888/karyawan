@@ -403,10 +403,10 @@ function renderKaryawanTable() {
           KTP: ${k.nik_ktp || "-"}<br>
           NPWP: ${k.npwp || "-"}
         </td>
-        <td>
-          <button onclick="cetakSlip(${index})" style="color:var(--primary); border:none; background:none; cursor:pointer; font-weight:bold;">SLIP</button>
-          <button onclick="showEditModal(${index})" style="color:var(--accent); border:none; background:none; cursor:pointer; font-weight:bold; margin-left:10px;">EDIT</button> 
-          <button onclick="hapusKaryawan('${k.nik}')" style="color:var(--danger); border:none; background:none; cursor:pointer; margin-left:10px;">HAPUS</button>
+        <td style="text-align:center;">
+          <button onclick="cetakSlip(${index})" class="btn-s" style="background:var(--primary); color:white; padding:8px 16px; border-radius:8px; border:none; cursor:pointer; font-weight:700;">
+            CETAK SLIP
+          </button>
         </td>
       </tr>`;
   });
