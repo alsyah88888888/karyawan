@@ -905,11 +905,14 @@ function renderCutiTable() {
     if (c.status === "APPROVED") statusBadge = `<span style="background:green; color:white; padding:4px 8px; border-radius:8px; font-size:0.8rem;">APPROVED</span>`;
     if (c.status === "REJECTED") statusBadge = `<span style="background:red; color:white; padding:4px 8px; border-radius:8px; font-size:0.8rem;">REJECTED</span>`;
 
-    let actionBtns = "-";
+    let actionBtns = `
+      <button onclick="hapusCuti(${c.id})" style="background:#ef4444; color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer;" title="Hapus Permanen">Hapus</button>
+    `;
     if (c.status === "PENDING") {
       actionBtns = `
                 <button onclick="updateStatusCuti(${c.id}, 'APPROVED', '${c.nik}', '${c.jenis_pengajuan}')" style="background:green; color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer;">Setuju</button>
                 <button onclick="updateStatusCuti(${c.id}, 'REJECTED', '${c.nik}', '${c.jenis_pengajuan}')" style="background:red; color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer; margin-left:5px;">Tolak</button>
+                <button onclick="hapusCuti(${c.id})" style="background:#64748b; color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer; margin-left:5px;">Hapus</button>
             `;
     }
 
@@ -955,6 +958,18 @@ async function updateStatusCuti(id, statusBaru, nikKaryawan, jenis) {
     syncData();
   } catch (e) {
     alert("Gagal update status: " + e.message);
+  }
+}
+
+async function hapusCuti(id) {
+  if (!confirm("Yakin ingin menghapus riwayat cuti/izin ini secara permanen?")) return;
+  try {
+    const { error } = await supabaseClient.from("cuti_izin").delete().eq("id", id);
+    if (error) throw error;
+    alert("Data cuti/izin berhasil dihapus!");
+    syncData();
+  } catch (e) {
+    alert("Gagal hapus data: " + e.message);
   }
 }
 

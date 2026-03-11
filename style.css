@@ -378,7 +378,7 @@ body {
 }
 
 .sidebar-logo {
-  width: 50px;
+  width: 40px;
   filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.2));
 }
 
@@ -391,23 +391,23 @@ body {
 }
 
 .sidebar {
-  width: 280px;
+  width: 260px;
   background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
   color: #fff;
-  padding: 30px 20px;
+  padding: 20px 15px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
   box-shadow: 4px 0 15px rgba(0, 0, 0, 0.1);
-  overflow-y: auto; /* Enable scroll if menu is long */
+  overflow-y: clip; 
 }
 
 .sidebar-header {
   display: flex;
   align-items: center;
-  gap: 15px;
-  margin-bottom: 40px;
-  padding: 0 10px;
+  gap: 12px;
+  margin-bottom: 25px;
+  padding: 0 5px;
 }
 
 .sidebar h2 {
@@ -431,24 +431,24 @@ body {
 }
 
 .nav-label {
-  font-size: 0.65rem;
+  font-size: 0.6rem;
   font-weight: 800;
   color: #64748b;
-  letter-spacing: 2px;
-  padding: 10px 20px 5px 20px;
+  letter-spacing: 1.5px;
+  padding: 8px 15px 4px 15px;
   text-transform: uppercase;
 }
 
 .admin-nav button {
   width: 100%;
   text-align: left;
-  padding: 12px 20px;
+  padding: 10px 15px;
   background: transparent;
   border: none;
   color: #94a3b8;
   cursor: pointer;
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   border-radius: 12px;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
