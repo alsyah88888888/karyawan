@@ -42,11 +42,13 @@ async function syncData() {
     logs = dataLog || [];
 
     // Ambil Data Cuti
-    const { data: dataCuti } = await supabaseClient.from("cuti_izin").select("*").order("id", { ascending: false });
+    const { data: dataCuti, error: errCuti } = await supabaseClient.from("cuti_izin").select("*").order("id", { ascending: false });
+    if (errCuti) throw errCuti;
     cutiData = dataCuti || [];
 
     // Ambil Data Kasbon
-    const { data: dataKasbon } = await supabaseClient.from("kasbon").select("*").order("id", { ascending: false });
+    const { data: dataKasbon, error: errKasbon } = await supabaseClient.from("kasbon").select("*").order("id", { ascending: false });
+    if (errKasbon) throw errKasbon;
     kasbonData = dataKasbon || [];
 
     // WAJIB: Panggil fungsi render setelah data masuk

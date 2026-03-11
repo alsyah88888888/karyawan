@@ -278,7 +278,6 @@ async function submitKasbon() {
             nik: currentUser.nik,
             nama: currentUser.nama,
             nominal: nominal,
-            nominal_pengajuan: nominal, // Backward compatibility
             waktu_pengajuan: new Date().toISOString(),
             alasan: alasan,
             status: "PENDING"
