@@ -630,10 +630,13 @@ async function updateKaryawan() {
 
     alert("Data berhasil diperbarui!");
     hideEditModal();
+    
+    // Refresh local KARYAWAN array immediately to reflect changes in UI
     await syncData();
+    
   } catch (e) {
-    console.error(e);
-    alert("Gagal update: " + e.message);
+    console.error("Update Error:", e);
+    alert("Gagal update data: " + e.message);
   }
 }
 
