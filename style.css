@@ -488,8 +488,8 @@ body {
   display: flex;
   flex-direction: column;
   background: #f8fafc;
-  width: 100%;
-  /* Pastikan lebar penuh */
+  width: calc(100vw - 280px); /* Fill the rest of the available width */
+  max-width: 100%;
 }
 
 #tabLog,
@@ -553,13 +553,14 @@ body {
 table {
   width: 100%;
   border-collapse: collapse;
+  min-width: 800px; /* Ensure table has a minimum width for readability */
 }
 
 th {
   background: #f8fafc;
   padding: 15px 20px;
   text-align: left;
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   font-weight: 700;
   color: var(--text-muted);
   text-transform: uppercase;
@@ -568,12 +569,14 @@ th {
   top: 0;
   z-index: 10;
   border-bottom: 2px solid #e2e8f0;
+  white-space: nowrap; /* Prevent headers from wrapping */
 }
 
 td {
   padding: 24px 20px;
   border-bottom: 1px solid #f1f5f9;
   font-size: 0.9375rem;
+  vertical-align: middle;
 }
 
 tr:hover td {
