@@ -13,6 +13,8 @@ const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
 const OFFICE_IP = "103.108.130.44";
 let KARYAWAN = [];
 let logs = [];
+let cutiData = [];
+let kasbonData = [];
 let isOfficeGlobal = false;
 let clockClicks = 0;
 let lastClickTime = 0;
@@ -36,9 +38,16 @@ async function syncData() {
       .from("logs")
       .select("*")
       .order("id", { ascending: false });
-
     if (errLog) throw errLog;
     logs = dataLog || [];
+
+    // Ambil Data Cuti
+    const { data: dataCuti } = await supabaseClient.from("cuti_izin").select("*").order("id", { ascending: false });
+    cutiData = dataCuti || [];
+
+    // Ambil Data Kasbon
+    const { data: dataKasbon } = await supabaseClient.from("kasbon").select("*").order("id", { ascending: false });
+    kasbonData = dataKasbon || [];
 
     // WAJIB: Panggil fungsi render setelah data masuk
     refreshAllUI();
@@ -71,6 +80,7 @@ function refreshAllUI() {
   if (isAdminPage) {
     renderTabel();
     renderKaryawanTable();
+    updateBadges();
   }
 }
 
@@ -130,6 +140,11 @@ function hitungDetailGaji(gapok, namaKaryawan) {
     (l) => (l.status === "MASUK" || l.status === "BERANGKAT") && (l.isLate === true || l.is_late === true),
   ).length;
 
+  // Hitung Cashbon Aktif (Bulan Ini)
+  const kasbonBulanIni = kasbonData
+    .filter(k => k.nama === namaKaryawan && k.status === 'APPROVED')
+    .reduce((sum, k) => sum + parseFloat(k.nominal), 0);
+
   // RUMUS PERHITUNGAN
   const gajiPro = (hariHadir / standarHari) * g;
   const potonganTelat = jumlahTelat * (gajiHarian * 0.02); // Potongan 2% dari gaji harian per telat
@@ -140,7 +155,7 @@ function hitungDetailGaji(gapok, namaKaryawan) {
   const jp = gajiPro * 0.01;
   const pph21 = gajiPro * 0.015;
 
-  const totalPotongan = bpjsKes + jht + jp + pph21 + potonganTelat;
+  const totalPotongan = bpjsKes + jht + jp + pph21 + potonganTelat + kasbonBulanIni;
   const thp = gajiPro - totalPotongan;
 
   return {
@@ -153,6 +168,7 @@ function hitungDetailGaji(gapok, namaKaryawan) {
     jht,
     jp,
     pph21,
+    kasbon: kasbonBulanIni,
     totalPotongan,
     thp: thp > 0 ? thp : 0,
   };
@@ -265,24 +281,46 @@ function switchTab(tab) {
   // 1. Sembunyikan semua konten tab
   document.getElementById("tabLog").style.display = "none";
   document.getElementById("tabKaryawan").style.display = "none";
+  document.getElementById("tabCuti").style.display = "none";
+  document.getElementById("tabKasbon").style.display = "none";
 
   // 2. Logika untuk memunculkan tab dan mengisi data
   if (tab === "log") {
     document.getElementById("tabLog").style.display = "block";
-    renderTabel(); // Fungsi gambar tabel log
+    renderTabel();
   } else if (tab === "karyawan") {
-    // Sesuaikan dengan isi onclick di HTML
     document.getElementById("tabKaryawan").style.display = "block";
-    renderKaryawanTable(); // Fungsi gambar tabel karyawan
+    renderKaryawanTable();
+  } else if (tab === "cuti") {
+    document.getElementById("tabCuti").style.display = "block";
+    renderCutiTable();
+  } else if (tab === "kasbon") {
+    document.getElementById("tabKasbon").style.display = "block";
+    renderKasbonTable();
   }
 
   // 3. Update warna tombol aktif
-  document
-    .getElementById("btnTabLog")
-    .classList.toggle("nav-active", tab === "log");
-  document
-    .getElementById("btnTabKaryawan")
-    .classList.toggle("nav-active", tab === "karyawan");
+  document.getElementById("btnTabLog").classList.toggle("nav-active", tab === "log");
+  document.getElementById("btnTabKaryawan").classList.toggle("nav-active", tab === "karyawan");
+  document.getElementById("btnTabCuti").classList.toggle("nav-active", tab === "cuti");
+  document.getElementById("btnTabKasbon").classList.toggle("nav-active", tab === "kasbon");
+}
+
+function updateBadges() {
+    const pendingCuti = cutiData.filter(c => c.status === 'PENDING').length;
+    const pendingKasbon = kasbonData.filter(k => k.status === 'PENDING').length;
+    
+    const badgeCuti = document.getElementById("badgeCuti");
+    const badgeKasbon = document.getElementById("badgeKasbon");
+    
+    if(badgeCuti) {
+        badgeCuti.innerText = pendingCuti;
+        badgeCuti.style.display = pendingCuti > 0 ? "inline-block" : "none";
+    }
+    if(badgeKasbon) {
+        badgeKasbon.innerText = pendingKasbon;
+        badgeKasbon.style.display = pendingKasbon > 0 ? "inline-block" : "none";
+    }
 }
 
 function renderTabel() {
@@ -611,6 +649,7 @@ function cetakSlip(index) {
             <div style="display:flex; justify-content:space-between;"><span>JP (1%)</span><span>-Rp ${Math.floor(d.jp).toLocaleString("id-ID")}</span></div>
             <div style="display:flex; justify-content:space-between;"><span>PPh 21 (1.5%)</span><span>-Rp ${Math.floor(d.pph21).toLocaleString("id-ID")}</span></div>
             <div style="display:flex; justify-content:space-between; color: red;"><span>Potongan Telat (${d.jumlahTelat}x)</span><span>-Rp ${Math.floor(d.potonganTelat).toLocaleString("id-ID")}</span></div>
+            ${d.kasbon > 0 ? `<div style="display:flex; justify-content:space-between; color: red;"><span>Potongan Kasbon</span><span>-Rp ${Math.floor(d.kasbon).toLocaleString("id-ID")}</span></div>` : ''}
         </div>
 
         <div style="border-top:2px solid #000; margin-top:15px; padding:10px 0; display:flex; justify-content:space-between; font-weight:bold; font-size:1.1rem; background:#f9f9f9;">
@@ -847,12 +886,145 @@ async function updateKaryawan() {
     if (error) throw error;
 
     alert("Data berhasil diperbarui!");
-    hideEditModal();
-    await syncData();
-  } catch (e) {
-    console.error(e);
-    alert("Gagal update: " + e.message);
+    hideModal();
+    syncData();
+  } catch (err) {
+    alert("Gagal memperbarui data: " + err.message);
   }
+}
+
+function hapusKaryawan(idStr) {
+  if (confirm("Yakin ingin menghapus karyawan ini beserta semua log absennya?")) {
+    const idNum = parseInt(idStr, 10);
+    if (!idNum) return alert("ID Tidak Valid");
+
+    // Cari NIK
+    const target = KARYAWAN.find((k) => k.id === idNum);
+    if (!target) return alert("Karyawan tidak ditemukan");
+
+    Promise.all([
+      supabaseClient.from("logs").delete().eq("nama", target.nama),
+      supabaseClient.from("karyawan").delete().eq("id", idNum),
+    ])
+      .then(() => {
+        alert("Karyawan dan riwayat log berhasil dihapus!");
+        syncData();
+      })
+      .catch((err) => alert("Gagal menghapus: " + err.message));
+  }
+}
+
+// --- TABEL CUTI & IZIN ---
+function renderCutiTable() {
+    const tbody = document.getElementById("cutiTableBody");
+    if (!tbody) return;
+    tbody.innerHTML = "";
+
+    if (cutiData.length === 0) {
+        tbody.innerHTML = "<tr><td colspan='6' style='text-align:center;'>Belum ada data pengajuan cuti/izin.</td></tr>";
+        return;
+    }
+
+    cutiData.forEach((c) => {
+        let statusBadge = `<span style="background:orange; color:white; padding:4px 8px; border-radius:8px; font-size:0.8rem;">PENDING</span>`;
+        if (c.status === "APPROVED") statusBadge = `<span style="background:green; color:white; padding:4px 8px; border-radius:8px; font-size:0.8rem;">APPROVED</span>`;
+        if (c.status === "REJECTED") statusBadge = `<span style="background:red; color:white; padding:4px 8px; border-radius:8px; font-size:0.8rem;">REJECTED</span>`;
+
+        let actionBtns = "-";
+        if (c.status === "PENDING") {
+            actionBtns = `
+                <button onclick="updateStatusCuti(${c.id}, 'APPROVED', '${c.nik}', '${c.jenis_pengajuan}')" style="background:green; color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer;">Setuju</button>
+                <button onclick="updateStatusCuti(${c.id}, 'REJECTED', '${c.nik}', '${c.jenis_pengajuan}')" style="background:red; color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer; margin-left:5px;">Tolak</button>
+            `;
+        }
+
+        tbody.innerHTML += `
+            <tr>
+                <td><strong>${c.nama}</strong><br><small>${c.nik}</small></td>
+                <td><strong>${c.jenis_pengajuan}</strong></td>
+                <td>${c.tanggal_mulai} <br>s/d<br> ${c.tanggal_selesai}</td>
+                <td style="max-width:200px; white-space:normal;">${c.alasan}</td>
+                <td>${statusBadge}</td>
+                <td>${actionBtns}</td>
+            </tr>
+        `;
+    });
+}
+
+async function updateStatusCuti(id, statusBaru, nikKaryawan, jenis) {
+    if (!confirm(`Yakin ingin mengubah status menjadi ${statusBaru}?`)) return;
+
+    try {
+        // 1. Update status di tabel cuti_izin
+        const { error } = await supabaseClient.from("cuti_izin").update({ status: statusBaru }).eq("id", id);
+        if (error) throw error;
+
+        // 2. Jika APPROVED dan jenisnya CUTI, kurangi sisa_cuti karyawan
+        if (statusBaru === "APPROVED" && jenis === "CUTI") {
+            // Cari data karyawan ini dulu untuk tau sisa cuti sekarang
+            const kary = KARYAWAN.find(k => k.nik === nikKaryawan);
+            if (kary) {
+                const sisaBaru = (kary.sisa_cuti || 0) - 1; // Simplifikasi: potong 1 hari per pengajuan. (Bisa dipercanggih hitung selisih hari nanti)
+                await supabaseClient.from("karyawan").update({ sisa_cuti: sisaBaru }).eq("nik", nikKaryawan);
+            }
+        }
+
+        alert("Status berhasil diperbarui!");
+        syncData();
+    } catch(e) {
+        alert("Gagal update status: " + e.message);
+    }
+}
+
+// --- TABEL KASBON ---
+function renderKasbonTable() {
+    const tbody = document.getElementById("kasbonTableBody");
+    if (!tbody) return;
+    tbody.innerHTML = "";
+
+    if (kasbonData.length === 0) {
+        tbody.innerHTML = "<tr><td colspan='6' style='text-align:center;'>Belum ada data pengajuan kasbon.</td></tr>";
+        return;
+    }
+
+    kasbonData.forEach((k) => {
+        let statusBadge = `<span style="background:orange; color:white; padding:4px 8px; border-radius:8px; font-size:0.8rem;">PENDING</span>`;
+        if (k.status === "APPROVED") statusBadge = `<span style="background:green; color:white; padding:4px 8px; border-radius:8px; font-size:0.8rem;">APPROVED</span>`;
+        if (k.status === "REJECTED") statusBadge = `<span style="background:red; color:white; padding:4px 8px; border-radius:8px; font-size:0.8rem;">REJECTED</span>`;
+
+        let actionBtns = "-";
+        if (k.status === "PENDING") {
+            actionBtns = `
+                <button onclick="updateStatusKasbon(${k.id}, 'APPROVED')" style="background:green; color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer;">Cairkan</button>
+                <button onclick="updateStatusKasbon(${k.id}, 'REJECTED')" style="background:red; color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer; margin-left:5px;">Tolak</button>
+            `;
+        }
+
+        tbody.innerHTML += `
+            <tr>
+                <td><strong>${k.nama}</strong><br><small>${k.nik}</small></td>
+                <td style="color:var(--brand-btn); font-weight:bold;">Rp ${k.nominal.toLocaleString("id-ID")}</td>
+                <td>${new Date(k.waktu_pengajuan).toLocaleString("id-ID")}</td>
+                <td style="max-width:200px; white-space:normal;">${k.alasan}</td>
+                <td>${statusBadge}</td>
+                <td>${actionBtns}</td>
+            </tr>
+        `;
+    });
+}
+
+async function updateStatusKasbon(id, statusBaru) {
+    if (!confirm(`Yakin ingin mengubah status kasbon menjadi ${statusBaru}?`)) return;
+
+    try {
+        const { error } = await supabaseClient.from("kasbon").update({ status: statusBaru }).eq("id", id);
+        if (error) throw error;
+
+        alert("Status kasbon berhasil diperbarui!");
+        syncData();
+    } catch(e) {
+        alert("Gagal update kasbon: " + e.message);
+    }
 }
 
 document.addEventListener("DOMContentLoaded", () => {

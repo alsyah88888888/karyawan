@@ -68,6 +68,15 @@
         .history-section th { background: #f8fafc; padding: 15px; text-align: left; }
         .history-section td { padding: 15px; border-bottom: 1px solid #f1f5f9; }
         .btn-logout { background: transparent; border: 1px solid white; color: white; padding: 10px 20px; border-radius: 8px; cursor: pointer; }
+        .btn-action { width: 100%; margin-top: 15px; padding: 10px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        .btn-action.secondary { background: #f1f5f9; color: #64748b; }
+        .btn-action.primary { background: var(--brand-btn); color: var(--brand-text); }
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(5px); display: none; align-items: center; justify-content: center; z-index: 50; }
+        .modal-content { background: white; padding: 30px; border-radius: 20px; width: 90%; max-width: 400px; }
+        .modal-content h3 { margin-bottom: 20px; color: var(--brand-text); }
+        .modal-content select, .modal-content input, .modal-content textarea { width: 100%; padding: 12px; margin-bottom: 15px; border-radius: 8px; border: 1px solid #ccc; font-family: inherit; }
+        .modal-content .btn-group { display: flex; gap: 10px; }
+        .modal-content .btn-group button { flex: 1; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -100,12 +109,13 @@
                 <div class="stat-card">
                     <h3>Sisa Cuti Tahunan</h3>
                     <p id="sisaCuti">0 <span style="font-size:1rem; color:#64748b; font-weight:600;">Hari</span></p>
-                    <button style="width:100%; margin-top:15px; padding:10px; background:#f1f5f9; border:none; border-radius:8px; cursor:pointer; font-weight:bold; color:#64748b;" onclick="alert('Fitur Request Cuti akan segera hadir di Fase 2!')">AJUKAN CUTI</button>
+                    <button class="btn-action secondary" onclick="bukaModal('modalCuti')">AJUKAN CUTI / IZIN</button>
+                    <button class="btn-action secondary" onclick="bukaModal('modalKasbon')" style="margin-top:10px;">AJUKAN KASBON</button>
                 </div>
                 <div class="stat-card">
                     <h3>Gaji Bulan Ini (Estimasi)</h3>
                     <p id="estimasiGaji" style="font-size:1.8rem; color:#15803d;">Rp 0</p>
-                    <button style="width:100%; margin-top:15px; padding:10px; background:var(--brand-btn); border:none; border-radius:8px; cursor:pointer; font-weight:bold; color:var(--brand-text);" onclick="downloadSlipPribadi()">DOWNLOAD SLIP GAJI</button>
+                    <button class="btn-action primary" onclick="downloadSlipPribadi()">DOWNLOAD SLIP GAJI</button>
                 </div>
             </div>
 
@@ -126,6 +136,40 @@
                     </table>
                 </div>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Ajukan Cuti -->
+<div class="modal-overlay" id="modalCuti">
+    <div class="modal-content">
+        <h3>Pengajuan Cuti / Izin</h3>
+        <select id="inpJenisCuti">
+            <option value="CUTI">Cuti Tahunan</option>
+            <option value="IZIN">Izin (Potong Gaji)</option>
+            <option value="SAKIT">Sakit (Dengan Surat Dokter)</option>
+        </select>
+        <label style="font-size: 0.8rem; font-weight: bold; color: #64748b; margin-bottom: 5px; display: block;">TANGGAL MULAI</label>
+        <input type="date" id="inpMulaiCuti">
+        <label style="font-size: 0.8rem; font-weight: bold; color: #64748b; margin-bottom: 5px; display: block;">TANGGAL SELESAI</label>
+        <input type="date" id="inpSelesaiCuti">
+        <textarea id="inpAlasanCuti" placeholder="Alasan Pengajuan" rows="3"></textarea>
+        <div class="btn-group">
+            <button style="background: #e2e8f0; color: #64748b;" onclick="tutupModal('modalCuti')">BATAL</button>
+            <button style="background: var(--brand-bg); color: white;" onclick="submitCuti()">AJUKAN</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Ajukan Kasbon -->
+<div class="modal-overlay" id="modalKasbon">
+    <div class="modal-content">
+        <h3>Pengajuan Kasbon (Pinjaman)</h3>
+        <input type="number" id="inpNominalKasbon" placeholder="Nominal (Cth: 500000)">
+        <textarea id="inpAlasanKasbon" placeholder="Alasan Keperluan Kasbon" rows="3"></textarea>
+        <div class="btn-group">
+            <button style="background: #e2e8f0; color: #64748b;" onclick="tutupModal('modalKasbon')">BATAL</button>
+            <button style="background: var(--brand-bg); color: white;" onclick="submitKasbon()">AJUKAN</button>
         </div>
     </div>
 </div>

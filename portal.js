@@ -209,3 +209,66 @@ function downloadSlipPribadi() {
     );
     w.document.close();
 }
+
+// --- MODAL & PENGAJUAN ---
+function bukaModal(id) {
+    document.getElementById(id).style.display = 'flex';
+}
+
+function tutupModal(id) {
+    document.getElementById(id).style.display = 'none';
+}
+
+async function submitCuti() {
+    const jenis = document.getElementById("inpJenisCuti").value;
+    const mulai = document.getElementById("inpMulaiCuti").value;
+    const selesai = document.getElementById("inpSelesaiCuti").value;
+    const alasan = document.getElementById("inpAlasanCuti").value.trim();
+
+    if (!mulai || !selesai || !alasan) return alert("Harap lengkapi semua data!");
+
+    try {
+        const { error } = await supabaseClient.from("cuti_izin").insert([{
+            nik: currentUser.nik,
+            nama: currentUser.nama,
+            jenis_pengajuan: jenis,
+            tanggal_mulai: mulai,
+            tanggal_selesai: selesai,
+            alasan: alasan,
+            status: "PENDING"
+        }]);
+
+        if (error) throw error;
+        
+        alert("Pengajuan berhasil dikirim! Menunggu persetujuan Admin.");
+        tutupModal('modalCuti');
+        loadDashboard(currentUser.nik); // refresh
+    } catch(e) {
+        alert("Gagal mengirim pengajuan: " + e.message);
+    }
+}
+
+async function submitKasbon() {
+    const nominal = parseFloat(document.getElementById("inpNominalKasbon").value);
+    const alasan = document.getElementById("inpAlasanKasbon").value.trim();
+
+    if (!nominal || isNaN(nominal) || !alasan) return alert("Harap lengkapi nominal dan alasan!");
+
+    try {
+        const { error } = await supabaseClient.from("kasbon").insert([{
+            nik: currentUser.nik,
+            nama: currentUser.nama,
+            nominal: nominal,
+            alasan: alasan,
+            status: "PENDING"
+        }]);
+
+        if (error) throw error;
+        
+        alert("Pengajuan Kasbon berhasil dikirim! Menunggu persetujuan Admin.");
+        tutupModal('modalKasbon');
+        loadDashboard(currentUser.nik); // refresh
+    } catch(e) {
+        alert("Gagal mengirim pengajuan kasbon: " + e.message);
+    }
+}
