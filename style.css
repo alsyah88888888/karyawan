@@ -27,8 +27,6 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
-  max-width: 100vw;
-  /* Cegah kelebihan lebar secara global */
 }
 
 body {
@@ -38,9 +36,11 @@ body {
   height: 100vh;
   height: 100dvh;
   /* Mobile viewport height */
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: hidden;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+  max-width: 100vw;
 }
 
 /* ==========================================
@@ -483,13 +483,14 @@ body {
 
 .content {
   flex: 1;
+  min-width: 0; /* Important constraint to prevent flex item blowout */
   padding: 30px;
   overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
   background: #f8fafc;
-  width: calc(100vw - 280px); /* Fill the rest of the available width */
-  max-width: 100%;
+  width: 100%;
 }
 
 #tabLog,
@@ -498,6 +499,7 @@ body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  width: 100%;
 }
 
 .header-content {
