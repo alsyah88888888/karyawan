@@ -1,3 +1,8 @@
+/**
+ * KOBOI ESS - Logic Layer
+ * Features: Login, Dashboard Sync, Leave/Loan Submission, Salary Estimation
+ */
+
 const SB_URL = "https://ulmwpmzcaiuyubgehptt.supabase.co";
 const SB_KEY =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVsbXdwbXpjYWl1eXViZ2VocHR0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE4MzI2MjUsImV4cCI6MjA4NzQwODYyNX0._Y2MkIiRDM52CVMsZEp-lSRBQ93ZYGkwkFbmxfZ5tFo";
@@ -5,10 +10,16 @@ const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
 
 let currentUser = null;
 let currentLogs = [];
+let currentKasbon = [];
 
+// 1. INITIALIZATION
 window.onload = () => {
     checkSession();
 };
+
+function showLoading(show) {
+    document.getElementById("loadingOverlay").style.display = show ? "flex" : "none";
+}
 
 function checkSession() {
     const sessionNIK = sessionStorage.getItem("empNIK");
@@ -22,13 +33,14 @@ function checkSession() {
     }
 }
 
+// 2. LOGIN LOGIC
 async function loginKaryawan() {
     const nik = document.getElementById("loginNik").value.trim();
     const pin = document.getElementById("loginPin").value.trim();
 
     if (!nik || !pin) return alert("Nomor ID Karyawan dan PIN harus diisi!");
 
-    document.querySelector(".login-section button").innerText = "MEMERIKSA...";
+    showLoading(true);
 
     try {
         const { data, error } = await supabaseClient
@@ -39,29 +51,34 @@ async function loginKaryawan() {
 
         if (error || !data) throw new Error("Nomor ID Karyawan tidak ditemukan!");
 
-        const validPin = data.pin ? data.pin : "123456"; // Default PIN if none set in DB yet
+        const validPin = data.pin ? data.pin : "123456";
 
         if (pin === validPin) {
             sessionStorage.setItem("empNIK", nik);
             checkSession();
         } else {
-            alert("PIN Salah! Coba lagi.");
+            alert("PIN Salah! Silakan coba lagi.");
         }
     } catch (e) {
         alert(e.message);
     } finally {
-        document.querySelector(".login-section button").innerText = "MASUK";
+        showLoading(false);
     }
 }
 
 function logoutKaryawan() {
-    sessionStorage.removeItem("empNIK");
-    checkSession();
+    if(confirm("Yakin ingin keluar?")) {
+        sessionStorage.removeItem("empNIK");
+        window.location.reload();
+    }
 }
 
+// 3. DASHBOARD DATA SYNC
 async function loadDashboard(nik) {
     try {
-        // 1. Fetch User Data
+        showLoading(true);
+
+        // A. Fetch User Data
         const { data: user, error: errUser } = await supabaseClient
             .from("karyawan")
             .select("*")
@@ -71,11 +88,17 @@ async function loadDashboard(nik) {
         if (errUser) throw errUser;
         currentUser = user;
 
+        // B. Update UI Profile
         document.getElementById("userName").innerText = user.nama;
-        document.getElementById("userDept").innerText = user.jabatan || user.dept;
-        document.getElementById("sisaCuti").innerHTML = `${user.sisa_cuti ?? 12} <span style="font-size:1rem; color:#64748b; font-weight:600;">Hari</span>`;
+        document.getElementById("welcomeName").innerText = user.nama.split(' ')[0];
+        document.getElementById("userDept").innerText = `${user.dept} • ${user.jabatan || '-'}`;
+        document.getElementById("sisaCuti").innerText = user.sisa_cuti ?? 12;
+        
+        // Initial Avatar
+        const initials = user.nama.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
+        document.getElementById("userInitial").innerText = initials;
 
-        // 2. Fetch User Logs
+        // C. Fetch Logs (Last 30 Days)
         const { data: logs, error: errLogs } = await supabaseClient
             .from("logs")
             .select("*")
@@ -86,13 +109,27 @@ async function loadDashboard(nik) {
         if (errLogs) throw errLogs;
         currentLogs = logs || [];
 
+        // D. Fetch approved & pending loans
+        const { data: kasbon, error: errKasbon } = await supabaseClient
+            .from("kasbon")
+            .select("*")
+            .eq("nik", nik)
+            .order("id", { ascending: false });
+
+        if (errKasbon) throw errKasbon;
+        currentKasbon = kasbon || [];
+
+        // E. Render Components
         renderHistory(currentLogs);
-        renderEstimasiGaji(user, currentLogs);
+        renderEstimasiGaji(user, currentLogs, currentKasbon);
+        renderKasbonStatus(currentKasbon);
 
     } catch (e) {
-        console.error("Gagal muat dashboard:", e);
-        alert("Sesi kadaluarsa atau terjadi kesalahan.");
+        console.error("Dashboard Error:", e);
+        alert("Gagal memuat data dashboard.");
         logoutKaryawan();
+    } finally {
+        showLoading(false);
     }
 }
 
@@ -101,26 +138,49 @@ function renderHistory(logs) {
     tbody.innerHTML = "";
 
     if (logs.length === 0) {
-        tbody.innerHTML = "<tr><td colspan='3' style='text-align:center;'>Belum ada riwayat absensi.</td></tr>";
+        tbody.innerHTML = "<tr><td colspan='3' style='text-align:center; padding: 40px; color: #94a3b8;'>Belum ada riwayat absensi.</td></tr>";
         return;
     }
 
     logs.slice(0, 7).forEach(l => {
-        const waktu = new Date(l.waktu).toLocaleString("id-ID");
-        const sClass = (l.status === "MASUK" || l.status === "BERANGKAT") ? "color:#15803d; font-weight:bold;" : "color:#4338ca; font-weight:bold;";
-        const isLate = l.isLate ? "Ya" : "-";
+        const waktu = new Date(l.waktu).toLocaleString("id-ID", { 
+            weekday: 'long', 
+            year: 'numeric', 
+            month: 'short', 
+            day: 'numeric', 
+            hour: '2-digit', 
+            minute: '2-digit' 
+        });
+        const statusClass = (l.status === "MASUK" || l.status === "BERANGKAT") ? "status-masuk" : "status-pulang";
+        const lateBadge = l.isLate ? '<span class="badge-late">TELAT</span>' : '';
         
         tbody.innerHTML += `
             <tr>
-                <td>${waktu}</td>
-                <td style="${sClass}">${l.status}</td>
-                <td><span style="${l.isLate ? 'color:red;font-weight:bold;' : ''}">${isLate}</span></td>
+                <td style="font-weight: 500;">${waktu}</td>
+                <td><span class="status-pill ${statusClass}">${l.status}</span></td>
+                <td>${lateBadge || '-'}</td>
             </tr>
         `;
     });
 }
 
-function hitungDetailGaji(gapok, logsData) {
+function renderKasbonStatus(kasbon) {
+    const activeLoan = kasbon.filter(k => k.status === 'APPROVED').reduce((sum, k) => sum + parseFloat(k.nominal), 0);
+    const pendingLoan = kasbon.filter(k => k.status === 'PENDING').reduce((sum, k) => sum + parseFloat(k.nominal), 0);
+    
+    document.getElementById("statusKasbon").innerText = `Rp ${activeLoan.toLocaleString("id-ID")}`;
+    
+    if (pendingLoan > 0) {
+        document.getElementById("infoKasbon").innerHTML = `<span style="color: #f59e0b; font-weight: 600;">⚠️ Menunggu Persetujuan: Rp ${pendingLoan.toLocaleString("id-ID")}</span>`;
+    } else if (activeLoan > 0) {
+        document.getElementById("infoKasbon").innerText = "Pinjaman akan memotong gaji bulan ini.";
+    } else {
+        document.getElementById("infoKasbon").innerText = "Tidak ada pinjaman aktif.";
+    }
+}
+
+// 4. PAYROLL FORMULA
+function hitungDetailGaji(gapok, logsData, kasbonData) {
     const g = parseFloat(gapok) || 0;
     const standarHari = 22;
     const gajiHarian = g / standarHari;
@@ -137,6 +197,11 @@ function hitungDetailGaji(gapok, logsData) {
         (l) => (l.status === "MASUK" || l.status === "BERANGKAT") && (l.isLate === true || l.is_late === true),
     ).length;
 
+    // APPROVED Loans deduction
+    const totalKasbon = kasbonData
+        ? kasbonData.filter(k => k.status === 'APPROVED').reduce((sum, k) => sum + parseFloat(k.nominal), 0)
+        : 0;
+
     const gajiPro = (hariHadir / standarHari) * g;
     const potonganTelat = jumlahTelat * (gajiHarian * 0.02); 
 
@@ -145,38 +210,109 @@ function hitungDetailGaji(gapok, logsData) {
     const jp = gajiPro * 0.01;
     const pph21 = gajiPro * 0.015;
 
-    const totalPotongan = bpjsKes + jht + jp + pph21 + potonganTelat;
+    const totalPotongan = bpjsKes + jht + jp + pph21 + potonganTelat + totalKasbon;
     const thp = gajiPro - totalPotongan;
 
     return {
         gapok: g, gajiPro, hadir: hariHadir, jumlahTelat, potonganTelat,
-        bpjsKes, jht, jp, pph21, totalPotongan, thp: thp > 0 ? thp : 0,
+        bpjsKes, jht, jp, pph21, kasbon: totalKasbon, totalPotongan, thp: thp > 0 ? thp : 0,
     };
 }
 
-function renderEstimasiGaji(user, logsData) {
-    const detail = hitungDetailGaji(user.gaji, logsData);
+function renderEstimasiGaji(user, logsData, kasbonData) {
+    const detail = hitungDetailGaji(user.gaji, logsData, kasbonData);
     document.getElementById("estimasiGaji").innerText = `Rp ${Math.floor(detail.thp).toLocaleString("id-ID")}`;
+}
+
+// 5. MODAL CONTROL
+function bukaModal(id) {
+    document.getElementById(id).classList.add('active');
+}
+
+function tutupModal(id) {
+    document.getElementById(id).classList.remove('active');
+}
+
+// 6. FORM SUBMISSION
+async function submitCuti() {
+    const jenis = document.getElementById("inpJenisCuti").value;
+    const mulai = document.getElementById("inpMulaiCuti").value;
+    const selesai = document.getElementById("inpSelesaiCuti").value;
+    const alasan = document.getElementById("inpAlasanCuti").value.trim();
+
+    if (!mulai || !selesai || !alasan) return alert("Harap lengkapi semua data!");
+
+    showLoading(true);
+    try {
+        const { error } = await supabaseClient.from("cuti_izin").insert([{
+            nik: currentUser.nik,
+            nama: currentUser.nama,
+            jenis_pengajuan: jenis,
+            tanggal_mulai: mulai,
+            tanggal_selesai: selesai,
+            alasan: alasan,
+            status: "PENDING"
+        }]);
+
+        if (error) throw error;
+        
+        alert("Pengajuan berhasil dikirim! Menunggu persetujuan Admin.");
+        tutupModal('modalCuti');
+        loadDashboard(currentUser.nik);
+    } catch(e) {
+        alert("Gagal mengirim pengajuan: " + e.message);
+    } finally {
+        showLoading(false);
+    }
+}
+
+async function submitKasbon() {
+    const nominal = parseFloat(document.getElementById("inpNominalKasbon").value);
+    const alasan = document.getElementById("inpAlasanKasbon").value.trim();
+
+    if (!nominal || isNaN(nominal) || !alasan) return alert("Harap lengkapi nominal dan alasan!");
+
+    showLoading(true);
+    try {
+        const { error } = await supabaseClient.from("kasbon").insert([{
+            nik: currentUser.nik,
+            nama: currentUser.nama,
+            nominal: nominal,
+            nominal_pengajuan: nominal, // Backward compatibility
+            waktu_pengajuan: new Date().toISOString(),
+            alasan: alasan,
+            status: "PENDING"
+        }]);
+
+        if (error) throw error;
+        
+        alert("Pengajuan Kasbon berhasil dikirim! Menunggu persetujuan Admin.");
+        tutupModal('modalKasbon');
+        loadDashboard(currentUser.nik);
+    } catch(e) {
+        alert("Gagal mengirim pengajuan kasbon: " + e.message);
+    } finally {
+        showLoading(false);
+    }
 }
 
 function downloadSlipPribadi() {
     if (!currentUser) return;
     const k = currentUser;
-    const d = hitungDetailGaji(k.gaji, currentLogs);
+    const d = hitungDetailGaji(k.gaji, currentLogs, currentKasbon);
     const tgl = new Date();
     const bulanIndo = [
         "JANUARI", "FEBRUARI", "MARET", "APRIL", "MEI", "JUNI",
         "JULI", "AGUSTUS", "SEPTEMBER", "OKTOBER", "NOVEMBER", "DESEMBER"
     ];
     
-    // (We reuse the beautiful slip generator logic from admin panel)
     const isiSlip = `
         <div style="width: 450px; padding: 30px; border: 1px solid #000; font-family: 'Courier New', monospace; background: #fff; color: #000;">
             <h2 style="text-align:center; margin:0;">PT. KOLA BORASI INDONESIA</h2>
-            <p style="text-align:center; border-bottom: 2px solid #000; padding-bottom:10px; font-weight:bold;">SLIP GAJI - ${bulanIndo[tgl.getMonth()]} ${tgl.getFullYear()}</p>
+            <p style="text-align:center; border-bottom: 2px solid #000; padding-bottom:10px; font-weight:bold;">SLIP GAJI (E-PORTAL) - ${bulanIndo[tgl.getMonth()]} ${tgl.getFullYear()}</p>
             
-            <div style="display:grid; grid-template-columns: 120px 10px 1fr; line-height: 1.6;">
-                <span>Nomor ID Karyawan</span><span>:</span><span>${k.nik || "-"}</span>
+            <div style="display:grid; grid-template-columns: 130px 10px 1fr; line-height: 1.6;">
+                <span>ID KARYAWAN</span><span>:</span><span>${k.nik || "-"}</span>
                 <span>NAMA</span><span>:</span><span>${k.nama}</span>
                 <span>JABATAN</span><span>:</span><span>${k.jabatan || k.dept}</span>
                 <span>KEHADIRAN</span><span>:</span><span>${d.hadir} / 22 Hari</span>
@@ -194,81 +330,19 @@ function downloadSlipPribadi() {
                 <div style="display:flex; justify-content:space-between;"><span>JP (1%)</span><span>-Rp ${Math.floor(d.jp).toLocaleString("id-ID")}</span></div>
                 <div style="display:flex; justify-content:space-between;"><span>PPh 21 (1.5%)</span><span>-Rp ${Math.floor(d.pph21).toLocaleString("id-ID")}</span></div>
                 <div style="display:flex; justify-content:space-between; color: red;"><span>Potongan Telat (${d.jumlahTelat}x)</span><span>-Rp ${Math.floor(d.potonganTelat).toLocaleString("id-ID")}</span></div>
+                ${d.kasbon > 0 ? `<div style="display:flex; justify-content:space-between; color: red;"><span>Potongan Kasbon</span><span>-Rp ${Math.floor(d.kasbon).toLocaleString("id-ID")}</span></div>` : ''}
             </div>
     
             <div style="border-top:2px solid #000; margin-top:15px; padding:10px 0; display:flex; justify-content:space-between; font-weight:bold; font-size:1.1rem; background:#f9f9f9;">
                 <span>TAKE HOME PAY</span><span>Rp ${Math.floor(d.thp).toLocaleString("id-ID")}</span>
             </div>
             
-            <p style="text-align:center; font-size:0.7rem; margin-top:20px; font-style: italic;">Dicetak oleh Karyawan (ESS) pada ${tgl.toLocaleString("id-ID")}</p>
+            <p style="text-align:center; font-size:0.7rem; margin-top:20px; font-style: italic;">Dicetak via KOBOI Portal pada ${tgl.toLocaleString("id-ID")}</p>
         </div>`;
     
     const w = window.open("", "_blank");
-    w.document.write(
-        `<html><body style="display:flex;justify-content:center;padding:20px;">${isiSlip}<script>window.onload=function(){window.print();}<\/script></body></html>`,
-    );
-    w.document.close();
-}
-
-// --- MODAL & PENGAJUAN ---
-function bukaModal(id) {
-    document.getElementById(id).classList.add('active');
-}
-
-function tutupModal(id) {
-    document.getElementById(id).classList.remove('active');
-}
-
-async function submitCuti() {
-    const jenis = document.getElementById("inpJenisCuti").value;
-    const mulai = document.getElementById("inpMulaiCuti").value;
-    const selesai = document.getElementById("inpSelesaiCuti").value;
-    const alasan = document.getElementById("inpAlasanCuti").value.trim();
-
-    if (!mulai || !selesai || !alasan) return alert("Harap lengkapi semua data!");
-
-    try {
-        const { error } = await supabaseClient.from("cuti_izin").insert([{
-            nik: currentUser.nik,
-            nama: currentUser.nama,
-            jenis_pengajuan: jenis,
-            tanggal_mulai: mulai,
-            tanggal_selesai: selesai,
-            alasan: alasan,
-            status: "PENDING"
-        }]);
-
-        if (error) throw error;
-        
-        alert("Pengajuan berhasil dikirim! Menunggu persetujuan Admin.");
-        tutupModal('modalCuti');
-        loadDashboard(currentUser.nik); // refresh
-    } catch(e) {
-        alert("Gagal mengirim pengajuan: " + e.message);
-    }
-}
-
-async function submitKasbon() {
-    const nominal = parseFloat(document.getElementById("inpNominalKasbon").value);
-    const alasan = document.getElementById("inpAlasanKasbon").value.trim();
-
-    if (!nominal || isNaN(nominal) || !alasan) return alert("Harap lengkapi nominal dan alasan!");
-
-    try {
-        const { error } = await supabaseClient.from("kasbon").insert([{
-            nik: currentUser.nik,
-            nama: currentUser.nama,
-            nominal: nominal,
-            alasan: alasan,
-            status: "PENDING"
-        }]);
-
-        if (error) throw error;
-        
-        alert("Pengajuan Kasbon berhasil dikirim! Menunggu persetujuan Admin.");
-        tutupModal('modalKasbon');
-        loadDashboard(currentUser.nik); // refresh
-    } catch(e) {
-        alert("Gagal mengirim pengajuan kasbon: " + e.message);
+    if (w) {
+        w.document.write(`<html><body style="display:flex;justify-content:center;padding:20px;">${isiSlip}<script>window.onload=function(){window.print();}<\/script></body></html>`);
+        w.document.close();
     }
 }

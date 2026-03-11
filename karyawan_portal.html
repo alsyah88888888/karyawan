@@ -4,176 +4,456 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Portal Karyawan KOBOI</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Main Style -->
     <link rel="stylesheet" href="style.css">
+    <!-- Supabase -->
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
-        .portal-layout {
-            display: flex;
+        :root {
+            --portal-bg: #f8fafc;
+            --portal-primary: #4338ca;
+            --portal-secondary: #6366f1;
+            --portal-accent: #f59e0b;
+            --portal-text: #1e293b;
+            --portal-subtext: #64748b;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: #0f172a;
+            margin: 0;
+            color: var(--portal-text);
+            overflow-x: hidden;
+        }
+
+        /* --- LOGIN SECTION --- */
+        .login-wrapper {
             min-height: 100vh;
+            display: flex;
             align-items: center;
             justify-content: center;
-            background: var(--dark-bg);
+            background: radial-gradient(circle at top right, #1e1b4b, #0f172a);
             padding: 20px;
         }
-        .portal-card {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(16px);
+
+        .login-container {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 40px;
             border-radius: 32px;
             width: 100%;
-            max-width: 900px;
-            box-shadow: 0 40px 100px -20px rgba(0, 0, 0, 0.4);
-            overflow: hidden;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            animation: slideUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .login-container img { width: 80px; margin-bottom: 20px; }
+        .login-container h2 { color: white; font-weight: 700; margin-bottom: 8px; font-size: 1.8rem; }
+        .login-container p { color: #94a3b8; margin-bottom: 30px; font-size: 0.95rem; }
+
+        .form-group { text-align: left; margin-bottom: 20px; }
+        .form-group label { display: block; color: #cbd5e1; font-size: 0.85rem; font-weight: 600; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .form-group input {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 14px 18px;
+            border-radius: 12px;
+            color: white;
+            font-size: 1rem;
+            transition: all 0.3s;
+            box-sizing: border-box;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--portal-secondary);
+            background: rgba(255, 255, 255, 0.1);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2);
+        }
+
+        .btn-login {
+            width: 100%;
+            background: linear-gradient(135deg, var(--portal-primary), var(--portal-secondary));
+            color: white;
+            border: none;
+            padding: 16px;
+            border-radius: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-top: 10px;
+        }
+        .btn-login:hover { transform: translateY(-2px); box-shadow: 0 10px 20px -5px rgba(67, 56, 202, 0.5); }
+        .btn-login:active { transform: translateY(0); }
+
+        /* --- DASHBOARD SECTION --- */
+        .dashboard-wrapper {
             display: none;
             flex-direction: column;
-            animation: fadeIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            min-height: 100vh;
+            background: #f1f5f9;
         }
-        .login-section {
+
+        .dashboard-nav {
+            background: white;
+            padding: 15px 5%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .nav-logo { display: flex; align-items: center; gap: 12px; }
+        .nav-logo img { width: 40px; }
+        .nav-logo h2 { font-size: 1.2rem; margin: 0; color: var(--portal-text); font-weight: 800; }
+        
+        .user-pill {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: #f8fafc;
+            padding: 6px 16px;
+            border-radius: 100px;
+            border: 1px solid #e2e8f0;
+        }
+        .user-pill .avatar { width: 32px; height: 32px; background: var(--portal-primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+        .user-pill .name { font-weight: 600; font-size: 0.9rem; }
+
+        .dashboard-content {
+            padding: 40px 5%;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 90%;
+        }
+
+        .welcome-section { margin-bottom: 40px; }
+        .welcome-section h1 { font-size: 2.2rem; margin: 0 0 8px 0; color: #0f172a; }
+        .welcome-section p { color: var(--portal-subtext); margin: 0; font-size: 1.1rem; }
+
+        /* STATS GRID */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+            margin-bottom: 40px;
+        }
+
+        .portal-card {
+            background: white;
+            border-radius: 24px;
+            padding: 30px;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.04);
+            transition: transform 0.3s;
+            border: 1px solid #e2e8f0;
             display: flex;
             flex-direction: column;
+            justify-content: space-between;
+        }
+        .portal-card:hover { transform: translateY(-5px); }
+        .portal-card .label { color: var(--portal-subtext); font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; display: block; }
+        .portal-card h2 { font-size: 2.5rem; margin: 0; font-weight: 800; color: #0f172a; }
+        .portal-card .action-btns { display: flex; gap: 12px; margin-top: 25px; }
+
+        .btn-card {
+            flex: 1;
+            padding: 12px;
+            border-radius: 12px;
+            border: none;
+            font-weight: 700;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+            text-align: center;
+        }
+        .btn-card.primary { background: var(--portal-primary); color: white; }
+        .btn-card.primary:hover { background: var(--portal-secondary); }
+        .btn-card.outline { background: #f8fafc; color: var(--portal-subtext); border: 1px solid #e2e8f0; }
+        .btn-card.outline:hover { background: #f1f5f9; color: var(--portal-text); }
+
+        /* HISTORY SECTION */
+        .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .section-header h3 { font-size: 1.3rem; margin: 0; font-weight: 700; }
+
+        .table-container {
+            background: white;
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.04);
+            border: 1px solid #e2e8f0;
+        }
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #f8fafc; padding: 18px 24px; text-align: left; font-size: 0.85rem; font-weight: 700; color: var(--portal-subtext); border-bottom: 2px solid #f1f5f9; }
+        td { padding: 18px 24px; font-size: 0.95rem; border-bottom: 1px solid #f1f5f9; }
+        tr:last-child td { border-bottom: none; }
+
+        .status-pill { padding: 6px 12px; border-radius: 100px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; }
+        .status-masuk { background: #dcfce7; color: #15803d; }
+        .status-pulang { background: #e0e7ff; color: #4338ca; }
+        .badge-late { background: #fee2e2; color: #b91c1c; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 800; margin-left: 8px; }
+
+        /* MODALS */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(8px);
+            display: none;
             align-items: center;
             justify-content: center;
-            padding: 50px 30px;
-            max-width: 400px;
+            z-index: 1000;
+            padding: 20px;
+        }
+        .modal-overlay.active { display: flex; animation: fadeIn 0.3s forwards; }
+        
+        .modal-card {
             background: white;
-            border-radius: 32px;
-            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 480px;
+            border-radius: 28px;
+            padding: 40px;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+            animation: modalPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
-        .login-section h2 { margin-bottom: 20px; color: var(--brand-text); }
-        .login-section input {
-            width: 100%; padding: 14px; border-radius: 12px;
-            border: 2px solid #e2e8f0; margin-bottom: 16px;
-            font-size: 1.1rem; text-align: center; color: var(--brand-text);
+        @keyframes modalPop {
+            from { transform: scale(0.9); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
         }
-        .login-section button {
-            width: 100%; padding: 14px; border-radius: 12px;
-            background: var(--brand-btn); color: var(--brand-text);
-            font-weight: bold; border: none; cursor: pointer; font-size: 1.1rem;
+
+        .modal-card h3 { margin: 0 0 10px 0; font-size: 1.5rem; }
+        .modal-card p { color: var(--portal-subtext); margin-bottom: 25px; }
+
+        .input-stack { margin-bottom: 20px; }
+        .input-stack label { display: block; font-size: 0.85rem; font-weight: 700; margin-bottom: 8px; color: var(--portal-text); }
+        .input-stack input, .input-stack select, .input-stack textarea {
+            width: 100%;
+            padding: 14px;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 12px;
+            font-family: inherit;
+            font-size: 1rem;
+            box-sizing: border-box;
         }
-        .portal-header {
-            background: linear-gradient(135deg, var(--brand-bg), #e63d00);
-            padding: 40px; color: white;
-            display: flex; justify-content: space-between; align-items: center;
+        .input-stack input:focus { border-color: var(--portal-secondary); outline: none; }
+
+        .modal-actions { display: flex; gap: 12px; margin-top: 30px; }
+
+        /* LOADING OVERLAY */
+        #loadingOverlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
         }
-        .portal-header h1 { margin:0; font-size: 2rem; }
-        .portal-body { padding: 40px; display: flex; gap: 30px; }
-        .dashboard-stats { display: grid; gap: 20px; flex: 1; }
-        .stat-card {
-            background: #fff; padding: 25px; border-radius: 20px;
-            border: 1px solid #e2e8f0; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05);
+        .loader {
+            width: 48px; height: 48px; border: 5px solid #e2e8f0;
+            border-bottom-color: var(--portal-primary);
+            border-radius: 50%; display: inline-block;
+            box-sizing: border-box; animation: rotation 1s linear infinite;
         }
-        .stat-card h3 { font-size: 0.8rem; color: #64748b; text-transform: uppercase; margin-bottom: 10px; }
-        .stat-card p { font-size: 2.5rem; font-weight: 800; color: var(--brand-text); margin: 0; }
-        .history-section { flex: 2; }
-        .history-section table { width: 100%; border-collapse: collapse; }
-        .history-section th { background: #f8fafc; padding: 15px; text-align: left; }
-        .history-section td { padding: 15px; border-bottom: 1px solid #f1f5f9; }
-        .btn-logout { background: transparent; border: 1px solid white; color: white; padding: 10px 20px; border-radius: 8px; cursor: pointer; }
-        .btn-action { width: 100%; margin-top: 15px; padding: 10px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
-        .btn-action.secondary { background: #f1f5f9; color: #64748b; }
-        .btn-action.primary { background: var(--brand-btn); color: var(--brand-text); }
-        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(5px); display: none; align-items: center; justify-content: center; z-index: 50; }
-        .modal-content { background: white; padding: 30px; border-radius: 20px; width: 90%; max-width: 400px; }
-        .modal-content h3 { margin-bottom: 20px; color: var(--brand-text); }
-        .modal-content select, .modal-content input, .modal-content textarea { width: 100%; padding: 12px; margin-bottom: 15px; border-radius: 8px; border: 1px solid #ccc; font-family: inherit; }
-        .modal-content .btn-group { display: flex; gap: 10px; }
-        .modal-content .btn-group button { flex: 1; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* RESPONSIVE */
+        @media (max-width: 768px) {
+            .dashboard-content { padding: 20px 5%; width: 90%; }
+            .stats-grid { grid-template-columns: 1fr; }
+            .welcome-section h1 { font-size: 1.8rem; }
+            .dashboard-nav h2 { display: none; }
+            .action-btns { flex-direction: column; }
+            th:nth-child(3), td:nth-child(3) { display: none; } /* Hide Telat col on mobile */
+        }
     </style>
 </head>
 <body>
 
-<div class="portal-layout" id="appLayout">
-    <!-- Login Screen -->
-    <div class="login-section" id="loginScreen">
-        <h2>Login Karyawan</h2>
-        <input type="text" id="loginNik" placeholder="Nomor ID Karyawan (Contoh: KBI-1234)">
-        <input type="password" id="loginPin" placeholder="PIN (Default KBI: 123456)">
-        <button onclick="loginKaryawan()">MASUK</button>
-        <a href="index.html" style="margin-top:20px; color:#64748b; text-decoration:none;">Kembali ke Mesin Absen</a>
+    <div id="loadingOverlay">
+        <span class="loader"></span>
     </div>
 
-    <!-- Dashboard Screen -->
-    <div class="portal-card" id="dashboardScreen">
-        <div class="portal-header">
-            <div>
-                <p style="opacity: 0.8; margin-bottom:5px; font-weight:600; letter-spacing:1px; text-transform:uppercase;">Selamat Datang,</p>
-                <h1 id="userName">Nama Karyawan</h1>
-                <p id="userDept" style="margin-top:5px; opacity:0.9;">Jabatan / Dept</p>
+    <!-- LOGIN UI -->
+    <div class="login-wrapper" id="loginScreen">
+        <div class="login-container">
+            <img src="images/koboi.png" alt="Logo">
+            <h2>Portal Karyawan</h2>
+            <p>Silakan login dengan ID & PIN Anda.</p>
+            
+            <div class="form-group">
+                <label>Nomor ID Karyawan</label>
+                <input type="text" id="loginNik" placeholder="Contoh: KBI-123456">
             </div>
-            <div>
-                <button class="btn-logout" onclick="logoutKaryawan()">KELUAR</button>
+            
+            <div class="form-group">
+                <label>PIN (Password)</label>
+                <input type="password" id="loginPin" placeholder="******">
+            </div>
+            
+            <button class="btn-login" onclick="loginKaryawan()">MASUK KE DASHBOARD</button>
+            <div style="margin-top: 25px;">
+                <a href="index.html" style="color: #94a3b8; text-decoration: none; font-size: 0.85rem; font-weight: 600;">Kembali ke Mesin Absen</a>
             </div>
         </div>
-        
-        <div class="portal-body">
-            <div class="dashboard-stats">
-                <div class="stat-card">
-                    <h3>Sisa Cuti Tahunan</h3>
-                    <p id="sisaCuti">0 <span style="font-size:1rem; color:#64748b; font-weight:600;">Hari</span></p>
-                    <button class="btn-action secondary" onclick="bukaModal('modalCuti')">AJUKAN CUTI / IZIN</button>
-                    <button class="btn-action secondary" onclick="bukaModal('modalKasbon')" style="margin-top:10px;">AJUKAN KASBON</button>
+    </div>
+
+    <!-- DASHBOARD UI -->
+    <div class="dashboard-wrapper" id="dashboardScreen">
+        <nav class="dashboard-nav">
+            <div class="nav-logo">
+                <img src="images/koboi.png" alt="Logo">
+                <h2>KOBOI ESS</h2>
+            </div>
+            <div style="display: flex; align-items: center; gap: 20px;">
+                <div class="user-pill">
+                    <div class="avatar" id="userInitial">JD</div>
+                    <div class="name" id="userName">User Name</div>
                 </div>
-                <div class="stat-card">
-                    <h3>Gaji Bulan Ini (Estimasi)</h3>
-                    <p id="estimasiGaji" style="font-size:1.8rem; color:#15803d;">Rp 0</p>
-                    <button class="btn-action primary" onclick="downloadSlipPribadi()">DOWNLOAD SLIP GAJI</button>
+                <button onclick="logoutKaryawan()" style="background: none; border: none; color: #ef4444; font-weight: 700; cursor: pointer; padding: 0;">KELUAR</button>
+            </div>
+        </nav>
+
+        <main class="dashboard-content">
+            <div class="welcome-section">
+                <h1>Halo, <span id="welcomeName">Karyawan</span>! 👋</h1>
+                <p id="userDept">Departemen • Jabatan</p>
+            </div>
+
+            <div class="stats-grid">
+                <!-- LEAVE CARD -->
+                <div class="portal-card">
+                    <div>
+                        <span class="label">Sisa Cuti Tahunan</span>
+                        <h2 id="sisaCuti">12</h2>
+                        <p style="color: var(--portal-subtext); font-size: 0.9rem; margin-top: 5px;">Hari tersisa</p>
+                    </div>
+                    <div class="action-btns">
+                        <button class="btn-card primary" onclick="bukaModal('modalCuti')">Ajukan Cuti/Izin</button>
+                    </div>
+                </div>
+
+                <!-- PAYROLL CARD -->
+                <div class="portal-card">
+                    <div>
+                        <span class="label">Estimasi Gaji (THP)</span>
+                        <h2 id="estimasiGaji">Rp 0</h2>
+                        <p style="color: #10b981; font-size: 0.9rem; margin-top: 5px; font-weight: 600;">Bulan Berjalan</p>
+                    </div>
+                    <div class="action-btns">
+                        <button class="btn-card outline" onclick="downloadSlipPribadi()">Unduh Slip Gaji</button>
+                    </div>
+                </div>
+
+                <!-- LOAN CARD -->
+                <div class="portal-card">
+                    <div>
+                        <span class="label">Status Kasbon</span>
+                        <h2 id="statusKasbon">Rp 0</h2>
+                        <p id="infoKasbon" style="color: var(--portal-subtext); font-size: 0.9rem; margin-top: 5px;">Tidak ada pinjaman aktif</p>
+                    </div>
+                    <div class="action-btns">
+                        <button class="btn-card primary" onclick="bukaModal('modalKasbon')">Ajukan Kasbon</button>
+                    </div>
                 </div>
             </div>
 
-            <div class="history-section">
-                <h3 style="margin-bottom:20px; color:var(--brand-text);">Riwayat Absensi 7 Hari Terakhir</h3>
-                <div style="background:white; border-radius:16px; border:1px solid #e2e8f0; overflow:hidden;">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Tanggal & Waktu</th>
-                                <th>Status</th>
-                                <th>Telat</th>
-                            </tr>
-                        </thead>
-                        <tbody id="historyTableBody">
-                            <!-- Table rows injected by JS -->
-                        </tbody>
-                    </table>
+            <div class="section-header">
+                <h3>Riwayat Absensi</h3>
+                <p style="color: var(--portal-subtext); font-size: 0.85rem; font-weight: 600;">7 Hari Terakhir</p>
+            </div>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>TANGGAL & WAKTU</th>
+                            <th>STATUS</th>
+                            <th>KETERANGAN</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyTableBody">
+                        <!-- Content injected by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <!-- MODAL CUTI -->
+    <div class="modal-overlay" id="modalCuti">
+        <div class="modal-card">
+            <h3>Pengajuan Cuti / Izin</h3>
+            <p>Silakan pilih jenis dan tanggal pengajuan.</p>
+            
+            <div class="input-stack">
+                <label>Jenis Pengajuan</label>
+                <select id="inpJenisCuti">
+                    <option value="CUTI">Cuti Tahunan</option>
+                    <option value="IZIN">Izin (Potong Gaji)</option>
+                    <option value="SAKIT">Sakit (Surat Dokter)</option>
+                </select>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div class="input-stack">
+                    <label>Mulai</label>
+                    <input type="date" id="inpMulaiCuti">
                 </div>
+                <div class="input-stack">
+                    <label>Selesai</label>
+                    <input type="date" id="inpSelesaiCuti">
+                </div>
+            </div>
+
+            <div class="input-stack">
+                <label>Alasan / Keperluan</label>
+                <textarea id="inpAlasanCuti" rows="3" placeholder="Contoh: Acara keluarga..."></textarea>
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn-card outline" onclick="tutupModal('modalCuti')">BATAL</button>
+                <button class="btn-card primary" onclick="submitCuti()">AJUKAN SEKARANG</button>
             </div>
         </div>
     </div>
-</div>
 
-<!-- Modal Ajukan Cuti -->
-<div class="modal-overlay" id="modalCuti">
-    <div class="modal-content">
-        <h3>Pengajuan Cuti / Izin</h3>
-        <select id="inpJenisCuti">
-            <option value="CUTI">Cuti Tahunan</option>
-            <option value="IZIN">Izin (Potong Gaji)</option>
-            <option value="SAKIT">Sakit (Dengan Surat Dokter)</option>
-        </select>
-        <label style="font-size: 0.8rem; font-weight: bold; color: #64748b; margin-bottom: 5px; display: block;">TANGGAL MULAI</label>
-        <input type="date" id="inpMulaiCuti">
-        <label style="font-size: 0.8rem; font-weight: bold; color: #64748b; margin-bottom: 5px; display: block;">TANGGAL SELESAI</label>
-        <input type="date" id="inpSelesaiCuti">
-        <textarea id="inpAlasanCuti" placeholder="Alasan Pengajuan" rows="3"></textarea>
-        <div class="btn-group">
-            <button style="background: #e2e8f0; color: #64748b;" onclick="tutupModal('modalCuti')">BATAL</button>
-            <button style="background: var(--brand-bg); color: white;" onclick="submitCuti()">AJUKAN</button>
+    <!-- MODAL KASBON -->
+    <div class="modal-overlay" id="modalKasbon">
+        <div class="modal-card">
+            <h3>Pengajuan Kasbon</h3>
+            <p>Nominal pinjaman akan memotong gaji bulan depan.</p>
+            
+            <div class="input-stack">
+                <label>Nominal (Rp)</label>
+                <input type="number" id="inpNominalKasbon" placeholder="Contoh: 500000">
+            </div>
+
+            <div class="input-stack">
+                <label>Alasan Pengajuan</label>
+                <textarea id="inpAlasanKasbon" rows="3" placeholder="Tujuan pinjaman..."></textarea>
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn-card outline" onclick="tutupModal('modalKasbon')">BATAL</button>
+                <button class="btn-card primary" onclick="submitKasbon()">AJUKAN SEKARANG</button>
+            </div>
         </div>
     </div>
-</div>
 
-<!-- Modal Ajukan Kasbon -->
-<div class="modal-overlay" id="modalKasbon">
-    <div class="modal-content">
-        <h3>Pengajuan Kasbon (Pinjaman)</h3>
-        <input type="number" id="inpNominalKasbon" placeholder="Nominal (Cth: 500000)">
-        <textarea id="inpAlasanKasbon" placeholder="Alasan Keperluan Kasbon" rows="3"></textarea>
-        <div class="btn-group">
-            <button style="background: #e2e8f0; color: #64748b;" onclick="tutupModal('modalKasbon')">BATAL</button>
-            <button style="background: var(--brand-bg); color: white;" onclick="submitKasbon()">AJUKAN</button>
-        </div>
-    </div>
-</div>
-
-<script src="portal.js"></script>
+    <script src="portal.js"></script>
 </body>
 </html>
