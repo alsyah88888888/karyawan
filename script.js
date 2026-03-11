@@ -851,83 +851,6 @@ async function generateMissingIDs() {
   }
 }
 
-function showEditModal(index) {
-  const k = KARYAWAN[index];
-  if (!k) return;
-  document.getElementById("editOriginalNik").value = k.nik;
-  document.getElementById("editNik").value = k.nik;
-  document.getElementById("editNama").value = k.nama;
-  document.getElementById("editDept").value = k.dept;
-  document.getElementById("editJabatan").value = k.jabatan || "";
-  document.getElementById("editGaji").value = k.gaji || 0;
-  document.getElementById("editTahun").value = k.tahun_bergabung || "";
-  document.getElementById("editPin").value = k.pin || "";
-  document.getElementById("editCuti").value = k.sisa_cuti ?? 12;
-
-  document.getElementById("modalEdit").classList.add("active");
-}
-
-function hideEditModal() {
-  document.getElementById("modalEdit").classList.remove("active");
-}
-
-async function updateKaryawan() {
-  try {
-    const originalNik = document.getElementById("editOriginalNik").value;
-    const nik = document.getElementById("editNik").value.trim();
-    const nama = document.getElementById("editNama").value.trim().toUpperCase();
-    const dept = document.getElementById("editDept").value;
-    const jabatan = document.getElementById("editJabatan").value;
-    const gaji = parseFloat(document.getElementById("editGaji").value) || 0;
-    const tahun = document.getElementById("editTahun").value.trim();
-    const pin = document.getElementById("editPin").value.trim();
-    const sisa_cuti = parseInt(document.getElementById("editCuti").value) || 0;
-
-    if (!nama || !gaji) return alert("Nama dan Gaji tidak boleh kosong!");
-
-    const updatedData = {
-      nik,
-      nama,
-      dept,
-      jabatan,
-      gaji,
-      tahun_bergabung: tahun,
-      pin,
-      sisa_cuti
-    };
-
-    const { error } = await supabaseClient
-      .from("karyawan")
-      .update(updatedData)
-      .eq("nik", originalNik);
-
-    if (error) throw error;
-
-    alert("Data berhasil diperbarui!");
-    hideModal();
-    syncData();
-  } catch (err) {
-    alert("Gagal memperbarui data: " + err.message);
-  }
-}
-
-function hapusKaryawan(nik) {
-  if (confirm(`Yakin ingin menghapus karyawan dengan ID ${nik} beserta semua log absennya?`)) {
-    const target = KARYAWAN.find((k) => k.nik === nik);
-    if (!target) return alert("Karyawan tidak ditemukan");
-
-    Promise.all([
-      supabaseClient.from("logs").delete().eq("nama", target.nama),
-      supabaseClient.from("karyawan").delete().eq("nik", nik),
-    ])
-      .then(() => {
-        alert("Karyawan dan riwayat log berhasil dihapus!");
-        syncData();
-      })
-      .catch((err) => alert("Gagal menghapus: " + err.message));
-  }
-}
-
 // --- TABEL CUTI & IZIN ---
 function renderCutiTable() {
   const tbody = document.getElementById("cutiTableBody");
@@ -1054,13 +977,17 @@ function renderAkunTable() {
   if (!body) return;
   body.innerHTML = "";
 
-  KARYAWAN.forEach((k) => {
+  KARYAWAN.forEach((k, index) => {
     body.innerHTML += `
       <tr class="akun-row" data-search="${k.nama.toLowerCase()} ${k.nik.toLowerCase()}">
         <td><strong>${k.nama}</strong></td>
         <td><code style="background:#f1f5f9; padding:4px 8px; border-radius:6px; font-weight:bold;">${k.nik || "-"}</code></td>
         <td><code style="background:#fef3c7; padding:4px 8px; border-radius:6px; font-weight:bold;">${k.pin || "123456"}</code></td>
         <td>${k.dept}</td>
+        <td>
+          <button onclick="showEditModal(${index})" style="background:none; border:none; color:var(--brand-text); cursor:pointer; font-weight:bold;">EDIT</button>
+          <button onclick="hapusKaryawan('${k.nik}')" style="background:none; border:none; color:var(--danger); cursor:pointer; font-weight:bold; margin-left:10px;">HAPUS</button>
+        </td>
       </tr>`;
   });
 }
