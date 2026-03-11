@@ -187,13 +187,35 @@ function hitungDetailGaji(gapok, logsData, kasbonData) {
 
     const ptkpStatus = currentUser?.status_ptkp || "TK/0";
 
-    const hariHadir = [
-        ...new Set(
-            logsData
-                .filter((l) => l.status === "MASUK" || l.status === "BERANGKAT")
-                .map((l) => new Date(l.waktu).toLocaleDateString()),
-        ),
-    ].length;
+    // Group logs by Date for Overtime
+    const logsByDate = {};
+    logsData.forEach(l => {
+        const d = new Date(l.waktu).toLocaleDateString();
+        if (!logsByDate[d]) logsByDate[d] = [];
+        logsByDate[d].push(l);
+    });
+
+    let totalLemburRp = 0;
+    let totalJamLembur = 0;
+    const uniqueDates = Object.keys(logsByDate);
+    const hariHadir = uniqueDates.filter(d => 
+        logsByDate[d].some(l => l.status === "MASUK" || l.status === "BERANGKAT")
+    ).length;
+
+    uniqueDates.forEach(date => {
+        const dayLogs = logsByDate[date].sort((a,b) => new Date(a.waktu) - new Date(b.waktu));
+        const firstIn = dayLogs.find(l => l.status === "MASUK" || l.status === "BERANGKAT");
+        const lastOut = [...dayLogs].reverse().find(l => l.status === "PULANG");
+
+        if (firstIn && lastOut) {
+            const hours = (new Date(lastOut.waktu) - new Date(firstIn.waktu)) / (1000 * 3600);
+            if (hours > 9) {
+                const overtime = Math.floor(hours - 9);
+                totalJamLembur += overtime;
+                totalLemburRp += overtime * 10000;
+            }
+        }
+    });
 
     const jumlahTelat = logsData.filter(
         (l) => (l.status === "MASUK" || l.status === "BERANGKAT") && (l.isLate === true || l.is_late === true),
@@ -227,11 +249,12 @@ function hitungDetailGaji(gapok, logsData, kasbonData) {
     }
 
     const totalPotongan = bpjsKes + jht + jp + pph21 + potonganTelat + totalKasbon;
-    const thp = gajiPro - totalPotongan;
+    const thp = (gajiPro + totalLemburRp) - totalPotongan;
 
     return {
         gapok: g, gajiPro, hadir: hariHadir, jumlahTelat, potonganTelat,
-        bpjsKes, jht, jp, pph21, kasbon: totalKasbon, totalPotongan, thp: thp > 0 ? thp : 0,
+        bpjsKes, jht, jp, pph21, kasbon: totalKasbon, bonusLembur: totalLemburRp, 
+        jamLembur: totalJamLembur, totalPotongan, thp: thp > 0 ? thp : 0,
         ptkpStatus, ptkpBulanan
     };
 }
@@ -327,26 +350,28 @@ function downloadSlipPribadi() {
             <h2 style="text-align:center; margin:0;">PT. KOLA BORASI INDONESIA</h2>
             <p style="text-align:center; border-bottom: 2px solid #000; padding-bottom:10px; font-weight:bold;">SLIP GAJI (E-PORTAL) - ${bulanIndo[tgl.getMonth()]} ${tgl.getFullYear()}</p>
             
-            <div style="display:grid; grid-template-columns: 130px 10px 1fr; line-height: 1.6;">
+            <div style="display:grid; grid-template-columns: 130px 10px 1fr; line-height: 1.6; font-size:0.85rem;">
                 <span>ID KARYAWAN</span><span>:</span><span>${k.nik || "-"}</span>
                 <span>NAMA</span><span>:</span><span>${k.nama}</span>
+                <span>STATUS PAJAK</span><span>:</span><span>${d.ptkpStatus}</span>
                 <span>JABATAN</span><span>:</span><span>${k.jabatan || k.dept}</span>
                 <span>KEHADIRAN</span><span>:</span><span>${d.hadir} / 22 Hari</span>
             </div>
     
             <div style="border-top:1px dashed #000; margin-top:15px; padding-top:10px;">
                 <div style="display:flex; justify-content:space-between;"><span>Gaji Pokok Full</span><span>Rp ${d.gapok.toLocaleString("id-ID")}</span></div>
-                <div style="display:flex; justify-content:space-between; font-weight:bold;"><span>Gaji Pro-rata</span><span>Rp ${Math.floor(d.gajiPro).toLocaleString("id-ID")}</span></div>
+                <div style="display:flex; justify-content:space-between;"><span>Gaji Pro-rata</span><span>Rp ${Math.floor(d.gajiPro).toLocaleString("id-ID")}</span></div>
+                <div style="display:flex; justify-content:space-between; color: #15803d; font-weight:bold;"><span>Bonus Lembur (${d.jamLembur} Jam)</span><span>+Rp ${d.bonusLembur.toLocaleString("id-ID")}</span></div>
             </div>
     
-            <p style="margin: 10px 0 5px 0; font-weight:bold; text-decoration: underline;">POTONGAN</p>
-            <div style="line-height: 1.4;">
+            <p style="margin: 10px 0 5px 0; font-weight:bold; text-decoration: underline;">POTONGAN & PAJAK</p>
+            <div style="line-height: 1.4; font-size:0.8rem;">
                 <div style="display:flex; justify-content:space-between;"><span>BPJS Kesehatan (1%)</span><span>-Rp ${Math.floor(d.bpjsKes).toLocaleString("id-ID")}</span></div>
                 <div style="display:flex; justify-content:space-between;"><span>JHT (2%)</span><span>-Rp ${Math.floor(d.jht).toLocaleString("id-ID")}</span></div>
                 <div style="display:flex; justify-content:space-between;"><span>JP (1%)</span><span>-Rp ${Math.floor(d.jp).toLocaleString("id-ID")}</span></div>
-                <div style="display:flex; justify-content:space-between;"><span>PPh 21 (1.5%)</span><span>-Rp ${Math.floor(d.pph21).toLocaleString("id-ID")}</span></div>
+                <div style="display:flex; justify-content:space-between;"><span>PPh 21 (PKP > 0)</span><span>-Rp ${Math.floor(d.pph21).toLocaleString("id-ID")}</span></div>
                 <div style="display:flex; justify-content:space-between; color: red;"><span>Potongan Telat (${d.jumlahTelat}x)</span><span>-Rp ${Math.floor(d.potonganTelat).toLocaleString("id-ID")}</span></div>
-                ${d.kasbon > 0 ? `<div style="display:flex; justify-content:space-between; color: red;"><span>Potongan Kasbon</span><span>-Rp ${Math.floor(d.kasbon).toLocaleString("id-ID")}</span></div>` : ''}
+                <div style="display:flex; justify-content:space-between; font-weight:bold; color:#1e293b; border-top:1px dashed #ccc; margin-top:5px; padding-top:5px;"><span>POTONGAN KASBON</span><span>-Rp ${d.kasbon.toLocaleString("id-ID")}</span></div>
             </div>
     
             <div style="border-top:2px solid #000; margin-top:15px; padding:10px 0; display:flex; justify-content:space-between; font-weight:bold; font-size:1.1rem; background:#f9f9f9;">

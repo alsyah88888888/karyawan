@@ -130,13 +130,35 @@ function hitungDetailGaji(gapok, namaKaryawan) {
   const ptkpStatus = info?.status_ptkp || "TK/0";
   const dataLogKaryawan = logs.filter((l) => l.nama === namaKaryawan);
 
-  const hariHadir = [
-    ...new Set(
-      dataLogKaryawan
-        .filter((l) => l.status === "MASUK" || l.status === "BERANGKAT")
-        .map((l) => new Date(l.waktu).toLocaleDateString()),
-    ),
-  ].length;
+  // Group by Date for Overtime Calculation
+  const logsByDate = {};
+  dataLogKaryawan.forEach(l => {
+    const d = new Date(l.waktu).toLocaleDateString();
+    if (!logsByDate[d]) logsByDate[d] = [];
+    logsByDate[d].push(l);
+  });
+
+  let totalLemburRp = 0;
+  let totalJamLembur = 0;
+  const uniqueDates = Object.keys(logsByDate);
+  const hariHadir = uniqueDates.filter(d => 
+    logsByDate[d].some(l => l.status === "MASUK" || l.status === "BERANGKAT")
+  ).length;
+
+  uniqueDates.forEach(date => {
+    const dayLogs = logsByDate[date].sort((a,b) => new Date(a.waktu) - new Date(b.waktu));
+    const firstIn = dayLogs.find(l => l.status === "MASUK" || l.status === "BERANGKAT");
+    const lastOut = [...dayLogs].reverse().find(l => l.status === "PULANG");
+
+    if (firstIn && lastOut) {
+      const hours = (new Date(lastOut.waktu) - new Date(firstIn.waktu)) / (1000 * 3600);
+      if (hours > 9) {
+        const overtime = Math.floor(hours - 9);
+        totalJamLembur += overtime;
+        totalLemburRp += overtime * 10000;
+      }
+    }
+  });
 
   const jumlahTelat = dataLogKaryawan.filter(
     (l) => (l.status === "MASUK" || l.status === "BERANGKAT") && (l.isLate === true || l.is_late === true),
@@ -153,7 +175,6 @@ function hitungDetailGaji(gapok, namaKaryawan) {
   const jht = gajiPro * 0.02;
   const jp = gajiPro * 0.01;
 
-  // LOGIKA PTKP & PPh21 (TERBARU)
   const ptkpMap = {
     "TK/0": 54000000, "TK/1": 58500000, "TK/2": 63000000, "TK/3": 67500000,
     "K/0": 58500000, "K/1": 63000000, "K/2": 67500000, "K/3": 72000000
@@ -161,22 +182,21 @@ function hitungDetailGaji(gapok, namaKaryawan) {
   const ptkpTahunan = ptkpMap[ptkpStatus] || 54000000;
   const ptkpBulanan = ptkpTahunan / 12;
 
-  // Perkiraan Penghasilan Kena Pajak (PKP)
   const brutoNeto = gajiPro - (bpjsKes + jht + jp);
   const pkpBulanan = brutoNeto - ptkpBulanan;
   
   let pph21 = 0;
   if (pkpBulanan > 0) {
-    // Tarif 5% untuk tier pertama
     pph21 = pkpBulanan * 0.05; 
   }
 
   const totalPotongan = bpjsKes + jht + jp + pph21 + potonganTelat + totalKasbon;
-  const thp = gajiPro - totalPotongan;
+  const thp = (gajiPro + totalLemburRp) - totalPotongan;
 
   return {
     gapok: g, gajiPro, hadir: hariHadir, jumlahTelat, potonganTelat,
-    bpjsKes, jht, jp, pph21, kasbon: totalKasbon, totalPotongan, 
+    bpjsKes, jht, jp, pph21, kasbon: totalKasbon, bonusLembur: totalLemburRp, 
+    jamLembur: totalJamLembur, totalPotongan, 
     thp: thp > 0 ? thp : 0, ptkpStatus, ptkpBulanan
   };
 }
@@ -451,7 +471,8 @@ function downloadSlip(index) {
 
         <div style="border-top:1px dashed #000; margin-top:15px; padding-top:10px;">
             <div style="display:flex; justify-content:space-between;"><span>Gaji Pokok Full</span><span>Rp ${d.gapok.toLocaleString("id-ID")}</span></div>
-            <div style="display:flex; justify-content:space-between; font-weight:bold;"><span>Gaji Pro-rata</span><span>Rp ${Math.floor(d.gajiPro).toLocaleString("id-ID")}</span></div>
+            <div style="display:flex; justify-content:space-between;"><span>Gaji Pro-rata</span><span>Rp ${Math.floor(d.gajiPro).toLocaleString("id-ID")}</span></div>
+            <div style="display:flex; justify-content:space-between; color: #15803d; font-weight:bold;"><span>Bonus Lembur (${d.jamLembur} Jam)</span><span>+Rp ${d.bonusLembur.toLocaleString("id-ID")}</span></div>
         </div>
 
         <p style="margin: 10px 0 5px 0; font-weight:bold; text-decoration: underline;">POTONGAN & PAJAK</p>
