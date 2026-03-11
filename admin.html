@@ -211,75 +211,84 @@
       </div>
 
       <div class="modal-body">
-        <label>Nomor ID Karyawan</label>
-        <input type="text" id="inpNik" placeholder="Contoh: KBI-123456" />
+        <div class="form-section">
+          <div class="form-section-title">Informasi Profil</div>
+          <label>Nomor ID Karyawan</label>
+          <input type="text" id="inpNik" placeholder="Contoh: KBI-123456" />
 
-        <label>Nama Lengkap</label>
-        <input type="text" id="inpNama" placeholder="Contoh: BUDI UTOMO" />
+          <label>Nama Lengkap</label>
+          <input type="text" id="inpNama" placeholder="Contoh: BUDI UTOMO" />
 
-        <div class="grid-fields">
-          <div>
-            <label>Departemen</label>
-            <select id="inpDept">
-              <option value="OPERASIONAL">OPERASIONAL</option>
-              <option value="OFFICE">OFFICE</option>
-            </select>
-          </div>
-          <div>
-            <label>Jabatan</label>
-            <select id="inpJabatan">
-              <option value="ADMIN">ADMIN</option>
-              <option value="DRIVER">DRIVER</option>
-              <option value="HELPER">HELPER</option>
-              <option value="SALES">SALES</option>
-            </select>
+          <div class="grid-fields">
+            <div>
+              <label>PIN (Untuk Login)</label>
+              <input type="text" id="inpPin" placeholder="Contoh: 123456" />
+            </div>
+            <div>
+              <label>Tahun Bergabung</label>
+              <input type="number" id="inpTahun" placeholder="Contoh: 2024" />
+            </div>
           </div>
         </div>
 
-        <div class="grid-fields">
-          <div>
-            <label>Gaji Pokok (Rp)</label>
-            <input type="number" id="inpGaji" placeholder="Gaji Pokok" />
+        <div class="form-section">
+          <div class="form-section-title">Pekerjaan & Gaji</div>
+          <div class="grid-fields">
+            <div>
+              <label>Departemen</label>
+              <select id="inpDept">
+                <option value="OPERASIONAL">OPERASIONAL</option>
+                <option value="OFFICE">OFFICE</option>
+              </select>
+            </div>
+            <div>
+              <label>Jabatan</label>
+              <select id="inpJabatan">
+                <option value="ADMIN">ADMIN</option>
+                <option value="DRIVER">DRIVER</option>
+                <option value="HELPER">HELPER</option>
+                <option value="SALES">SALES</option>
+              </select>
+            </div>
           </div>
-          <div>
-            <label>Tahun Bergabung</label>
-            <input type="number" id="inpTahun" placeholder="Contoh: 2024" />
+
+          <div class="grid-fields">
+            <div>
+              <label>Gaji Pokok (Rp)</label>
+              <input type="number" id="inpGaji" placeholder="Gaji Pokok" />
+            </div>
+            <div>
+              <label>Sisa Cuti</label>
+              <input type="number" id="inpCuti" placeholder="Default: 12" value="12" />
+            </div>
           </div>
         </div>
 
-        <div class="grid-fields">
-          <div>
-            <label>PIN (Untuk Login)</label>
-            <input type="text" id="inpPin" placeholder="Contoh: 123456" />
+        <div class="form-section">
+          <div class="form-section-title">Identitas & Pajak</div>
+          <div class="grid-fields">
+            <div>
+              <label>NIK KTP</label>
+              <input type="text" id="inpNikKtp" placeholder="16 Digit NIK KTP" />
+            </div>
+            <div>
+              <label>NPWP</label>
+              <input type="text" id="inpNpwp" placeholder="15 Digit NPWP" />
+            </div>
           </div>
-          <div>
-            <label>Sisa Cuti</label>
-            <input type="number" id="inpCuti" placeholder="Default: 12" value="12" />
-          </div>
-        </div>
 
-        <div class="grid-fields">
-          <div>
-            <label>NIK KTP</label>
-            <input type="text" id="inpNikKtp" placeholder="16 Digit NIK KTP" />
-          </div>
-          <div>
-            <label>NPWP</label>
-            <input type="text" id="inpNpwp" placeholder="15 Digit NPWP" />
-          </div>
+          <label>Status PTKP</label>
+          <select id="inpPtkp">
+            <option value="TK/0">TK/0 (Tidak Kawin, 0 Tanggungan)</option>
+            <option value="TK/1">TK/1 (Tidak Kawin, 1 Tanggungan)</option>
+            <option value="TK/2">TK/2 (Tidak Kawin, 2 Tanggungan)</option>
+            <option value="TK/3">TK/3 (Tidak Kawin, 3 Tanggungan)</option>
+            <option value="K/0">K/0 (Kawin, 0 Tanggungan)</option>
+            <option value="K/1">K/1 (Kawin, 1 Tanggungan)</option>
+            <option value="K/2">K/2 (Kawin, 2 Tanggungan)</option>
+            <option value="K/3">K/3 (Kawin, 3 Tanggungan)</option>
+          </select>
         </div>
-
-        <label>Status PTKP</label>
-        <select id="inpPtkp">
-          <option value="TK/0">TK/0 (Tidak Kawin, 0 Tanggungan)</option>
-          <option value="TK/1">TK/1 (Tidak Kawin, 1 Tanggungan)</option>
-          <option value="TK/2">TK/2 (Tidak Kawin, 2 Tanggungan)</option>
-          <option value="TK/3">TK/3 (Tidak Kawin, 3 Tanggungan)</option>
-          <option value="K/0">K/0 (Kawin, 0 Tanggungan)</option>
-          <option value="K/1">K/1 (Kawin, 1 Tanggungan)</option>
-          <option value="K/2">K/2 (Kawin, 2 Tanggungan)</option>
-          <option value="K/3">K/3 (Kawin, 3 Tanggungan)</option>
-        </select>
       </div>
 
       <div class="modal-footer">
@@ -303,75 +312,84 @@
       <div class="modal-body">
         <input type="hidden" id="editOriginalNik" />
 
-        <label>Nomor ID Karyawan</label>
-        <input type="text" id="editNik" />
+        <div class="form-section">
+          <div class="form-section-title">Informasi Profil</div>
+          <label>Nomor ID Karyawan</label>
+          <input type="text" id="editNik" />
 
-        <label>Nama Lengkap</label>
-        <input type="text" id="editNama" />
+          <label>Nama Lengkap</label>
+          <input type="text" id="editNama" />
 
-        <div class="grid-fields">
-          <div>
-            <label>Departemen</label>
-            <select id="editDept">
-              <option value="OPERASIONAL">OPERASIONAL</option>
-              <option value="OFFICE">OFFICE</option>
-            </select>
-          </div>
-          <div>
-            <label>Jabatan</label>
-            <select id="editJabatan">
-              <option value="ADMIN">ADMIN</option>
-              <option value="DRIVER">DRIVER</option>
-              <option value="HELPER">HELPER</option>
-              <option value="SALES">SALES</option>
-            </select>
+          <div class="grid-fields">
+            <div>
+              <label>PIN Karyawan</label>
+              <input type="text" id="editPin" />
+            </div>
+            <div>
+              <label>Tahun Bergabung</label>
+              <input type="number" id="editTahun" />
+            </div>
           </div>
         </div>
 
-        <div class="grid-fields">
-          <div>
-            <label>Gaji Pokok (Rp)</label>
-            <input type="number" id="editGaji" />
+        <div class="form-section">
+          <div class="form-section-title">Pekerjaan & Gaji</div>
+          <div class="grid-fields">
+            <div>
+              <label>Departemen</label>
+              <select id="editDept">
+                <option value="OPERASIONAL">OPERASIONAL</option>
+                <option value="OFFICE">OFFICE</option>
+              </select>
+            </div>
+            <div>
+              <label>Jabatan</label>
+              <select id="editJabatan">
+                <option value="ADMIN">ADMIN</option>
+                <option value="DRIVER">DRIVER</option>
+                <option value="HELPER">HELPER</option>
+                <option value="SALES">SALES</option>
+              </select>
+            </div>
           </div>
-          <div>
-            <label>Tahun Bergabung</label>
-            <input type="number" id="editTahun" />
+
+          <div class="grid-fields">
+            <div>
+              <label>Gaji Pokok (Rp)</label>
+              <input type="number" id="editGaji" />
+            </div>
+            <div>
+              <label>Sisa Cuti</label>
+              <input type="number" id="editCuti" />
+            </div>
           </div>
         </div>
 
-        <div class="grid-fields">
-          <div>
-            <label>PIN Karyawan (Edit Jika Perlu)</label>
-            <input type="text" id="editPin" />
+        <div class="form-section">
+          <div class="form-section-title">Identitas & Pajak</div>
+          <div class="grid-fields">
+            <div>
+              <label>NIK KTP</label>
+              <input type="text" id="editNikKtp" />
+            </div>
+            <div>
+              <label>NPWP</label>
+              <input type="text" id="editNpwp" />
+            </div>
           </div>
-          <div>
-            <label>Sisa Cuti</label>
-            <input type="number" id="editCuti" />
-          </div>
-        </div>
 
-        <div class="grid-fields">
-          <div>
-            <label>NIK KTP</label>
-            <input type="text" id="editNikKtp" />
-          </div>
-          <div>
-            <label>NPWP</label>
-            <input type="text" id="editNpwp" />
-          </div>
+          <label>Status PTKP</label>
+          <select id="editPtkp">
+            <option value="TK/0">TK/0</option>
+            <option value="TK/1">TK/1</option>
+            <option value="TK/2">TK/2</option>
+            <option value="TK/3">TK/3</option>
+            <option value="K/0">K/0</option>
+            <option value="K/1">K/1</option>
+            <option value="K/2">K/2</option>
+            <option value="K/3">K/3</option>
+          </select>
         </div>
-
-        <label>Status PTKP</label>
-        <select id="editPtkp">
-          <option value="TK/0">TK/0</option>
-          <option value="TK/1">TK/1</option>
-          <option value="TK/2">TK/2</option>
-          <option value="TK/3">TK/3</option>
-          <option value="K/0">K/0</option>
-          <option value="K/1">K/1</option>
-          <option value="K/2">K/2</option>
-          <option value="K/3">K/3</option>
-        </select>
       </div>
 
       <div class="modal-footer">

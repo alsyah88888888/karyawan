@@ -726,13 +726,57 @@ tr:hover td {
 
 .modal-body {
   padding: 32px;
+  max-height: 70vh;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--brand-text) transparent;
+}
+
+.modal-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modal-body::-webkit-scrollbar-thumb {
+  background: #e2e8f0;
+  border-radius: 10px;
+}
+
+.form-section {
+  margin-bottom: 32px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.form-section:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.form-section-title {
+  font-size: 0.875rem;
+  font-weight: 800;
+  color: var(--primary);
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.form-section-title::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: #f1f5f9;
 }
 
 .modal-footer {
-  padding: 0 32px 32px;
+  padding: 24px 32px 32px;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
+  border-top: 1px solid #f1f5f9;
+  background: #fafafa;
 }
 
 .grid-fields {
@@ -744,9 +788,9 @@ tr:hover td {
 
 .modal-body label {
   display: block;
-  font-size: 0.8125rem;
+  font-size: 0.75rem;
   font-weight: 700;
-  color: var(--text-muted);
+  color: #64748b;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin-bottom: 8px;
@@ -755,24 +799,24 @@ tr:hover td {
 .modal-body input,
 .modal-body select {
   width: 100%;
-  padding: 14px 18px;
-  border-radius: 14px;
-  border: 2px solid rgba(19, 78, 142, 0.2);
-  background: #fff;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1.5px solid #e2e8f0;
+  background: #f8fafc;
   font-family: inherit;
   font-size: 0.9375rem;
   font-weight: 500;
   color: var(--brand-text);
-  margin-bottom: 20px;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  margin-bottom: 16px;
+  transition: all 0.3s ease;
   outline: none;
 }
 
 .modal-body input:focus,
 .modal-body select:focus {
-  border-color: var(--brand-btn);
+  border-color: var(--primary);
   background: #fff;
-  box-shadow: 0 0 0 4px rgba(255, 179, 63, 0.1);
+  box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
 }
 
 .modal-body input::placeholder {
