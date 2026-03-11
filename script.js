@@ -695,6 +695,17 @@ function exportData() {
   a.click();
 }
 
+function exportKaryawan() {
+  let csv = "NIK,Nama,Departemen,Jabatan,Gaji Pokok,Tahun Bergabung,Sisa Cuti\n";
+  KARYAWAN.forEach((k) => {
+    csv += `${k.nik || "-"},${k.nama},${k.dept},${k.jabatan || "-"},${k.gaji || 0},${k.tahun_bergabung || "-"},${k.sisa_cuti || 0}\n`;
+  });
+  const a = document.createElement("a");
+  a.href = window.URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
+  a.download = `Data_Karyawan_KOBOI_${new Date().toLocaleDateString()}.csv`;
+  a.click();
+}
+
 function zoomFoto(url) {
   const v = document.createElement("div");
   v.style =
