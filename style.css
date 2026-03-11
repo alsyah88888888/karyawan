@@ -411,26 +411,23 @@ body {
 }
 
 .admin-nav {
-  margin-bottom: 30px;
+  margin-bottom: auto;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 .admin-nav button {
   width: 100%;
   text-align: left;
-  padding: 12px 16px;
+  padding: 14px 20px;
   background: transparent;
   border: none;
   color: #94a3b8;
   cursor: pointer;
   font-weight: 600;
-  border-radius: 12px;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  gap: 12px;
+  border-radius: 14px;
+  transition: all 0.3s;
 }
 
 .admin-nav button:hover {
@@ -441,79 +438,7 @@ body {
 .admin-nav button.nav-active {
   background: var(--brand-btn);
   color: var(--brand-text);
-  box-shadow: 0 8px 16px -4px rgba(255, 179, 63, 0.3);
-}
-
-.sidebar-footer {
-  margin-top: auto;
-  padding-top: 20px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.divider {
-  height: 1px;
-  background: rgba(255, 255, 255, 0.1);
-  margin: 8px 0;
-}
-
-.btn-action {
-  width: 100%;
-  padding: 10px 14px;
-  border-radius: 10px;
-  font-size: 0.8125rem;
-  font-weight: 700;
-  border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  transition: all 0.2s;
-}
-
-.btn-action span {
-  font-size: 1rem;
-}
-
-.btn-action.sync {
-  background: rgba(79, 70, 229, 0.2);
-  color: #818cf8;
-}
-
-.btn-action.sync:hover {
-  background: rgba(79, 70, 229, 0.3);
-}
-
-.btn-action.download {
-  background: rgba(255, 255, 255, 0.05);
-  color: #e2e8f0;
-}
-
-.btn-action.download:hover {
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.btn-action.danger {
-  background: rgba(239, 68, 68, 0.1);
-  color: #f87171;
-}
-
-.btn-action.danger:hover {
-  background: rgba(239, 68, 68, 0.2);
-}
-
-.btn-action.exit {
-  background: transparent;
-  color: #94a3b8;
-  justify-content: center;
-  margin-top: 8px;
-}
-
-.btn-action.exit:hover {
-  color: #fff;
-  background: rgba(255, 255, 255, 0.05);
+  box-shadow: 0 4px 12px rgba(255, 179, 63, 0.3);
 }
 
 .stat-box {

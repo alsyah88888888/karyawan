@@ -58,25 +58,21 @@
         <h3 id="countAbsen">0</h3>
       </div>
 
-      <div class="sidebar-footer">
-        <button class="btn-action sync" onclick="syncData()">
-          <span>🔄</span> Refresh Data
-        </button>
+      <button onclick="syncData()" class="btn-download" style="background:var(--accent); color:white; margin-bottom:10px; width:100%; padding:14px; border-radius:14px; font-weight:700; border:none; cursor:pointer;">
+        Refresh Data
+      </button>
 
-        <button class="btn-action download" onclick="exportData()">
-          <span>📊</span> CSV Absensi
-        </button>
+      <button onclick="exportData()" class="btn-download" style="background:#475569; color:white; margin-bottom:10px; width:100%; padding:14px; border-radius:14px; font-weight:700; border:none; cursor:pointer;">
+        Download CSV Absensi
+      </button>
 
-        <div class="divider"></div>
+      <button onclick="clearData()" class="btn-danger" style="background:rgba(239,68,68,0.1); color:#ef4444; margin-bottom:10px; width:100%; padding:14px; border-radius:14px; font-weight:700; border:none; cursor:pointer;">
+        Hapus Log Absensi
+      </button>
 
-        <button class="btn-action danger" onclick="clearData()">
-          <span>🗑️</span> Hapus Log
-        </button>
-
-        <button class="btn-action exit" onclick="logoutAdmin()">
-          <span>🚪</span> Keluar Admin
-        </button>
-      </div>
+      <button class="btn-exit" onclick="logoutAdmin()" style="background:transparent; color:#94a3b8; width:100%; padding:14px; border:none; cursor:pointer; font-weight:700;">
+        KELUAR ADMIN
+      </button>
     </aside>
 
     <main class="content">
@@ -122,9 +118,10 @@
               <tr>
                 <th>NAMA KARYAWAN</th>
                 <th>DEPARTEMEN</th>
-                <th>JAM KERJA / THN BERGABUNG</th>
-                <th>ESTIMASI THP</th>
+                <th>JAM KERJA / BERGABUNG</th>
+                <th>PENDAPATAN (THP)</th>
                 <th>DATA IDENTITAS</th>
+                <th>CETAK</th>
               </tr>
             </thead>
             <tbody id="karyawanTableBody"></tbody>
