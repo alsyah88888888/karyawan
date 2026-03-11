@@ -429,7 +429,7 @@ function downloadSlip(index) {
         <p style="text-align:center; border-bottom: 2px solid #000; padding-bottom:10px; font-weight:bold;">SLIP GAJI - ${bulanIndo[tgl.getMonth()]} ${tgl.getFullYear()}</p>
         
         <div style="display:grid; grid-template-columns: 120px 10px 1fr; line-height: 1.6;">
-            <span>ID KARYAWAN</span><span>:</span><span>${k.nik || "-"}</span>
+            <span>Nomor ID Karyawan</span><span>:</span><span>${k.nik || "-"}</span>
             <span>NAMA</span><span>:</span><span>${k.nama}</span>
             <span>JABATAN</span><span>:</span><span>${k.jabatan || k.dept}</span>
             <span>KEHADIRAN</span><span>:</span><span>${d.hadir} / 22 Hari</span>
@@ -696,14 +696,26 @@ function exportData() {
 }
 
 function exportKaryawan() {
-  let csv = "NIK,Nama,Departemen,Jabatan,Gaji Pokok,Tahun Bergabung,Sisa Cuti\n";
-  KARYAWAN.forEach((k) => {
-    csv += `${k.nik || "-"},${k.nama},${k.dept},${k.jabatan || "-"},${k.gaji || 0},${k.tahun_bergabung || "-"},${k.sisa_cuti || 0}\n`;
-  });
-  const a = document.createElement("a");
-  a.href = window.URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
-  a.download = `Data_Karyawan_KOBOI_${new Date().toLocaleDateString()}.csv`;
-  a.click();
+  if (typeof XLSX === 'undefined') {
+    return alert("Library Excel belum siap. Mohon tunggu sebentar atau refresh halaman.");
+  }
+
+  // Ambil hanya kolom yang diminta: ID, Nama, Departemen, Jabatan, Gaji
+  const dataExport = KARYAWAN.map(k => ({
+    "Nomor ID Karyawan": k.nik || "-",
+    "Nama": k.nama,
+    "Departemen": k.dept,
+    "Jabatan": k.jabatan || "-",
+    "Gaji": k.gaji || 0
+  }));
+
+  // Buat workbook dan worksheet
+  const worksheet = XLSX.utils.json_to_sheet(dataExport);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Data Karyawan");
+
+  // Download file .xlsx asli
+  XLSX.writeFile(workbook, `Database_Karyawan_${new Date().toLocaleDateString()}.xlsx`);
 }
 
 function zoomFoto(url) {

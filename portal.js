@@ -26,7 +26,7 @@ async function loginKaryawan() {
     const nik = document.getElementById("loginNik").value.trim();
     const pin = document.getElementById("loginPin").value.trim();
 
-    if (!nik || !pin) return alert("NIK dan PIN harus diisi!");
+    if (!nik || !pin) return alert("Nomor ID Karyawan dan PIN harus diisi!");
 
     document.querySelector(".login-section button").innerText = "MEMERIKSA...";
 
@@ -37,7 +37,7 @@ async function loginKaryawan() {
             .eq("nik", nik)
             .single();
 
-        if (error || !data) throw new Error("NIK tidak ditemukan!");
+        if (error || !data) throw new Error("Nomor ID Karyawan tidak ditemukan!");
 
         const validPin = data.pin ? data.pin : "123456"; // Default PIN if none set in DB yet
 
@@ -176,7 +176,7 @@ function downloadSlipPribadi() {
             <p style="text-align:center; border-bottom: 2px solid #000; padding-bottom:10px; font-weight:bold;">SLIP GAJI - ${bulanIndo[tgl.getMonth()]} ${tgl.getFullYear()}</p>
             
             <div style="display:grid; grid-template-columns: 120px 10px 1fr; line-height: 1.6;">
-                <span>ID KARYAWAN</span><span>:</span><span>${k.nik || "-"}</span>
+                <span>Nomor ID Karyawan</span><span>:</span><span>${k.nik || "-"}</span>
                 <span>NAMA</span><span>:</span><span>${k.nama}</span>
                 <span>JABATAN</span><span>:</span><span>${k.jabatan || k.dept}</span>
                 <span>KEHADIRAN</span><span>:</span><span>${d.hadir} / 22 Hari</span>
