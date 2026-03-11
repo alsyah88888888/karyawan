@@ -276,9 +276,9 @@ async function prosesAbsen(tipe) {
       }
     } else {
       // Untuk PULANG
-      pesen = "Terima Kasih semoga pulang sampai tujuan dan bertemu dengan keluarga kembali";
+      pesen = "Terima Kasih semoga pencapaian harianmu berhasil dan tetap semangat sampai jumpa lagi";
     }
-    
+
     alert(pesen);
     await syncData();
   }
@@ -320,20 +320,20 @@ function switchTab(tab) {
 }
 
 function updateBadges() {
-    const pendingCuti = cutiData.filter(c => c.status === 'PENDING').length;
-    const pendingKasbon = kasbonData.filter(k => k.status === 'PENDING').length;
-    
-    const badgeCuti = document.getElementById("badgeCuti");
-    const badgeKasbon = document.getElementById("badgeKasbon");
-    
-    if(badgeCuti) {
-        badgeCuti.innerText = pendingCuti;
-        badgeCuti.style.display = pendingCuti > 0 ? "inline-block" : "none";
-    }
-    if(badgeKasbon) {
-        badgeKasbon.innerText = pendingKasbon;
-        badgeKasbon.style.display = pendingKasbon > 0 ? "inline-block" : "none";
-    }
+  const pendingCuti = cutiData.filter(c => c.status === 'PENDING').length;
+  const pendingKasbon = kasbonData.filter(k => k.status === 'PENDING').length;
+
+  const badgeCuti = document.getElementById("badgeCuti");
+  const badgeKasbon = document.getElementById("badgeKasbon");
+
+  if (badgeCuti) {
+    badgeCuti.innerText = pendingCuti;
+    badgeCuti.style.display = pendingCuti > 0 ? "inline-block" : "none";
+  }
+  if (badgeKasbon) {
+    badgeKasbon.innerText = pendingKasbon;
+    badgeKasbon.style.display = pendingKasbon > 0 ? "inline-block" : "none";
+  }
 }
 
 function renderTabel() {
@@ -352,7 +352,7 @@ function renderTabel() {
 
     // Filter berdasarkan Departemen yang TERKINI, bukan riwayat log
     if (filter !== "ALL" && deptTerkini !== filter) return;
-    
+
     count++;
 
     const displayID = info && info.nik ? `<br><small>${info.nik}</small>` : "";
@@ -929,29 +929,29 @@ function hapusKaryawan(idStr) {
 
 // --- TABEL CUTI & IZIN ---
 function renderCutiTable() {
-    const tbody = document.getElementById("cutiTableBody");
-    if (!tbody) return;
-    tbody.innerHTML = "";
+  const tbody = document.getElementById("cutiTableBody");
+  if (!tbody) return;
+  tbody.innerHTML = "";
 
-    if (cutiData.length === 0) {
-        tbody.innerHTML = "<tr><td colspan='6' style='text-align:center;'>Belum ada data pengajuan cuti/izin.</td></tr>";
-        return;
-    }
+  if (cutiData.length === 0) {
+    tbody.innerHTML = "<tr><td colspan='6' style='text-align:center;'>Belum ada data pengajuan cuti/izin.</td></tr>";
+    return;
+  }
 
-    cutiData.forEach((c) => {
-        let statusBadge = `<span style="background:orange; color:white; padding:4px 8px; border-radius:8px; font-size:0.8rem;">PENDING</span>`;
-        if (c.status === "APPROVED") statusBadge = `<span style="background:green; color:white; padding:4px 8px; border-radius:8px; font-size:0.8rem;">APPROVED</span>`;
-        if (c.status === "REJECTED") statusBadge = `<span style="background:red; color:white; padding:4px 8px; border-radius:8px; font-size:0.8rem;">REJECTED</span>`;
+  cutiData.forEach((c) => {
+    let statusBadge = `<span style="background:orange; color:white; padding:4px 8px; border-radius:8px; font-size:0.8rem;">PENDING</span>`;
+    if (c.status === "APPROVED") statusBadge = `<span style="background:green; color:white; padding:4px 8px; border-radius:8px; font-size:0.8rem;">APPROVED</span>`;
+    if (c.status === "REJECTED") statusBadge = `<span style="background:red; color:white; padding:4px 8px; border-radius:8px; font-size:0.8rem;">REJECTED</span>`;
 
-        let actionBtns = "-";
-        if (c.status === "PENDING") {
-            actionBtns = `
+    let actionBtns = "-";
+    if (c.status === "PENDING") {
+      actionBtns = `
                 <button onclick="updateStatusCuti(${c.id}, 'APPROVED', '${c.nik}', '${c.jenis_pengajuan}')" style="background:green; color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer;">Setuju</button>
                 <button onclick="updateStatusCuti(${c.id}, 'REJECTED', '${c.nik}', '${c.jenis_pengajuan}')" style="background:red; color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer; margin-left:5px;">Tolak</button>
             `;
-        }
+    }
 
-        tbody.innerHTML += `
+    tbody.innerHTML += `
             <tr>
                 <td><strong>${c.nama}</strong><br><small>${c.nik}</small></td>
                 <td><strong>${c.jenis_pengajuan}</strong></td>
@@ -961,59 +961,59 @@ function renderCutiTable() {
                 <td>${actionBtns}</td>
             </tr>
         `;
-    });
+  });
 }
 
 async function updateStatusCuti(id, statusBaru, nikKaryawan, jenis) {
-    if (!confirm(`Yakin ingin mengubah status menjadi ${statusBaru}?`)) return;
+  if (!confirm(`Yakin ingin mengubah status menjadi ${statusBaru}?`)) return;
 
-    try {
-        // 1. Update status di tabel cuti_izin
-        const { error } = await supabaseClient.from("cuti_izin").update({ status: statusBaru }).eq("id", id);
-        if (error) throw error;
+  try {
+    // 1. Update status di tabel cuti_izin
+    const { error } = await supabaseClient.from("cuti_izin").update({ status: statusBaru }).eq("id", id);
+    if (error) throw error;
 
-        // 2. Jika APPROVED dan jenisnya CUTI, kurangi sisa_cuti karyawan
-        if (statusBaru === "APPROVED" && jenis === "CUTI") {
-            // Cari data karyawan ini dulu untuk tau sisa cuti sekarang
-            const kary = KARYAWAN.find(k => k.nik === nikKaryawan);
-            if (kary) {
-                const sisaBaru = (kary.sisa_cuti || 0) - 1; // Simplifikasi: potong 1 hari per pengajuan. (Bisa dipercanggih hitung selisih hari nanti)
-                await supabaseClient.from("karyawan").update({ sisa_cuti: sisaBaru }).eq("nik", nikKaryawan);
-            }
-        }
-
-        alert("Status berhasil diperbarui!");
-        syncData();
-    } catch(e) {
-        alert("Gagal update status: " + e.message);
+    // 2. Jika APPROVED dan jenisnya CUTI, kurangi sisa_cuti karyawan
+    if (statusBaru === "APPROVED" && jenis === "CUTI") {
+      // Cari data karyawan ini dulu untuk tau sisa cuti sekarang
+      const kary = KARYAWAN.find(k => k.nik === nikKaryawan);
+      if (kary) {
+        const sisaBaru = (kary.sisa_cuti || 0) - 1; // Simplifikasi: potong 1 hari per pengajuan. (Bisa dipercanggih hitung selisih hari nanti)
+        await supabaseClient.from("karyawan").update({ sisa_cuti: sisaBaru }).eq("nik", nikKaryawan);
+      }
     }
+
+    alert("Status berhasil diperbarui!");
+    syncData();
+  } catch (e) {
+    alert("Gagal update status: " + e.message);
+  }
 }
 
 // --- TABEL KASBON ---
 function renderKasbonTable() {
-    const tbody = document.getElementById("kasbonTableBody");
-    if (!tbody) return;
-    tbody.innerHTML = "";
+  const tbody = document.getElementById("kasbonTableBody");
+  if (!tbody) return;
+  tbody.innerHTML = "";
 
-    if (kasbonData.length === 0) {
-        tbody.innerHTML = "<tr><td colspan='6' style='text-align:center;'>Belum ada data pengajuan kasbon.</td></tr>";
-        return;
-    }
+  if (kasbonData.length === 0) {
+    tbody.innerHTML = "<tr><td colspan='6' style='text-align:center;'>Belum ada data pengajuan kasbon.</td></tr>";
+    return;
+  }
 
-    kasbonData.forEach((k) => {
-        let statusBadge = `<span style="background:orange; color:white; padding:4px 8px; border-radius:8px; font-size:0.8rem;">PENDING</span>`;
-        if (k.status === "APPROVED") statusBadge = `<span style="background:green; color:white; padding:4px 8px; border-radius:8px; font-size:0.8rem;">APPROVED</span>`;
-        if (k.status === "REJECTED") statusBadge = `<span style="background:red; color:white; padding:4px 8px; border-radius:8px; font-size:0.8rem;">REJECTED</span>`;
+  kasbonData.forEach((k) => {
+    let statusBadge = `<span style="background:orange; color:white; padding:4px 8px; border-radius:8px; font-size:0.8rem;">PENDING</span>`;
+    if (k.status === "APPROVED") statusBadge = `<span style="background:green; color:white; padding:4px 8px; border-radius:8px; font-size:0.8rem;">APPROVED</span>`;
+    if (k.status === "REJECTED") statusBadge = `<span style="background:red; color:white; padding:4px 8px; border-radius:8px; font-size:0.8rem;">REJECTED</span>`;
 
-        let actionBtns = "-";
-        if (k.status === "PENDING") {
-            actionBtns = `
+    let actionBtns = "-";
+    if (k.status === "PENDING") {
+      actionBtns = `
                 <button onclick="updateStatusKasbon(${k.id}, 'APPROVED')" style="background:green; color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer;">Cairkan</button>
                 <button onclick="updateStatusKasbon(${k.id}, 'REJECTED')" style="background:red; color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer; margin-left:5px;">Tolak</button>
             `;
-        }
+    }
 
-        tbody.innerHTML += `
+    tbody.innerHTML += `
             <tr>
                 <td><strong>${k.nama}</strong><br><small>${k.nik}</small></td>
                 <td style="color:var(--brand-btn); font-weight:bold;">Rp ${k.nominal.toLocaleString("id-ID")}</td>
@@ -1023,21 +1023,21 @@ function renderKasbonTable() {
                 <td>${actionBtns}</td>
             </tr>
         `;
-    });
+  });
 }
 
 async function updateStatusKasbon(id, statusBaru) {
-    if (!confirm(`Yakin ingin mengubah status kasbon menjadi ${statusBaru}?`)) return;
+  if (!confirm(`Yakin ingin mengubah status kasbon menjadi ${statusBaru}?`)) return;
 
-    try {
-        const { error } = await supabaseClient.from("kasbon").update({ status: statusBaru }).eq("id", id);
-        if (error) throw error;
+  try {
+    const { error } = await supabaseClient.from("kasbon").update({ status: statusBaru }).eq("id", id);
+    if (error) throw error;
 
-        alert("Status kasbon berhasil diperbarui!");
-        syncData();
-    } catch(e) {
-        alert("Gagal update kasbon: " + e.message);
-    }
+    alert("Status kasbon berhasil diperbarui!");
+    syncData();
+  } catch (e) {
+    alert("Gagal update kasbon: " + e.message);
+  }
 }
 
 // --- TAB DAFTAR AKUN ---
