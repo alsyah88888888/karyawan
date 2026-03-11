@@ -126,8 +126,8 @@ async function loadDashboard(nik) {
 
     } catch (e) {
         console.error("Dashboard Error:", e);
-        alert("Gagal memuat data dashboard.");
-        logoutKaryawan();
+        // Jangan logout otomatis agar tidak terjadi refresh paksa saat koneksi buruk
+        // alert("Gagal memuat data dashboard terbaru. Cek koneksi Anda."); 
     } finally {
         showLoading(false);
     }
