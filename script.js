@@ -297,19 +297,19 @@ function switchTab(tab) {
 
   // 2. Logika untuk memunculkan tab dan mengisi data
   if (tab === "log") {
-    document.getElementById("tabLog").style.display = "block";
+    document.getElementById("tabLog").style.display = "flex";
     renderTabel();
   } else if (tab === "karyawan") {
-    document.getElementById("tabKaryawan").style.display = "block";
+    document.getElementById("tabKaryawan").style.display = "flex";
     renderKaryawanTable();
   } else if (tab === "cuti") {
-    document.getElementById("tabCuti").style.display = "block";
+    document.getElementById("tabCuti").style.display = "flex";
     renderCutiTable();
   } else if (tab === "kasbon") {
-    document.getElementById("tabKasbon").style.display = "block";
+    document.getElementById("tabKasbon").style.display = "flex";
     renderKasbonTable();
   } else if (tab === "akun") {
-    document.getElementById("tabAkun").style.display = "block";
+    document.getElementById("tabAkun").style.display = "flex";
     renderAkunTable();
   }
 

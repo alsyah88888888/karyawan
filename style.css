@@ -37,6 +37,7 @@ body {
   height: 100dvh;
   /* Mobile viewport height */
   overflow-x: hidden;
+  overflow-y: hidden;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   max-width: 100vw;
@@ -574,6 +575,7 @@ body {
   box-shadow: var(--shadow-premium);
   overflow-y: auto;
   flex: 1;
+  min-height: 0; /* Crucial for flex box scrolling */
   border: 1px solid rgba(19, 78, 142, 0.1);
   width: 100%;
   /* Pastikan tabel memenuhi area */
