@@ -185,6 +185,8 @@ function hitungDetailGaji(gapok, logsData, kasbonData) {
     const standarHari = 22;
     const gajiHarian = g / standarHari;
 
+    const ptkpStatus = currentUser?.status_ptkp || "TK/0";
+
     const hariHadir = [
         ...new Set(
             logsData
@@ -197,7 +199,6 @@ function hitungDetailGaji(gapok, logsData, kasbonData) {
         (l) => (l.status === "MASUK" || l.status === "BERANGKAT") && (l.isLate === true || l.is_late === true),
     ).length;
 
-    // APPROVED Loans deduction
     const totalKasbon = kasbonData
         ? kasbonData.filter(k => k.status === 'APPROVED').reduce((sum, k) => sum + parseFloat(k.nominal), 0)
         : 0;
@@ -208,7 +209,22 @@ function hitungDetailGaji(gapok, logsData, kasbonData) {
     const bpjsKes = gajiPro * 0.01;
     const jht = gajiPro * 0.02;
     const jp = gajiPro * 0.01;
-    const pph21 = gajiPro * 0.015;
+    
+    // LOGIKA PTKP & PPh21
+    const ptkpMap = {
+        "TK/0": 54000000, "TK/1": 58500000, "TK/2": 63000000, "TK/3": 67500000,
+        "K/0": 58500000, "K/1": 63000000, "K/2": 67500000, "K/3": 72000000
+    };
+    const ptkpTahunan = ptkpMap[ptkpStatus] || 54000000;
+    const ptkpBulanan = ptkpTahunan / 12;
+
+    const brutoNeto = gajiPro - (bpjsKes + jht + jp);
+    const pkpBulanan = brutoNeto - ptkpBulanan;
+    
+    let pph21 = 0;
+    if (pkpBulanan > 0) {
+        pph21 = pkpBulanan * 0.05; 
+    }
 
     const totalPotongan = bpjsKes + jht + jp + pph21 + potonganTelat + totalKasbon;
     const thp = gajiPro - totalPotongan;
@@ -216,6 +232,7 @@ function hitungDetailGaji(gapok, logsData, kasbonData) {
     return {
         gapok: g, gajiPro, hadir: hariHadir, jumlahTelat, potonganTelat,
         bpjsKes, jht, jp, pph21, kasbon: totalKasbon, totalPotongan, thp: thp > 0 ? thp : 0,
+        ptkpStatus, ptkpBulanan
     };
 }
 

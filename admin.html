@@ -36,21 +36,35 @@
       </div>
 
       <nav class="admin-nav">
-        <button onclick="switchTab('log')" id="btnTabLog" class="nav-active">
-          Log Absensi
-        </button>
-        <button onclick="switchTab('karyawan')" id="btnTabKaryawan">
-          Payroll & Gaji
-        </button>
-        <button onclick="switchTab('cuti')" id="btnTabCuti">
-          Cuti & Izin <span id="badgeCuti" style="background:var(--accent); color:white; padding:2px 6px; border-radius:10px; font-size:0.7rem; margin-left:5px; display:none;">0</span>
-        </button>
-        <button onclick="switchTab('kasbon')" id="btnTabKasbon">
-          Kasbon <span id="badgeKasbon" style="background:var(--accent); color:white; padding:2px 6px; border-radius:10px; font-size:0.7rem; margin-left:5px; display:none;">0</span>
-        </button>
-        <button onclick="switchTab('akun')" id="btnTabAkun">
-          Daftar Akun
-        </button>
+        <div class="nav-group">
+          <div class="nav-label">UTAMA</div>
+          <button onclick="switchTab('log')" id="btnTabLog" class="nav-active">
+            Log Presensi
+          </button>
+          <button onclick="switchTab('karyawan')" id="btnTabKaryawan">
+            Payroll & Gaji
+          </button>
+        </div>
+
+        <div class="nav-group" style="margin-top:20px;">
+          <div class="nav-label">PENGAJUAN</div>
+          <button onclick="switchTab('cuti')" id="btnTabCuti">
+            Cuti & Izin <span id="badgeCuti" class="nav-badge">0</span>
+          </button>
+          <button onclick="switchTab('kasbon')" id="btnTabKasbon">
+            Kasbon <span id="badgeKasbon" class="nav-badge">0</span>
+          </button>
+        </div>
+
+        <div class="nav-group" style="margin-top:20px;">
+          <div class="nav-label">PENGATURAN</div>
+          <button onclick="switchTab('akun')" id="btnTabAkun">
+            Daftar Akun
+          </button>
+          <button onclick="logoutAdmin()" class="btn-logout-sidebar">
+            Keluar Panel
+          </button>
+        </div>
       </nav>
 
       <div class="stat-box">

@@ -126,10 +126,10 @@ function hitungDetailGaji(gapok, namaKaryawan) {
   const standarHari = 22;
   const gajiHarian = g / standarHari;
 
-  // Filter log untuk karyawan spesifik
+  const info = KARYAWAN.find(k => k.nama === namaKaryawan);
+  const ptkpStatus = info?.status_ptkp || "TK/0";
   const dataLogKaryawan = logs.filter((l) => l.nama === namaKaryawan);
 
-  // Hitung hadir unik berdasarkan tanggal (hanya status MASUK atau BERANGKAT)
   const hariHadir = [
     ...new Set(
       dataLogKaryawan
@@ -138,42 +138,46 @@ function hitungDetailGaji(gapok, namaKaryawan) {
     ),
   ].length;
 
-  // Hitung jumlah telat (proteksi jika kolom isLate/is_late berbeda)
   const jumlahTelat = dataLogKaryawan.filter(
     (l) => (l.status === "MASUK" || l.status === "BERANGKAT") && (l.isLate === true || l.is_late === true),
   ).length;
 
-  // Hitung Cashbon Aktif (Bulan Ini)
-  const kasbonBulanIni = kasbonData
+  const totalKasbon = kasbonData
     .filter(k => k.nama === namaKaryawan && k.status === 'APPROVED')
     .reduce((sum, k) => sum + parseFloat(k.nominal), 0);
 
-  // RUMUS PERHITUNGAN
   const gajiPro = (hariHadir / standarHari) * g;
-  const potonganTelat = jumlahTelat * (gajiHarian * 0.02); // Potongan 2% dari gaji harian per telat
+  const potonganTelat = jumlahTelat * (gajiHarian * 0.02);
 
-  // Potongan Statis (Total 5.5% dari gaji pro-rata)
   const bpjsKes = gajiPro * 0.01;
   const jht = gajiPro * 0.02;
   const jp = gajiPro * 0.01;
-  const pph21 = gajiPro * 0.015;
 
-  const totalPotongan = bpjsKes + jht + jp + pph21 + potonganTelat + kasbonBulanIni;
+  // LOGIKA PTKP & PPh21 (TERBARU)
+  const ptkpMap = {
+    "TK/0": 54000000, "TK/1": 58500000, "TK/2": 63000000, "TK/3": 67500000,
+    "K/0": 58500000, "K/1": 63000000, "K/2": 67500000, "K/3": 72000000
+  };
+  const ptkpTahunan = ptkpMap[ptkpStatus] || 54000000;
+  const ptkpBulanan = ptkpTahunan / 12;
+
+  // Perkiraan Penghasilan Kena Pajak (PKP)
+  const brutoNeto = gajiPro - (bpjsKes + jht + jp);
+  const pkpBulanan = brutoNeto - ptkpBulanan;
+  
+  let pph21 = 0;
+  if (pkpBulanan > 0) {
+    // Tarif 5% untuk tier pertama
+    pph21 = pkpBulanan * 0.05; 
+  }
+
+  const totalPotongan = bpjsKes + jht + jp + pph21 + potonganTelat + totalKasbon;
   const thp = gajiPro - totalPotongan;
 
   return {
-    gapok: g,
-    gajiPro,
-    hadir: hariHadir,
-    jumlahTelat,
-    potonganTelat,
-    bpjsKes,
-    jht,
-    jp,
-    pph21,
-    kasbon: kasbonBulanIni,
-    totalPotongan,
-    thp: thp > 0 ? thp : 0,
+    gapok: g, gajiPro, hadir: hariHadir, jumlahTelat, potonganTelat,
+    bpjsKes, jht, jp, pph21, kasbon: totalKasbon, totalPotongan, 
+    thp: thp > 0 ? thp : 0, ptkpStatus, ptkpBulanan
   };
 }
 // --- LOGIKA USER & ABSENSI ---
@@ -437,9 +441,10 @@ function downloadSlip(index) {
         <h2 style="text-align:center; margin:0;">PT. KOLA BORASI INDONESIA</h2>
         <p style="text-align:center; border-bottom: 2px solid #000; padding-bottom:10px; font-weight:bold;">SLIP GAJI - ${bulanIndo[tgl.getMonth()]} ${tgl.getFullYear()}</p>
         
-        <div style="display:grid; grid-template-columns: 120px 10px 1fr; line-height: 1.6;">
-            <span>Nomor ID Karyawan</span><span>:</span><span>${k.nik || "-"}</span>
+        <div style="display:grid; grid-template-columns: 120px 10px 1fr; line-height: 1.6; font-size:0.85rem;">
+            <span>Nomor ID</span><span>:</span><span>${k.nik || "-"}</span>
             <span>NAMA</span><span>:</span><span>${k.nama}</span>
+            <span>STATUS PAJAK</span><span>:</span><span>${d.ptkpStatus}</span>
             <span>JABATAN</span><span>:</span><span>${k.jabatan || k.dept}</span>
             <span>KEHADIRAN</span><span>:</span><span>${d.hadir} / 22 Hari</span>
         </div>
@@ -449,13 +454,14 @@ function downloadSlip(index) {
             <div style="display:flex; justify-content:space-between; font-weight:bold;"><span>Gaji Pro-rata</span><span>Rp ${Math.floor(d.gajiPro).toLocaleString("id-ID")}</span></div>
         </div>
 
-        <p style="margin: 10px 0 5px 0; font-weight:bold; text-decoration: underline;">POTONGAN</p>
-        <div style="line-height: 1.4;">
+        <p style="margin: 10px 0 5px 0; font-weight:bold; text-decoration: underline;">POTONGAN & PAJAK</p>
+        <div style="line-height: 1.4; font-size:0.8rem;">
             <div style="display:flex; justify-content:space-between;"><span>BPJS Kesehatan (1%)</span><span>-Rp ${Math.floor(d.bpjsKes).toLocaleString("id-ID")}</span></div>
             <div style="display:flex; justify-content:space-between;"><span>JHT (2%)</span><span>-Rp ${Math.floor(d.jht).toLocaleString("id-ID")}</span></div>
             <div style="display:flex; justify-content:space-between;"><span>JP (1%)</span><span>-Rp ${Math.floor(d.jp).toLocaleString("id-ID")}</span></div>
-            <div style="display:flex; justify-content:space-between;"><span>PPh 21 (1.5%)</span><span>-Rp ${Math.floor(d.pph21).toLocaleString("id-ID")}</span></div>
+            <div style="display:flex; justify-content:space-between;"><span>PPh 21 (PKP > 0)</span><span>-Rp ${Math.floor(d.pph21).toLocaleString("id-ID")}</span></div>
             <div style="display:flex; justify-content:space-between; color: red;"><span>Potongan Telat (${d.jumlahTelat}x)</span><span>-Rp ${Math.floor(d.potonganTelat).toLocaleString("id-ID")}</span></div>
+            <div style="display:flex; justify-content:space-between; font-weight:bold; color:#1e293b; border-top:1px dashed #ccc; margin-top:5px; padding-top:5px;"><span>POTONGAN KASBON</span><span>-Rp ${d.kasbon.toLocaleString("id-ID")}</span></div>
         </div>
 
         <div style="border-top:2px solid #000; margin-top:15px; padding:10px 0; display:flex; justify-content:space-between; font-weight:bold; font-size:1.1rem; background:#f9f9f9;">
@@ -968,18 +974,22 @@ function renderKasbonTable() {
     if (k.status === "APPROVED") statusBadge = `<span style="background:green; color:white; padding:4px 8px; border-radius:8px; font-size:0.8rem;">APPROVED</span>`;
     if (k.status === "REJECTED") statusBadge = `<span style="background:red; color:white; padding:4px 8px; border-radius:8px; font-size:0.8rem;">REJECTED</span>`;
 
-    let actionBtns = "-";
+    let actionBtns = `
+      <button onclick="hapusKasbon(${k.id})" style="background:#ef4444; color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer;" title="Hapus Permanen">Hapus</button>
+    `;
+    
     if (k.status === "PENDING") {
       actionBtns = `
                 <button onclick="updateStatusKasbon(${k.id}, 'APPROVED')" style="background:green; color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer;">Cairkan</button>
                 <button onclick="updateStatusKasbon(${k.id}, 'REJECTED')" style="background:red; color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer; margin-left:5px;">Tolak</button>
+                <button onclick="hapusKasbon(${k.id})" style="background:#64748b; color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer; margin-left:5px;">Hapus</button>
             `;
     }
 
     tbody.innerHTML += `
             <tr>
                 <td><strong>${k.nama}</strong><br><small>${k.nik}</small></td>
-                <td style="color:var(--brand-btn); font-weight:bold;">Rp ${k.nominal.toLocaleString("id-ID")}</td>
+                <td style="color:#15803d; font-weight:bold;">Rp ${k.nominal.toLocaleString("id-ID")}</td>
                 <td>${new Date(k.waktu_pengajuan).toLocaleString("id-ID")}</td>
                 <td style="max-width:200px; white-space:normal;">${k.alasan}</td>
                 <td>${statusBadge}</td>
@@ -1000,6 +1010,18 @@ async function updateStatusKasbon(id, statusBaru) {
     syncData();
   } catch (e) {
     alert("Gagal update kasbon: " + e.message);
+  }
+}
+
+async function hapusKasbon(id) {
+  if (!confirm("Yakin ingin menghapus riwayat kasbon ini secara permanen?")) return;
+  try {
+    const { error } = await supabaseClient.from("kasbon").delete().eq("id", id);
+    if (error) throw error;
+    alert("Data kasbon berhasil dihapus!");
+    syncData();
+  } catch (e) {
+    alert("Gagal hapus data: " + e.message);
   }
 }
 

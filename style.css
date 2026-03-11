@@ -402,43 +402,91 @@ body {
   overflow-y: auto; /* Enable scroll if menu is long */
 }
 
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 40px;
+  padding: 0 10px;
+}
+
 .sidebar h2 {
-  font-size: 1.25rem;
+  font-size: 1.1rem;
   font-weight: 800;
-  color: var(--brand-btn);
-  margin-bottom: 30px;
-  letter-spacing: 1px;
+  color: #fff;
+  letter-spacing: 1.5px;
+  margin: 0;
 }
 
 .admin-nav {
   margin-bottom: auto;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+}
+
+.nav-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.nav-label {
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: #64748b;
+  letter-spacing: 2px;
+  padding: 10px 20px 5px 20px;
+  text-transform: uppercase;
 }
 
 .admin-nav button {
   width: 100%;
   text-align: left;
-  padding: 14px 20px;
+  padding: 12px 20px;
   background: transparent;
   border: none;
   color: #94a3b8;
   cursor: pointer;
   font-weight: 600;
-  border-radius: 14px;
-  transition: all 0.3s;
+  font-size: 0.9rem;
+  border-radius: 12px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .admin-nav button:hover {
   color: #fff;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.08);
+  transform: translateX(5px);
 }
 
 .admin-nav button.nav-active {
-  background: var(--brand-btn);
-  color: var(--brand-text);
-  box-shadow: 0 4px 12px rgba(255, 179, 63, 0.3);
+  background: linear-gradient(135deg, var(--brand-btn) 0%, #e67e22 100%);
+  color: white;
+  box-shadow: 0 10px 20px rgba(230, 126, 34, 0.2);
+}
+
+.nav-badge {
+  background: #f43f5e;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  display: none; /* Controlled by JS but styled here */
+}
+
+.btn-logout-sidebar {
+  margin-top: 10px;
+  color: #fca5a5 !important;
+}
+
+.btn-logout-sidebar:hover {
+  background: rgba(239, 68, 68, 0.15) !important;
+  color: #fee2e2 !important;
 }
 
 .stat-box {
