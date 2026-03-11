@@ -502,6 +502,10 @@ async function simpanKaryawan() {
     const pin = pinEl ? pinEl.value.trim() : "";
     const sisa_cuti = cutiEl ? parseInt(cutiEl.value) || 12 : 12;
 
+    const nik_ktp = document.getElementById("inpNikKtp")?.value.trim() || "";
+    const npwp = document.getElementById("inpNpwp")?.value.trim() || "";
+    const status_ptkp = document.getElementById("inpPtkp")?.value || "";
+
     if (!nama || !gaji) {
       return alert("Mohon isi Nama dan Gaji!");
     }
@@ -519,7 +523,10 @@ async function simpanKaryawan() {
       gaji: nominalGaji,
       tahun_bergabung: tahun,
       pin,
-      sisa_cuti
+      sisa_cuti,
+      nik_ktp,
+      npwp,
+      status_ptkp
     };
 
     console.log("Menyimpan karyawan baru:", newKar);
@@ -540,6 +547,9 @@ async function simpanKaryawan() {
     if (document.getElementById("inpTahun")) document.getElementById("inpTahun").value = "";
     if (pinEl) pinEl.value = "";
     if (cutiEl) cutiEl.value = "12";
+    if (document.getElementById("inpNikKtp")) document.getElementById("inpNikKtp").value = "";
+    if (document.getElementById("inpNpwp")) document.getElementById("inpNpwp").value = "";
+    if (document.getElementById("inpPtkp")) document.getElementById("inpPtkp").value = "TK/0";
 
     await syncData();
   } catch (err) {
@@ -560,6 +570,9 @@ function showEditModal(index) {
   document.getElementById("editTahun").value = k.tahun_bergabung || "";
   document.getElementById("editPin").value = k.pin || "";
   document.getElementById("editCuti").value = k.sisa_cuti ?? 12;
+  document.getElementById("editNikKtp").value = k.nik_ktp || "";
+  document.getElementById("editNpwp").value = k.npwp || "";
+  document.getElementById("editPtkp").value = k.status_ptkp || "TK/0";
 
   document.getElementById("modalEdit").classList.add("active");
 }
@@ -580,6 +593,10 @@ async function updateKaryawan() {
     const pin = document.getElementById("editPin").value.trim();
     const sisa_cuti = parseInt(document.getElementById("editCuti").value) || 0;
 
+    const nik_ktp = document.getElementById("editNikKtp")?.value.trim() || "";
+    const npwp = document.getElementById("editNpwp")?.value.trim() || "";
+    const status_ptkp = document.getElementById("editPtkp")?.value || "";
+
     if (!nama || !gaji) return alert("Nama dan Gaji tidak boleh kosong!");
 
     const updatedData = {
@@ -590,7 +607,10 @@ async function updateKaryawan() {
       gaji,
       tahun_bergabung: tahun,
       pin,
-      sisa_cuti
+      sisa_cuti,
+      nik_ktp,
+      npwp,
+      status_ptkp
     };
 
     const { error } = await supabaseClient
