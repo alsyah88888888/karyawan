@@ -293,10 +293,17 @@ function renderTabel() {
   let count = 0;
 
   logs.forEach((l) => {
-    if (filter !== "ALL" && l.dept !== filter) return;
+    // Ambil data karyawan terbaru dari master KARYAWAN
+    const info = KARYAWAN.find(k => k.nama === l.nama);
+    // Jika data profil karyawan masih ada, kita gunakan department terbarunya. 
+    // Kalau karyawan sudah dihapus seluruhnya, ambil string dari `l.dept` lawas/aslinya.
+    const deptTerkini = info ? info.dept : l.dept;
+
+    // Filter berdasarkan Departemen yang TERKINI, bukan riwayat log
+    if (filter !== "ALL" && deptTerkini !== filter) return;
+    
     count++;
 
-    const info = KARYAWAN.find(k => k.nama === l.nama);
     const displayID = info && info.nik ? `<br><small>${info.nik}</small>` : "";
 
     const sClass = (l.status === "MASUK" || l.status === "BERANGKAT") ? "status-masuk" : "status-pulang";
@@ -305,11 +312,11 @@ function renderTabel() {
       ? '<br><small style="color:red;font-weight:bold;">(TELAT)</small>'
       : "";
 
-    // PERBAIKAN: Menambahkan tombol hapus di kolom terakhir
+    // PERBAIKAN: Gunakan deptTerkini saat memunculkan di kolom Departemen
     body.innerHTML += `
             <tr>
                 <td><strong>${l.nama}</strong>${displayID}</td>
-                <td>${l.dept}</td>
+                <td>${deptTerkini}</td>
                 <td>${waktuTampil}</td>
                 <td><span class="status-tag ${sClass}">${l.status}</span>${telatBadge}</td>
                 <td>
@@ -610,8 +617,11 @@ function cetakSlip(index) {
 function exportData() {
   let csv = "Nama,Departemen,Waktu,Status,Telat\n";
   logs.forEach(
-    (l) =>
-      (csv += `${l.nama},${l.dept},${new Date(l.waktu).toLocaleString("id-ID")},${l.status},${l.isLate}\n`),
+    (l) => {
+      const info = KARYAWAN.find(k => k.nama === l.nama);
+      const deptTerkini = info ? info.dept : l.dept;
+      csv += `${l.nama},${deptTerkini},${new Date(l.waktu).toLocaleString("id-ID")},${l.status},${l.isLate}\n`;
+    }
   );
   const a = document.createElement("a");
   a.href = window.URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
