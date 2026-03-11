@@ -40,7 +40,7 @@
           Log Absensi
         </button>
         <button onclick="switchTab('karyawan')" id="btnTabKaryawan">
-          Kelola Karyawan
+          Payroll & Gaji
         </button>
         <button onclick="switchTab('cuti')" id="btnTabCuti">
           Cuti & Izin <span id="badgeCuti" style="background:var(--accent); color:white; padding:2px 6px; border-radius:10px; font-size:0.7rem; margin-left:5px; display:none;">0</span>
@@ -58,19 +58,25 @@
         <h3 id="countAbsen">0</h3>
       </div>
 
-      <button class="btn-download" onclick="syncData()" style="background:var(--accent); margin-bottom: 10px;">
-        🔄 Refresh Data
-      </button>
+      <div class="sidebar-footer">
+        <button class="btn-action sync" onclick="syncData()">
+          <span>🔄</span> Refresh Data
+        </button>
 
-      <button class="btn-download" onclick="exportData()">
-        Download CSV
-      </button>
+        <button class="btn-action download" onclick="exportData()">
+          <span>📊</span> CSV Absensi
+        </button>
 
-      <button class="btn-danger" onclick="clearData()">
-        Hapus Semua Log
-      </button>
+        <div class="divider"></div>
 
-      <button class="btn-exit" onclick="logoutAdmin()">Keluar</button>
+        <button class="btn-action danger" onclick="clearData()">
+          <span>🗑️</span> Hapus Log
+        </button>
+
+        <button class="btn-action exit" onclick="logoutAdmin()">
+          <span>🚪</span> Keluar Admin
+        </button>
+      </div>
     </aside>
 
     <main class="content">
@@ -102,16 +108,10 @@
 
       <section id="tabKaryawan" style="display: none">
         <div class="header-content">
-          <h2>Daftar Karyawan</h2>
+          <h2>Payroll & Estimasi Gaji</h2>
           <div style="display: flex; gap: 10px;">
-            <button onclick="generateMissingIDs()" class="btn-m">
-              Lengkapi ID
-            </button>
             <button onclick="exportKaryawan()" class="btn-m" style="background:#15803d; box-shadow: 0 4px 0 #166534;">
-              Export Excel
-            </button>
-            <button onclick="showModal()" class="btn-m">
-              + Tambah Karyawan
+              Export Payroll (Excel)
             </button>
           </div>
         </div>
@@ -125,7 +125,6 @@
                 <th>JAM KERJA / THN BERGABUNG</th>
                 <th>ESTIMASI THP</th>
                 <th>DATA IDENTITAS</th>
-                <th>AKSI</th>
               </tr>
             </thead>
             <tbody id="karyawanTableBody"></tbody>
@@ -180,8 +179,19 @@
       <!-- TAB DAFTAR AKUN -->
       <section id="tabAkun" style="display: none">
         <div class="header-content">
-          <h2>Daftar Akun & PIN Karyawan</h2>
-          <input type="text" id="searchAkun" placeholder="Cari Nama atau ID..." onkeyup="filterAkun()" style="padding: 8px 12px; border-radius: 8px; border: 1px solid #ddd; width: 250px;" />
+          <div>
+            <h2>Manajemen Akun</h2>
+            <p style="color: var(--text-muted); font-size: 0.8rem;">Kelola login, PIN, dan data utama karyawan di sini.</p>
+          </div>
+          <div style="display: flex; gap: 10px; align-items: center;">
+            <input type="text" id="searchAkun" placeholder="Cari Nama atau ID..." onkeyup="filterAkun()" style="padding: 10px 16px; border-radius: 12px; border: 1.5px solid #e2e8f0; width: 220px;" />
+            <button onclick="generateMissingIDs()" class="btn-m" style="background: #64748b; box-shadow: 0 4px 0 #475569;">
+              Lengkapi ID
+            </button>
+            <button onclick="showModal()" class="btn-m">
+              + Karyawan Baru
+            </button>
+          </div>
         </div>
         <div class="table-scroll">
           <table>

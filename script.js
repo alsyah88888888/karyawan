@@ -1019,8 +1019,9 @@ function renderAkunTable() {
         </td>
         <td>${k.dept}</td>
         <td>
-          <button onclick="showEditModal(${index})" style="background:none; border:none; color:var(--brand-text); cursor:pointer; font-weight:bold;">EDIT</button>
-          <button onclick="hapusKaryawan('${k.nik}')" style="background:none; border:none; color:var(--danger); cursor:pointer; font-weight:bold; margin-left:10px;">HAPUS</button>
+          <button onclick="showEditModal(${index})" class="btn-s" style="background:#6366f1;">EDIT</button>
+          <button onclick="hapusKaryawan('${k.nik}')" class="btn-s" style="background:#ef4444; margin-left:5px;">HAPUS</button>
+          <button onclick="cetakSlip(${index})" class="btn-s" style="background:#10b981; margin-left:5px;">SLIP</button>
         </td>
       </tr>`;
   });
