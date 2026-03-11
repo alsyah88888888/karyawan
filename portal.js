@@ -212,11 +212,11 @@ function downloadSlipPribadi() {
 
 // --- MODAL & PENGAJUAN ---
 function bukaModal(id) {
-    document.getElementById(id).style.display = 'flex';
+    document.getElementById(id).classList.add('active');
 }
 
 function tutupModal(id) {
-    document.getElementById(id).style.display = 'none';
+    document.getElementById(id).classList.remove('active');
 }
 
 async function submitCuti() {

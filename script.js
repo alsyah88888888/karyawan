@@ -283,6 +283,7 @@ function switchTab(tab) {
   document.getElementById("tabKaryawan").style.display = "none";
   document.getElementById("tabCuti").style.display = "none";
   document.getElementById("tabKasbon").style.display = "none";
+  document.getElementById("tabAkun").style.display = "none";
 
   // 2. Logika untuk memunculkan tab dan mengisi data
   if (tab === "log") {
@@ -297,6 +298,9 @@ function switchTab(tab) {
   } else if (tab === "kasbon") {
     document.getElementById("tabKasbon").style.display = "block";
     renderKasbonTable();
+  } else if (tab === "akun") {
+    document.getElementById("tabAkun").style.display = "block";
+    renderAkunTable();
   }
 
   // 3. Update warna tombol aktif
@@ -304,6 +308,7 @@ function switchTab(tab) {
   document.getElementById("btnTabKaryawan").classList.toggle("nav-active", tab === "karyawan");
   document.getElementById("btnTabCuti").classList.toggle("nav-active", tab === "cuti");
   document.getElementById("btnTabKasbon").classList.toggle("nav-active", tab === "kasbon");
+  document.getElementById("btnTabAkun").classList.toggle("nav-active", tab === "akun");
 }
 
 function updateBadges() {
@@ -1025,6 +1030,23 @@ async function updateStatusKasbon(id, statusBaru) {
     } catch(e) {
         alert("Gagal update kasbon: " + e.message);
     }
+}
+
+// --- TAB DAFTAR AKUN ---
+function renderAkunTable() {
+  const body = document.getElementById("akunTableBody");
+  if (!body) return;
+  body.innerHTML = "";
+
+  KARYAWAN.forEach((k) => {
+    body.innerHTML += `
+      <tr>
+        <td><strong>${k.nama}</strong></td>
+        <td><code style="background:#f1f5f9; padding:4px 8px; border-radius:6px; font-weight:bold;">${k.nik || "-"}</code></td>
+        <td><code style="background:#fef3c7; padding:4px 8px; border-radius:6px; font-weight:bold;">${k.pin || "123456"}</code></td>
+        <td>${k.dept}</td>
+      </tr>`;
+  });
 }
 
 document.addEventListener("DOMContentLoaded", () => {
