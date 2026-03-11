@@ -436,81 +436,7 @@ function renderKaryawanTable() {
   });
 }
 
-function downloadSlip(index) {
-  const k = KARYAWAN[index];
-  const d = hitungDetailGaji(k.gaji, k.nama);
-  const tgl = new Date();
-  const bulanIndo = [
-    "JANUARI",
-    "FEBRUARI",
-    "MARET",
-    "APRIL",
-    "MEI",
-    "JUNI",
-    "JULI",
-    "AGUSTUS",
-    "SEPTEMBER",
-    "OKTOBER",
-    "NOVEMBER",
-    "DESEMBER",
-  ];
-  const namaFile = `Slip_Gaji_${k.nama}_${bulanIndo[tgl.getMonth()]}_${tgl.getFullYear()}.pdf`;
 
-  const isiSlip = `
-    <div style="width: 450px; padding: 30px; border: 1px solid #000; font-family: 'Courier New', monospace; background: #fff; color: #000;">
-        <h2 style="text-align:center; margin:0;">PT. KOLA BORASI INDONESIA</h2>
-        <p style="text-align:center; border-bottom: 2px solid #000; padding-bottom:10px; font-weight:bold;">SLIP GAJI - ${bulanIndo[tgl.getMonth()]} ${tgl.getFullYear()}</p>
-        
-        <div style="display:grid; grid-template-columns: 120px 10px 1fr; line-height: 1.6; font-size:0.85rem;">
-            <span>Nomor ID</span><span>:</span><span>${k.nik || "-"}</span>
-            <span>NAMA</span><span>:</span><span>${k.nama}</span>
-            <span>STATUS PAJAK</span><span>:</span><span>${d.ptkpStatus}</span>
-            <span>JABATAN</span><span>:</span><span>${k.jabatan || k.dept}</span>
-            <span>KEHADIRAN</span><span>:</span><span>${d.hadir} / 22 Hari</span>
-        </div>
-
-        <div style="border-top:1px dashed #000; margin-top:15px; padding-top:10px;">
-            <div style="display:flex; justify-content:space-between;"><span>Gaji Pokok Full</span><span>Rp ${d.gapok.toLocaleString("id-ID")}</span></div>
-            <div style="display:flex; justify-content:space-between;"><span>Gaji Pro-rata</span><span>Rp ${Math.floor(d.gajiPro).toLocaleString("id-ID")}</span></div>
-            <div style="display:flex; justify-content:space-between; color: #15803d; font-weight:bold;"><span>Bonus Lembur (${d.jamLembur} Jam)</span><span>+Rp ${d.bonusLembur.toLocaleString("id-ID")}</span></div>
-        </div>
-
-        <p style="margin: 10px 0 5px 0; font-weight:bold; text-decoration: underline;">POTONGAN & PAJAK</p>
-        <div style="line-height: 1.4; font-size:0.8rem;">
-            <div style="display:flex; justify-content:space-between;"><span>BPJS Kesehatan (1%)</span><span>-Rp ${Math.floor(d.bpjsKes).toLocaleString("id-ID")}</span></div>
-            <div style="display:flex; justify-content:space-between;"><span>JHT (2%)</span><span>-Rp ${Math.floor(d.jht).toLocaleString("id-ID")}</span></div>
-            <div style="display:flex; justify-content:space-between;"><span>JP (1%)</span><span>-Rp ${Math.floor(d.jp).toLocaleString("id-ID")}</span></div>
-            <div style="display:flex; justify-content:space-between;"><span>PPh 21 (PKP > 0)</span><span>-Rp ${Math.floor(d.pph21).toLocaleString("id-ID")}</span></div>
-            <div style="display:flex; justify-content:space-between; color: red;"><span>Potongan Telat (${d.jumlahTelat}x)</span><span>-Rp ${Math.floor(d.potonganTelat).toLocaleString("id-ID")}</span></div>
-            <div style="display:flex; justify-content:space-between; font-weight:bold; color:#1e293b; border-top:1px dashed #ccc; margin-top:5px; padding-top:5px;"><span>POTONGAN KASBON</span><span>-Rp ${d.kasbon.toLocaleString("id-ID")}</span></div>
-        </div>
-
-        <div style="border-top:2px solid #000; margin-top:15px; padding:10px 0; display:flex; justify-content:space-between; font-weight:bold; font-size:1.1rem; background:#f9f9f9;">
-            <span>TAKE HOME PAY</span><span>Rp ${Math.floor(d.thp).toLocaleString("id-ID")}</span>
-        </div>
-        
-        <p style="text-align:center; font-size:0.7rem; margin-top:20px; font-style: italic;">Dicetak melalui KOBOI Apps pada ${tgl.toLocaleString("id-ID")}</p>
-    </div>`;
-
-  // Membuat jendela baru untuk proses download/print
-  const w = window.open("", "_blank");
-  w.document.write(`
-        <html>
-            <head><title>${namaFile}</title></head>
-            <body style="display:flex;justify-content:center;padding:20px;">
-                ${isiSlip}
-                <script>
-                    window.onload = function() {
-                        window.print();
-                        // Menutup jendela otomatis setelah dialog print selesai (opsional)
-                        // window.close(); 
-                    }
-                <\/script>
-            </body>
-        </html>
-    `);
-  w.document.close();
-}
 
 async function simpanKaryawan() {
   try {
@@ -679,24 +605,13 @@ async function hapusKaryawan(idKaryawan) {
   }
 }
 
-// --- FITUR SLIP GAJI ---
 function cetakSlip(index) {
   const k = KARYAWAN[index];
   const d = hitungDetailGaji(k.gaji, k.nama);
   const tgl = new Date();
   const bulanIndo = [
-    "JANUARI",
-    "FEBRUARI",
-    "MARET",
-    "APRIL",
-    "MEI",
-    "JUNI",
-    "JULI",
-    "AGUSTUS",
-    "SEPTEMBER",
-    "OKTOBER",
-    "NOVEMBER",
-    "DESEMBER",
+    "JANUARI", "FEBRUARI", "MARET", "APRIL", "MEI", "JUNI",
+    "JULI", "AGUSTUS", "SEPTEMBER", "OKTOBER", "NOVEMBER", "DESEMBER",
   ];
 
   const isiSlip = `
@@ -704,26 +619,28 @@ function cetakSlip(index) {
         <h2 style="text-align:center; margin:0;">PT. KOLA BORASI INDONESIA</h2>
         <p style="text-align:center; border-bottom: 2px solid #000; padding-bottom:10px; font-weight:bold;">SLIP GAJI - ${bulanIndo[tgl.getMonth()]} ${tgl.getFullYear()}</p>
         
-        <div style="display:grid; grid-template-columns: 120px 10px 1fr; line-height: 1.6;">
+        <div style="display:grid; grid-template-columns: 130px 10px 1fr; line-height: 1.6; font-size:0.85rem;">
             <span>ID KARYAWAN</span><span>:</span><span>${k.nik || "-"}</span>
             <span>NAMA</span><span>:</span><span>${k.nama}</span>
+            <span>STATUS PAJAK</span><span>:</span><span>${d.ptkpStatus}</span>
             <span>JABATAN</span><span>:</span><span>${k.jabatan || k.dept}</span>
             <span>KEHADIRAN</span><span>:</span><span>${d.hadir} / 22 Hari</span>
         </div>
 
         <div style="border-top:1px dashed #000; margin-top:15px; padding-top:10px;">
             <div style="display:flex; justify-content:space-between;"><span>Gaji Pokok Full</span><span>Rp ${d.gapok.toLocaleString("id-ID")}</span></div>
-            <div style="display:flex; justify-content:space-between; font-weight:bold;"><span>Gaji Pro-rata</span><span>Rp ${Math.floor(d.gajiPro).toLocaleString("id-ID")}</span></div>
+            <div style="display:flex; justify-content:space-between;"><span>Gaji Pro-rata</span><span>Rp ${Math.floor(d.gajiPro).toLocaleString("id-ID")}</span></div>
+            <div style="display:flex; justify-content:space-between; color: #15803d; font-weight:bold;"><span>Bonus Lembur (${d.jamLembur} Jam)</span><span>+Rp ${d.bonusLembur.toLocaleString("id-ID")}</span></div>
         </div>
 
-        <p style="margin: 10px 0 5px 0; font-weight:bold; text-decoration: underline;">POTONGAN</p>
-        <div style="line-height: 1.4;">
+        <p style="margin: 10px 0 5px 0; font-weight:bold; text-decoration: underline;">POTONGAN & PAJAK</p>
+        <div style="line-height: 1.4; font-size:0.8rem;">
             <div style="display:flex; justify-content:space-between;"><span>BPJS Kesehatan (1%)</span><span>-Rp ${Math.floor(d.bpjsKes).toLocaleString("id-ID")}</span></div>
             <div style="display:flex; justify-content:space-between;"><span>JHT (2%)</span><span>-Rp ${Math.floor(d.jht).toLocaleString("id-ID")}</span></div>
             <div style="display:flex; justify-content:space-between;"><span>JP (1%)</span><span>-Rp ${Math.floor(d.jp).toLocaleString("id-ID")}</span></div>
-            <div style="display:flex; justify-content:space-between;"><span>PPh 21 (1.5%)</span><span>-Rp ${Math.floor(d.pph21).toLocaleString("id-ID")}</span></div>
+            <div style="display:flex; justify-content:space-between;"><span>PPh 21 (PKP > 0)</span><span>-Rp ${Math.floor(d.pph21).toLocaleString("id-ID")}</span></div>
             <div style="display:flex; justify-content:space-between; color: red;"><span>Potongan Telat (${d.jumlahTelat}x)</span><span>-Rp ${Math.floor(d.potonganTelat).toLocaleString("id-ID")}</span></div>
-            ${d.kasbon > 0 ? `<div style="display:flex; justify-content:space-between; color: red;"><span>Potongan Kasbon</span><span>-Rp ${Math.floor(d.kasbon).toLocaleString("id-ID")}</span></div>` : ''}
+            <div style="display:flex; justify-content:space-between; font-weight:bold; color:#1e293b; border-top:1px dashed #ccc; margin-top:5px; padding-top:5px;"><span>POTONGAN KASBON</span><span>-Rp ${d.kasbon.toLocaleString("id-ID")}</span></div>
         </div>
 
         <div style="border-top:2px solid #000; margin-top:15px; padding:10px 0; display:flex; justify-content:space-between; font-weight:bold; font-size:1.1rem; background:#f9f9f9;">
@@ -734,9 +651,7 @@ function cetakSlip(index) {
     </div>`;
 
   const w = window.open("", "_blank");
-  w.document.write(
-    `<html><body style="display:flex;justify-content:center;padding:20px;">${isiSlip}</body></html>`,
-  );
+  w.document.write(`<html><body style="display:flex;justify-content:center;padding:20px;">${isiSlip}<script>window.onload=function(){window.print();}<\/script></body></html>`);
   w.document.close();
 }
 
