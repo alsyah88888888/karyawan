@@ -395,7 +395,13 @@ function renderKaryawanTable() {
         <td><strong>${k.nama}</strong><br><small>${k.nik || "-"}</small></td>
         <td>${k.jabatan || k.dept}<br><small>Hadir: ${d.hadir}/22</small></td>
         <td>Rp ${(k.gaji || 0).toLocaleString("id-ID")}<br><small>Thn Bergabung: ${k.tahun_bergabung || "-"}</small></td>
-        <td style="color:var(--accent); font-weight:bold;">Rp ${Math.floor(d.thp).toLocaleString("id-ID")}</td>
+        <td style="color:var(--accent); font-weight:bold;">Rp ${Math.floor(d.thp).toLocaleString("id-ID")}<br>
+          <small style="color:#64748b; font-weight:normal;">PTKP: ${k.status_ptkp || "-"}</small>
+        </td>
+        <td style="font-size: 0.8rem; line-height: 1.2;">
+          KTP: ${k.nik_ktp || "-"}<br>
+          NPWP: ${k.npwp || "-"}
+        </td>
         <td>
           <button onclick="cetakSlip(${index})" style="color:var(--primary); border:none; background:none; cursor:pointer; font-weight:bold;">SLIP</button>
           <button onclick="showEditModal(${index})" style="color:var(--accent); border:none; background:none; cursor:pointer; font-weight:bold; margin-left:10px;">EDIT</button> 
@@ -572,8 +578,10 @@ function showEditModal(index) {
   document.getElementById("editCuti").value = k.sisa_cuti ?? 12;
   document.getElementById("editNikKtp").value = k.nik_ktp || "";
   document.getElementById("editNpwp").value = k.npwp || "";
+  document.getElementById("editNpwp").value = k.npwp || "";
   document.getElementById("editPtkp").value = k.status_ptkp || "TK/0";
 
+  console.log("Loading Edit Modal for:", k);
   document.getElementById("modalEdit").classList.add("active");
 }
 
@@ -1000,9 +1008,15 @@ function renderAkunTable() {
   KARYAWAN.forEach((k, index) => {
     body.innerHTML += `
       <tr class="akun-row" data-search="${k.nama.toLowerCase()} ${k.nik.toLowerCase()}">
-        <td><strong>${k.nama}</strong></td>
-        <td><code style="background:#f1f5f9; padding:4px 8px; border-radius:6px; font-weight:bold;">${k.nik || "-"}</code></td>
-        <td><code style="background:#fef3c7; padding:4px 8px; border-radius:6px; font-weight:bold;">${k.pin || "123456"}</code></td>
+        <td><strong>${k.nama}</strong><br><small>PTKP: ${k.status_ptkp || "-"}</small></td>
+        <td>
+          <code style="background:#f1f5f9; padding:4px 8px; border-radius:6px; font-weight:bold;">${k.nik || "-"}</code><br>
+          <small>KTP: ${k.nik_ktp || "-"}</small>
+        </td>
+        <td>
+          <code style="background:#fef3c7; padding:4px 8px; border-radius:6px; font-weight:bold;">${k.pin || "123456"}</code><br>
+          <small>NPWP: ${k.npwp || "-"}</small>
+        </td>
         <td>${k.dept}</td>
         <td>
           <button onclick="showEditModal(${index})" style="background:none; border:none; color:var(--brand-text); cursor:pointer; font-weight:bold;">EDIT</button>
