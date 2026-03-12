@@ -679,7 +679,7 @@ function cetakSlip(index) {
         </div>
 
         <p style="text-align:center; font-weight:900; font-size: 0.9rem; text-decoration: underline; margin-bottom: 15px;">
-            SLIP GAJI KARYAWAN - ${bulanIndo[tgl.getMonth()]} ${tgl.getFullYear()}
+            SLIP GAJI KARYAWAN (E-PORTAL) - ${bulanIndo[tgl.getMonth()]} ${tgl.getFullYear()}
         </p>
         
         <div style="display:grid; grid-template-columns: 110px 10px 1fr; line-height: 1.6; font-size:0.75rem;">
@@ -722,7 +722,7 @@ function cetakSlip(index) {
         </div>
 
         <p style="text-align:center; font-size:0.55rem; margin-top:20px; color: #64748b; font-style: italic;">
-            Dokumen ini sah dikeluarkan secara digital oleh KOBOI HRIS Management System.<br>
+            E-Slip sah dikeluarkan secara digital via KOBOI Employee Portal.<br>
             Waktu Cetak: ${tgl.toLocaleString("id-ID")}
         </p>
     </div>`;
@@ -1232,14 +1232,9 @@ function adminCetakMOU(index) {
   const printStyles = `
     <style>
       body { font-family: 'Times New Roman', serif; padding: 40px; line-height: 1.5; color: #000; }
-      @media print {
-        body { padding: 0; }
-        .mou-print-container { width: 100%; border: none !important; }
-      }
-      .mou-print-container { max-width: 800px; margin: auto; padding: 20px; border: 1px solid #eee; }
       img { max-width: 100%; }
-      p { margin-bottom: 10px; text-align: justify; }
-      hr { border: 1px solid #000; margin-top: 10px; margin-bottom: 20px; }
+      @page { margin: 2cm; }
+      p { margin-bottom: 10px; }
     </style>
   `;
 
@@ -1247,13 +1242,13 @@ function adminCetakMOU(index) {
     <div class="mou-print-container">
         <div style="text-align:center; margin-bottom: 20px;">
             <img src="images/koboi.png" style="width: 60px; margin-bottom: 10px;">
-            <p style="font-weight:800; font-size:1.3rem; margin:0; line-height: 1.2;">PT. KOLA BORASI INDONESIA</p>
+            <p style="font-weight:800; font-size:1.3rem; margin:0;">PT. KOLA BORASI INDONESIA</p>
             <p style="font-size:0.8rem; margin:0;">Kompeten, Loyal, Berintegritas</p>
-            <hr>
+            <hr style="border: 1px solid #000; margin-top:10px;">
         </div>
 
         <p style="text-align:center; font-weight:800; font-size:1.1rem; text-decoration: underline;">SURAT PERJANJIAN KERJA (MOU)</p>
-        <p style="text-align:center; margin-bottom:30px;">Nomor: MOU/KBI/ADM/${user.nik || 'XXX'}/${new Date().getFullYear()}</p>
+        <p style="text-align:center; margin-bottom:30px;">Nomor: MOU/KBI/${user.nik}/${new Date().getFullYear()}</p>
         
         <p>Yang bertanda tangan di bawah ini:</p>
         <div style="margin-left:20px; margin-bottom:15px;">
@@ -1302,7 +1297,20 @@ function adminCetakMOU(index) {
   `;
 
   const windowPrint = window.open('', '', 'width=900,height=900');
-  windowPrint.document.write(`<html><head><title>MOU - ${user.nama}</title>${printStyles}</head><body>${content}</body><script>window.onload=function(){window.print();window.close();};</script></html>`);
+  windowPrint.document.write(`
+    <html>
+        <head>
+            <title>Cetak MOU - ${user.nama}</title>
+            ${printStyles}
+        </head>
+        <body>
+            ${content}
+            <script>
+                window.onload = function() { window.print(); window.close(); };
+            </script>
+        </body>
+    </html>
+  `);
   windowPrint.document.close();
 }
 
