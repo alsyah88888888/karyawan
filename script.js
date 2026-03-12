@@ -1207,7 +1207,10 @@ _Pesan ini diterbitkan secara digital melalui KOBOI Apps._
   const url = `https://wa.me/${clearWa}?text=${encodeURIComponent(pesan)}`;
   setTimeout(() => {
     window.open(url, "_blank");
-  }, 8function adminCetakMOU(index) {
+  }, 800);
+}
+
+function adminCetakMOU(index) {
   const user = KARYAWAN[index];
 
   // Custom clauses based on department
@@ -1299,6 +1302,5 @@ _Pesan ini diterbitkan secara digital melalui KOBOI Apps._
   const windowPrint = window.open('', '', 'width=900,height=900');
   windowPrint.document.write(`<html><head><title>MOU - ${user.nama}</title>${printStyles}</head><body>${content}</body><script>window.onload=function(){window.print();window.close();};</script></html>`);
   windowPrint.document.close();
-}ose();
 }
 
