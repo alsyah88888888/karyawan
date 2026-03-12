@@ -413,32 +413,76 @@ function renderMOUStatus(user) {
 
 function bukaModalMOU() {
     const user = currentUser;
+    
+    // Custom clauses based on department
+    let deptClauses = "";
+    if (user.dept === "OPERASIONAL") {
+        deptClauses = `
+            <p><strong>PASAL 5: KESELAMATAN & OPERASIONAL</strong><br>
+            PIHAK KEDUA wajib mematuhi seluruh Standar Operasional Prosedur (SOP) keselamatan kerja. Segala bentuk kelalaian yang mengakibatkan kerusakan alat atau kerugian operasional menjadi tanggung jawab PIHAK KEDUA dan dapat dikenakan ganti rugi atau sanksi berat.</p>
+        `;
+    } else {
+        deptClauses = `
+            <p><strong>PASAL 5: PROFESIONALISME & DEADLINE</strong><br>
+            PIHAK KEDUA wajib menyelesaikan laporan dan tugas sesuai dengan tenggat waktu (deadline) yang ditentukan. Kegagalan berulang dalam memenuhi standar kualitas kerja kantor akan menjadi bahan evaluasi kinerja bulanan dan pemberian SP.</p>
+        `;
+    }
+
     const bodyMOU = `
-        <div style="text-align:justify;">
-            <p style="text-align:center; font-weight:800; font-size:1.1rem;">SURAT PERJANJIAN KERJA (MEMORANDUM OF UNDERSTANDING)</p>
+        <div id="mouPrintArea" class="mou-print-container" style="text-align:justify; color: #000; font-family: 'Times New Roman', serif;">
+            <div style="text-align:center; margin-bottom: 20px;">
+                <img src="images/koboi.png" style="width: 60px; margin-bottom: 10px;">
+                <p style="font-weight:800; font-size:1.3rem; margin:0;">PT. KOLA BORASI INDONESIA</p>
+                <p style="font-size:0.8rem; margin:0;">Kompeten, Loyal, Berintegritas</p>
+                <hr style="border: 1px solid #000; margin-top:10px;">
+            </div>
+
+            <p style="text-align:center; font-weight:800; font-size:1.1rem; text-decoration: underline;">SURAT PERJANJIAN KERJA (MOU)</p>
             <p style="text-align:center; margin-bottom:30px;">Nomor: MOU/KBI/${user.nik}/${new Date().getFullYear()}</p>
             
             <p>Yang bertanda tangan di bawah ini:</p>
             <div style="margin-left:20px; margin-bottom:15px;">
-                <strong>1. PT. KOLA BORASI INDONESIA</strong>, berkedudukan di Jakarta, dalam hal ini diwakili oleh Manajemen HRD, selanjutnya disebut <strong>"PIHAK PERTAMA"</strong>.<br>
-                <strong>2. ${user.nama}</strong>, ID: ${user.nik}, beralamat sesuai data identitas, dalam hal ini bertindak untuk diri sendiri, selanjutnya disebut <strong>"PIHAK KEDUA"</strong>.
+                <strong>1. PT. KOLA BORASI INDONESIA</strong>, dalam hal ini diwakili oleh Manajemen HRD, selanjutnya disebut <strong>"PIHAK PERTAMA"</strong>.<br>
+                <strong>2. ${user.nama}</strong>, ID/NIK: ${user.nik}, Jabatan: ${user.jabatan || user.dept}, selanjutnya disebut <strong>"PIHAK KEDUA"</strong>.
             </div>
 
-            <p>KEDUA BELAH PIHAK dengan ini sepakat untuk mengikatkan diri dalam Perjanjian Hubungan Kerja dengan ketentuan sebagai berikut:</p>
+            <p>KEDUA BELAH PIHAK sepakat untuk menjalin hubungan kerja profesional dengan ketentuan mengikat sebagai berikut:</p>
             
-            <p><strong>PASAL 1: JURUSAN & TANGGUNG JAWAB</strong><br>
-            PIHAK KEDUA bekerja sebagai <strong>${user.jabatan || user.dept}</strong> pada departemen <strong>${user.dept}</strong> dan bersedia melaksanakan tugas dengan penuh tanggung jawab sesuai arahan perusahaan.</p>
+            <p><strong>PASAL 1: TUGAS & TANGGUNG JAWAB</strong><br>
+            PIHAK KEDUA bekerja sebagai <strong>${user.jabatan || user.dept}</strong>. PIHAK KEDUA bertanggung jawab melaksanakan instruksi kerja dari PIHAK PERTAMA dengan dedikasi tinggi dan integritas penuh.</p>
 
-            <p><strong>PASAL 2: UPAH & TUNJANGAN</strong><br>
-            PIHAK PERTAMA sepakat memberikan upah pokok sebesar <strong>Rp ${user.gaji.toLocaleString('id-ID')}</strong> per bulan, yang dibayarkan setiap akhir bulan berjalan melalui sistem KOBOI Apps.</p>
+            <p><strong>PASAL 2: KERAHASIAAN DATA (NDA)</strong><br>
+            PIHAK KEDUA dilarang keras membocorkan, menyebarkan, atau menyalahgunakan data perusahaan, strategi bisnis, maupun informasi klien kepada pihak ketiga tanpa izin tertulis. Pelanggaran terhadap pasal ini akan diproses secara HUKUM.</p>
 
-            <p><strong>PASAL 3: KEDISIPLINAN</strong><br>
-            PIHAK KEDUA wajib mengikuti aturan jam kerja perusahaan (9 jam kerja) dan sistem absensi real-time. Pelanggaran terhadap jam kerja akan dikenakan sanksi pro-rata atau pemotongan sesuai sistem.</p>
+            <p><strong>PASAL 3: PENJAGAAN ASET</strong><br>
+            PIHAK KEDUA wajib menjaga seluruh aset perusahaan yang dipercayakan kepadanya. Segala bentuk kehilangan atau penyalahgunaan aset untuk kepentingan pribadi adalah pelanggaran berat.</p>
 
-            <p><strong>PASAL 4: JANGKA WAKTU</strong><br>
-            Perjanjian ini berlaku sejak tanggal bergabung hingga diputuskan oleh salah satu pihak sesuai dengan kebijakan internal PT. Kola Borasi Indonesia.</p>
+            <p><strong>PASAL 4: KEDISIPLINAN & ABSENSI</strong><br>
+            Kehadiran dihitung berdasarkan sistem real-time KOBOI Apps. Ketidakmampuan mengikuti jam kerja tanpa alasan yang sah akan dikenakan pemotongan gaji secara sistematis dan pemberian Surat Peringatan (SP).</p>
 
-            <p style="margin-top:30px;">Demikian Surat Perjanjian ini dibuat untuk dipatuhi oleh kedua belah pihak secara digital tanpa ada paksaan dari pihak manapun.</p>
+            ${deptClauses}
+
+            <p><strong>PASAL 6: SANKSI & PEMUTUSAN HUBUNGAN</strong><br>
+            Perusahaan berhak melakukan pemutusan hubungan kerja (PHK) seketika tanpa kompensasi apabila PIHAK KEDUA ditemukan melakukan tindakan Fraud, Pencurian, Narkoba, atau tindakan asusila di lingkungan kerja.</p>
+
+            <div style="margin-top:40px; display: flex; justify-content: space-between;">
+                <div style="text-align:center; width: 45%;">
+                    <p>PIHAK PERTAMA,</p>
+                    <div style="height: 80px;"></div>
+                    <p>( Manajemen HRD )</p>
+                </div>
+                <div style="text-align:center; width: 45%;">
+                    <p>PIHAK KEDUA,</p>
+                    <div id="printSignatureArea" style="height: 80px; display: flex; justify-content: center; align-items: center;">
+                        <!-- Signature image injected here for printing -->
+                    </div>
+                    <p>( ${user.nama} )</p>
+                </div>
+            </div>
+            
+            <p style="font-size: 0.7rem; color: #64748b; margin-top: 50px; text-align: center; border-top: 1px dashed #cbd5e1; padding-top: 10px;">
+                Dokumen ini diterbitkan secara digital melalui KOBOI Apps dan memiliki kekuatan hukum yang sah.
+            </p>
         </div>
     `;
 
@@ -446,14 +490,46 @@ function bukaModalMOU() {
     bukaModal('modalMOU');
     initSignaturePad();
 
+    const btnPrint = document.getElementById("btnPrintMOU");
     if (user.mou_signed) {
         document.getElementById("signatureSection").style.display = "none";
         document.getElementById("btnSimpanMOU").style.display = "none";
+        btnPrint.style.display = "inline-block";
         renderExistingSignature(user.mou_signature);
+        
+        // Prepare signature for print view
+        const printSigArea = document.getElementById("printSignatureArea");
+        printSigArea.innerHTML = `<img src="${user.mou_signature}" style="max-height: 80px; width: auto;">`;
     } else {
         document.getElementById("signatureSection").style.display = "block";
         document.getElementById("btnSimpanMOU").style.display = "block";
+        btnPrint.style.display = "none";
     }
+}
+
+function cetakMOU() {
+    const printContent = document.getElementById("mouPrintArea").innerHTML;
+    const windowPrint = window.open('', '', 'width=900,height=900');
+    windowPrint.document.write(`
+        <html>
+            <head>
+                <title>Cetak MOU - ${currentUser.nama}</title>
+                <style>
+                    body { font-family: 'Times New Roman', serif; padding: 40px; line-height: 1.5; color: #000; }
+                    img { max-width: 100%; }
+                    @page { margin: 2cm; }
+                    p { margin-bottom: 10px; }
+                </style>
+            </head>
+            <body>
+                ${printContent}
+                <script>
+                    window.onload = function() { window.print(); window.close(); };
+                </script>
+            </body>
+        </html>
+    `);
+    windowPrint.document.close();
 }
 
 function initSignaturePad() {

@@ -509,15 +509,16 @@
 
         /* MOU Modal & Signature */
         .mou-content {
-            height: 300px;
+            height: 450px;
             overflow-y: auto;
             border: 1px solid #e2e8f0;
-            padding: 20px;
+            padding: 30px;
             border-radius: 12px;
             margin-bottom: 20px;
-            font-size: 0.85rem;
+            font-size: 0.9rem;
             line-height: 1.6;
             background: #fff;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
         }
         
         #signaturePad {
@@ -911,6 +912,7 @@
 
             <div class="modal-actions">
                 <button class="btn-card outline" onclick="tutupModal('modalMOU')">TUTUP</button>
+                <button id="btnPrintMOU" class="btn-card outline" style="display:none; border-color: var(--portal-primary); color: var(--portal-primary);" onclick="cetakMOU()">CETAK MOU (PDF)</button>
                 <button id="btnSimpanMOU" class="btn-card primary" onclick="saveMOU()">SIMPAN & TANDA TANGAN</button>
             </div>
         </div>
