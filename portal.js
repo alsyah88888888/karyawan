@@ -348,7 +348,8 @@ function downloadSlipPribadi() {
     const bulanIndo = [
         "JANUARI", "FEBRUARI", "MARET", "APRIL", "MEI", "JUNI",
         "JULI", "AGUSTUS", "SEPTEMBER", "OKTOBER", "NOVEMBER", "DESEMBER"
-    ];    const printStyles = `
+    ];
+    const printStyles = `
         <style>
             @page { size: A5; margin: 0; }
             body { margin: 0; padding: 0; -webkit-print-color-adjust: exact; }
