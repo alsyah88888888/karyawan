@@ -434,7 +434,6 @@ function downloadSlipPribadi() {
         w.document.write(`<html><head><title>Slip - ${k.nama}</title>${printStyles}</head><body>${isiSlip}<script>window.onload=function(){window.print();window.close();}<\/script></body></html>`);
         w.document.close();
     }
-    }
 }
 // 7. MOU & DIGITAL SIGNATURE
 function renderMOUStatus(user) {

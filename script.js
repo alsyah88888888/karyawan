@@ -1207,7 +1207,10 @@ _Pesan ini diterbitkan secara digital melalui KOBOI Apps._
   const url = `https://wa.me/${clearWa}?text=${encodeURIComponent(pesan)}`;
   setTimeout(() => {
     window.open(url, "_blank");
-  }, 8function adminCetakMOU(index) {
+  }, 800);
+}
+
+function adminCetakMOU(index) {
   const user = KARYAWAN[index];
 
   let deptClauses = "";
@@ -1220,7 +1223,10 @@ _Pesan ini diterbitkan secara digital melalui KOBOI Apps._
     deptClauses = `
           <p><strong>PASAL 5: PROFESIONALISME & DEADLINE</strong><br>
           PIHAK KEDUA wajib menyelesaikan laporan dan tugas sesuai dengan tenggat waktu (deadline) yang ditentukan. Kegagalan berulang dalam memenuhi standar kualitas kerja kantor akan menjadi bahan evaluasi kinerja bulanan dan pemberian SP.</p>
-        const printStyles = `
+      `;
+  }
+
+  const printStyles = `
     <style>
       @page { size: A5; margin: 0; }
       body { margin: 0; padding: 0; -webkit-print-color-adjust: exact; }
@@ -1301,8 +1307,5 @@ _Pesan ini diterbitkan secara digital melalui KOBOI Apps._
   const windowPrint = window.open('', '', 'width=850,height=900');
   windowPrint.document.write(`<html><head><title>MOU - ${user.nama}</title>${printStyles}</head><body>${content}</body><script>window.onload=function(){window.print();window.close();};</script></html>`);
   windowPrint.document.close();
-}
-ose();
-}ose();
 }
 
