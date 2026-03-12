@@ -473,59 +473,63 @@ function bukaModalMOU() {
     }
 
     const bodyMOU = `
-        <div id="mouPrintArea" class="mou-print-container" style="text-align:justify; color: #000; font-family: 'Times New Roman', serif;">
-            <div style="text-align:center; margin-bottom: 20px;">
-                <img src="images/koboi.png" style="width: 60px; margin-bottom: 10px;">
-                <p style="font-weight:800; font-size:1.3rem; margin:0;">PT. KOLA BORASI INDONESIA</p>
-                <p style="font-size:0.8rem; margin:0;">Kompeten, Loyal, Berintegritas</p>
-                <hr style="border: 1px solid #000; margin-top:10px;">
+        <div id="mouPrintArea" class="mou-print-container" style="text-align:justify; color: #000; font-family: 'Arial', sans-serif; font-size: 0.75rem; line-height: 1.2;">
+            <!-- KOP SURAT PROFESIONAL (Identik Slip Gaji) -->
+            <div style="display: flex; align-items: center; border-bottom: 3px double #000; padding-bottom: 8px; margin-bottom: 10px;">
+                <img src="images/koboi.png" style="width: 45px; margin-right: 12px;">
+                <div style="flex: 1;">
+                    <h2 style="margin: 0; font-size: 0.9rem; font-weight: 900; color: #000;">PT. KOLA BORASI INDONESIA</h2>
+                    <p style="margin: 1px 0; font-size: 0.55rem; line-height: 1.2;">
+                        Jl. Arjuna IV Green Kartika Residence Blok EE NO.2, CIBINONG, BOGOR - JAWA BARAT, 16911<br>
+                        <strong>PHONE:</strong> 0857-7444-4805 | <strong>WEB:</strong> www.kolaborasi.id
+                    </p>
+                </div>
             </div>
 
-            <p style="text-align:center; font-weight:800; font-size:1.1rem; text-decoration: underline;">SURAT PERJANJIAN KERJA (MOU)</p>
-            <p style="text-align:center; margin-bottom:30px;">Nomor: MOU/KBI/${user.nik}/${new Date().getFullYear()}</p>
+            <p style="text-align:center; font-weight:800; font-size:0.85rem; text-decoration: underline; margin-bottom: 2px;">SURAT PERJANJIAN KERJA (MOU)</p>
+            <p style="text-align:center; margin-bottom:12px; font-size: 0.7rem;">Nomor: MOU/KBI/${user.nik}/${new Date().getFullYear()}</p>
             
-            <p>Yang bertanda tangan di bawah ini:</p>
-            <div style="margin-left:20px; margin-bottom:15px;">
-                <strong>1. PT. KOLA BORASI INDONESIA</strong>, dalam hal ini diwakili oleh Manajemen HRD, selanjutnya disebut <strong>"PIHAK PERTAMA"</strong>.<br>
+            <p style="margin-bottom: 5px;">Yang bertanda tangan di bawah ini:</p>
+            <div style="margin-left:15px; margin-bottom:10px;">
+                <strong>1. PT. KOLA BORASI INDONESIA</strong>, diwakili oleh Manajemen HRD, selanjutnya disebut <strong>"PIHAK PERTAMA"</strong>.<br>
                 <strong>2. ${user.nama}</strong>, ID/NIK: ${user.nik}, Jabatan: ${user.jabatan || user.dept}, selanjutnya disebut <strong>"PIHAK KEDUA"</strong>.
             </div>
 
-            <p>KEDUA BELAH PIHAK sepakat untuk menjalin hubungan kerja profesional dengan ketentuan mengikat sebagai berikut:</p>
+            <p style="margin-bottom: 5px;">KEDUA BELAH PIHAK sepakat menjalin hubungan kerja profesional dengan ketentuan sebagai berikut:</p>
             
-            <p><strong>PASAL 1: TUGAS & TANGGUNG JAWAB</strong><br>
-            PIHAK KEDUA bekerja sebagai <strong>${user.jabatan || user.dept}</strong>. PIHAK KEDUA bertanggung jawab melaksanakan instruksi kerja dari PIHAK PERTAMA dengan dedikasi tinggi dan integritas penuh.</p>
+            <p style="margin-bottom: 5px;"><strong>PASAL 1: TUGAS & TANGGUNG JAWAB</strong><br>
+            PIHAK KEDUA bekerja sebagai <strong>${user.jabatan || user.dept}</strong>. PIHAK KEDUA wajib melaksanakan instruksi dari PIHAK PERTAMA dengan dedikasi tinggi.</p>
 
-            <p><strong>PASAL 2: KERAHASIAAN DATA (NDA)</strong><br>
-            PIHAK KEDUA dilarang keras membocorkan, menyebarkan, atau menyalahgunakan data perusahaan, strategi bisnis, maupun informasi klien kepada pihak ketiga tanpa izin tertulis. Pelanggaran terhadap pasal ini akan diproses secara HUKUM.</p>
+            <p style="margin-bottom: 5px;"><strong>PASAL 2: KERAHASIAAN DATA (NDA)</strong><br>
+            PIHAK KEDUA dilarang membocorkan data perusahaan atau klien kepada pihak ketiga tanpa izin. Pelanggaran akan diproses secara HUKUM.</p>
 
-            <p><strong>PASAL 3: PENJAGAAN ASET</strong><br>
-            PIHAK KEDUA wajib menjaga seluruh aset perusahaan yang dipercayakan kepadanya. Segala bentuk kehilangan atau penyalahgunaan aset untuk kepentingan pribadi adalah pelanggaran berat.</p>
+            <p style="margin-bottom: 5px;"><strong>PASAL 3: PENJAGAAN ASET</strong><br>
+            PIHAK KEDUA wajib menjaga seluruh aset perusahaan. Segala bentuk kehilangan atau penyalahgunaan aset adalah pelanggaran berat.</p>
 
-            <p><strong>PASAL 4: KEDISIPLINAN & ABSENSI</strong><br>
-            Kehadiran dihitung berdasarkan sistem real-time KOBOI Apps. Ketidakmampuan mengikuti jam kerja tanpa alasan yang sah akan dikenakan pemotongan gaji secara sistematis dan pemberian Surat Peringatan (SP).</p>
+            <p style="margin-bottom: 5px;"><strong>PASAL 4: KEDISIPLINAN & ABSENSI</strong><br>
+            Kehadiran dihitung via KOBOI Apps. Ketidakhadiran tanpa alasan sah akan dikenakan pemotongan gaji dan SP.</p>
 
             ${deptClauses}
 
-            <p><strong>PASAL 6: SANKSI & PEMUTUSAN HUBUNGAN</strong><br>
-            Perusahaan berhak melakukan pemutusan hubungan kerja (PHK) seketika tanpa kompensasi apabila PIHAK KEDUA ditemukan melakukan tindakan Fraud, Pencurian, Narkoba, atau tindakan asusila di lingkungan kerja.</p>
+            <p style="margin-bottom: 5px;"><strong>PASAL 6: SANKSI & PEMUTUSAN HUBUNGAN</strong><br>
+            Perusahaan berhak melakukan PHK seketika tanpa kompensasi jika PIHAK KEDUA ditemukan melakukan Fraud, Pencurian, Narkoba, atau tindakan asusila.</p>
 
-            <div style="margin-top:40px; display: flex; justify-content: space-between;">
+            <div style="margin-top:20px; display: flex; justify-content: space-between;">
                 <div style="text-align:center; width: 45%;">
-                    <p>PIHAK PERTAMA,</p>
-                    <div style="height: 80px;"></div>
-                    <p>( Manajemen HRD )</p>
+                    <p style="margin-bottom: 30px;">PIHAK PERTAMA,</p>
+                    <p style="font-weight: bold;">( Manajemen HRD )</p>
                 </div>
                 <div style="text-align:center; width: 45%;">
-                    <p>PIHAK KEDUA,</p>
-                    <div id="printSignatureArea" style="height: 80px; display: flex; justify-content: center; align-items: center;">
+                    <p style="margin-bottom: 5px;">PIHAK KEDUA,</p>
+                    <div id="printSignatureArea" style="height: 45px; display: flex; justify-content: center; align-items: center; margin-bottom: 5px;">
                         <!-- Signature image injected here for printing -->
                     </div>
-                    <p>( ${user.nama} )</p>
+                    <p style="font-weight: bold;">( ${user.nama} )</p>
                 </div>
             </div>
             
-            <p style="font-size: 0.7rem; color: #64748b; margin-top: 50px; text-align: center; border-top: 1px dashed #cbd5e1; padding-top: 10px;">
-                Dokumen ini diterbitkan secara digital melalui KOBOI Apps dan memiliki kekuatan hukum yang sah.
+            <p style="font-size: 0.6rem; color: #64748b; margin-top: 15px; text-align: center; border-top: 1px dashed #cbd5e1; padding-top: 5px;">
+                Dokumen digital KOBOI Apps memiliki kekuatan hukum yang sah.
             </p>
         </div>
     `;
@@ -557,18 +561,19 @@ function cetakMOU() {
     windowPrint.document.write(`
         <html>
             <head>
-                <title>Cetak MOU - ${currentUser.nama}</title>
+                <title>MOU - ${currentUser.nama}</title>
                 <style>
-                    body { font-family: 'Times New Roman', serif; padding: 40px; line-height: 1.5; color: #000; }
+                    @page { size: A5; margin: 5mm; }
+                    body { font-family: 'Arial', sans-serif; margin: 0; padding: 0; color: #000; -webkit-print-color-adjust: exact; }
                     img { max-width: 100%; }
-                    @page { margin: 2cm; }
-                    p { margin-bottom: 10px; text-align: justify; }
                 </style>
             </head>
             <body>
                 ${printContent}
                 <script>
-                    window.onload = function() { window.print(); window.close(); };
+                    window.onload = function() { 
+                        setTimeout(() => { window.print(); window.close(); }, 500);
+                    };
                 </script>
             </body>
         </html>
