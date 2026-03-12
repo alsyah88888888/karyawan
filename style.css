@@ -905,23 +905,99 @@ tr:hover td {
   animation: fadeIn 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* ==========================================
+   RESPONSIVE DESIGN (PHASE 37 - IMPROVED)
+   ========================================== */
+
+/* Tablet & Mobile Landscape */
 @media (max-width: 1024px) {
   .sidebar {
-    width: 260px;
+    width: 80px;
+    padding: 15px 10px;
+  }
+  .sidebar h2, .nav-label, .stat-box p, .stat-box h3, .nav-group span {
+    display: none;
+  }
+  .admin-nav button {
+    justify-content: center;
+    padding: 15px;
+  }
+  .content {
+    padding: 20px;
   }
 }
 
+/* Mobile Portrait */
 @media (max-width: 768px) {
   .admin-container {
     flex-direction: column;
+    overflow-y: auto;
   }
-
   .sidebar {
     width: 100%;
-    padding: 30px 20px;
+    height: auto;
+    flex-direction: row;
+    overflow-x: auto;
+    padding: 10px;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
   }
-
+  .sidebar-header {
+    margin: 0 15px 0 0;
+    padding: 0;
+  }
+  .admin-nav {
+    flex-direction: row;
+    margin: 0;
+  }
+  .nav-group {
+    flex-direction: row;
+    gap: 8px;
+  }
+  .sidebar-logo {
+    width: 30px;
+  }
+  .stat-box {
+    display: none;
+  }
   .content {
-    padding: 20px;
+    padding: 15px;
+  }
+  .header-content {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+  }
+  .header-content h2 {
+    font-size: 1.25rem;
+  }
+  .table-scroll {
+    border-radius: 12px;
+  }
+  .modal-content {
+    max-width: 95%;
+    border-radius: 24px;
+  }
+  .grid-fields {
+    grid-template-columns: 1fr;
+  }
+  .modal-footer {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Specific Table Fixes for Small Screens */
+@media (max-width: 480px) {
+  td, th {
+    padding: 12px;
+    font-size: 0.8rem;
+  }
+  .img-prev {
+    width: 32px;
+    height: 32px;
+  }
+  .nav-active {
+    box-shadow: none;
   }
 }

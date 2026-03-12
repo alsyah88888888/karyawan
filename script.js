@@ -417,34 +417,39 @@ function renderKaryawanTable() {
     const d = hitungDetailGaji(k.gaji || 0, k.nama);
     body.innerHTML += `
       <tr>
-        <td><strong>${k.nama}</strong><br><small>${k.nik || "-"}</small></td>
-        <td>${k.jabatan || k.dept}<br><small>Hadir: ${d.hadir}/22</small></td>
-        <td>Rp ${(k.gaji || 0).toLocaleString("id-ID")}<br><small>Thn Bergabung: ${k.tahun_bergabung || "-"}</small></td>
-        <td style="color:var(--accent); font-weight:bold;">Rp ${Math.floor(d.thp).toLocaleString("id-ID")}<br>
-          <small style="color:#64748b; font-weight:normal;">PTKP: ${k.status_ptkp || "-"}</small>
+        <td style="min-width:180px;">
+          <div style="font-weight:800; color:var(--text-main);">${k.nama}</div>
+          <div style="font-size:0.75rem; color:var(--text-muted);">${k.nik || "-"}</div>
         </td>
-        <td style="font-size: 0.8rem; line-height: 1.2;">
+        <td>
+          <div style="font-weight:600;">${k.jabatan || k.dept}</div>
+          <div style="font-size:0.75rem; color:var(--text-muted);">Hadir: ${d.hadir}/22 Hari</div>
+        </td>
+        <td>
+          <div style="font-weight:600;">Rp ${(k.gaji || 0).toLocaleString("id-ID")}</div>
+          <div style="font-size:0.75rem; color:var(--text-muted);">Gabung: ${k.tahun_bergabung || "-"}</div>
+        </td>
+        <td style="color:var(--accent); font-weight:800;">
+          Rp ${Math.floor(d.thp).toLocaleString("id-ID")}
+          <div style="font-size:0.65rem; color:var(--text-muted); font-weight:normal;">PTKP: ${k.status_ptkp || "-"}</div>
+        </td>
+        <td style="font-size: 0.75rem; color:var(--text-muted);">
           KTP: ${k.nik_ktp || "-"}<br>
           NPWP: ${k.npwp || "-"}
         </td>
         <td>
-          <span style="color: ${k.mou_signed ? '#10b981' : '#f59e0b'}; font-weight:bold; font-size:0.75rem;">
-            ${k.mou_signed ? '✅ SUDAH TTD' : '⏳ BELUM TTD'}
+          <span class="status-tag" style="background: ${k.mou_signed ? '#dcfce7' : '#fef3c7'}; color: ${k.mou_signed ? '#15803d' : '#92400e'}; font-size:0.65rem; padding:4px 8px;">
+            ${k.mou_signed ? '✅ SIGNED' : '⏳ PENDING'}
           </span>
-          <br>
-          <button onclick="resetMOU(${index})" style="background:none; border:none; color:var(--danger); font-size:0.6rem; cursor:pointer; padding:0;">[RESET MOU]</button>
+          <div style="margin-top:4px;">
+            <button onclick="resetMOU(${index})" style="background:none; border:none; color:var(--danger); font-size:0.6rem; cursor:pointer; padding:0; text-decoration:underline;">[RESET]</button>
+          </div>
         </td>
-        <td style="text-align:center;">
-          <div style="display:flex; flex-direction:column; gap:5px;">
-            <button onclick="cetakSlip(${index})" class="btn-s" style="background:var(--primary); color:white; padding:8px; border-radius:8px; border:none; cursor:pointer; font-weight:700; font-size:0.7rem;">
-              SLIP (PDF)
-            </button>
-            <button onclick="kirimWaSlip(${index})" class="btn-s" style="background:#25d366; color:white; padding:8px; border-radius:8px; border:none; cursor:pointer; font-weight:700; font-size:0.7rem;">
-              SLIP (WA)
-            </button>
-            <button onclick="adminCetakMOU(${index})" class="btn-s" style="background:#64748b; color:white; padding:8px; border-radius:8px; border:none; cursor:pointer; font-weight:700; font-size:0.7rem;">
-              CETAK MOU
-            </button>
+        <td>
+          <div style="display:flex; gap:5px; flex-wrap:wrap;">
+            <button onclick="cetakSlip(${index})" class="status-tag status-masuk" style="border:none; cursor:pointer; font-size:0.65rem;">PDF</button>
+            <button onclick="kirimWaSlip(${index})" class="status-tag" style="background:#dcfce7; color:#15803d; border:none; cursor:pointer; font-size:0.65rem;">WA</button>
+            <button onclick="adminCetakMOU(${index})" class="status-tag status-pulang" style="border:none; cursor:pointer; font-size:0.65rem;">MOU</button>
           </div>
         </td>
       </tr>`;
