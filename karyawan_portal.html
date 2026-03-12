@@ -562,6 +562,71 @@
             color: #f59e0b;
             font-weight: 700;
         }
+
+        /* --- PORTAL MODERNIZATION (PHASE 29) --- */
+        html {
+            scroll-behavior: smooth;
+        }
+
+        .portal-section {
+            padding: 60px 0;
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        .portal-section.reveal {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .portal-section:nth-child(even) {
+            background: rgba(241, 245, 249, 0.5); /* Soft slate alternate */
+            border-top: 1px solid #e2e8f0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .portal-card {
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .portal-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            border-color: var(--portal-primary);
+        }
+
+        .section-header h3 {
+            position: relative;
+            display: inline-block;
+            margin-bottom: 30px;
+        }
+
+        .section-header h3::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 0;
+            width: 40px;
+            height: 4px;
+            background: var(--portal-primary);
+            border-radius: 2px;
+        }
+
+        .welcome-section {
+            animation: fadeInDown 1s both;
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
     </style>
 </head>
 
@@ -614,84 +679,101 @@
             </div>
         </nav>
 
-        <main class="dashboard-content">
-            <div class="welcome-section">
-                <h1>Halo, <span id="welcomeName">Karyawan</span>! 👋</h1>
-                <p id="userDept">Departemen • Jabatan</p>
-            </div>
-
-            <div class="stats-grid">
-                <!-- LEAVE CARD -->
-                <div class="portal-card">
-                    <div>
-                        <span class="label">Sisa Cuti Tahunan</span>
-                        <h2 id="sisaCuti">12</h2>
-                        <p style="color: var(--portal-subtext); font-size: 0.9rem; margin-top: 5px;">Hari tersisa</p>
+        <main class="dashboard-content" style="padding: 0; max-width: none; width: 100%;">
+            <!-- SECTION 1: WELCOME & SUMMARY -->
+            <section class="portal-section reveal" id="sectionWelcome" style="padding: 60px 5%;">
+                <div style="max-width: 1400px; margin: 0 auto; width: 90%;">
+                    <div class="welcome-section">
+                        <h1>Halo, <span id="welcomeName">Karyawan</span>! 👋</h1>
+                        <p id="userDept">Departemen • Jabatan</p>
                     </div>
-                    <div class="action-btns">
-                        <button class="btn-card primary" onclick="bukaModal('modalCuti')">Ajukan Cuti/Izin</button>
+    
+                    <div class="stats-grid">
+                        <!-- LEAVE CARD -->
+                        <div class="portal-card">
+                            <div>
+                                <span class="label">Sisa Cuti Tahunan</span>
+                                <h2 id="sisaCuti">12</h2>
+                                <p style="color: var(--portal-subtext); font-size: 0.9rem; margin-top: 5px;">Hari tersisa</p>
+                            </div>
+                            <div class="action-btns">
+                                <button class="btn-card primary" onclick="bukaModal('modalCuti')">Ajukan Cuti/Izin</button>
+                            </div>
+                        </div>
+    
+                        <!-- PAYROLL CARD -->
+                        <div class="portal-card">
+                            <div>
+                                <span class="label">Estimasi Gaji (THP)</span>
+                                <h2 id="estimasiGaji">Rp 0</h2>
+                                <p style="color: #10b981; font-size: 0.9rem; margin-top: 5px; font-weight: 600;">Bulan Berjalan
+                                </p>
+                            </div>
+                            <div class="action-btns">
+                                <button class="btn-card outline" onclick="downloadSlipPribadi()">Unduh Slip Gaji</button>
+                            </div>
+                        </div>
+    
+                        <!-- LOAN CARD -->
+                        <div class="portal-card">
+                            <div>
+                                <span class="label">Status Kasbon</span>
+                                <h2 id="statusKasbon">Rp 0</h2>
+                                <p id="infoKasbon" style="color: var(--portal-subtext); font-size: 0.9rem; margin-top: 5px;">
+                                    Tidak ada pinjaman aktif</p>
+                            </div>
+                            <div class="action-btns">
+                                <button class="btn-card primary" onclick="bukaModal('modalKasbon')">Ajukan Kasbon</button>
+                            </div>
+                        </div>
+                        <!-- MOU CARD -->
+                        <div class="portal-card">
+                            <div>
+                                <span class="label">Dokumen Kontrak</span>
+                                <h2 id="mouStatus" class="mou-status-pending">MEMBACA...</h2>
+                                <p id="mouDateInfo" style="color: var(--portal-subtext); font-size: 0.9rem; margin-top: 5px;">
+                                    Harap segera lengkapi</p>
+                            </div>
+                            <div class="action-btns">
+                                <button id="btnBukaMOU" class="btn-card primary" onclick="bukaModalMOU()">Lihat Kontrak</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
-
-                <!-- PAYROLL CARD -->
-                <div class="portal-card">
-                    <div>
-                        <span class="label">Estimasi Gaji (THP)</span>
-                        <h2 id="estimasiGaji">Rp 0</h2>
-                        <p style="color: #10b981; font-size: 0.9rem; margin-top: 5px; font-weight: 600;">Bulan Berjalan
-                        </p>
+            </section>
+    
+            <!-- SECTION 2: ATTENDANCE HISTORY -->
+            <section class="portal-section" id="sectionHistory" style="padding: 80px 5%;">
+                <div style="max-width: 1400px; margin: 0 auto; width: 90%;">
+                    <div class="section-header">
+                        <h3>Riwayat Absensi</h3>
+                        <p style="color: var(--portal-subtext); font-size: 0.85rem; font-weight: 600;">7 Hari Terakhir</p>
                     </div>
-                    <div class="action-btns">
-                        <button class="btn-card outline" onclick="downloadSlipPribadi()">Unduh Slip Gaji</button>
-                    </div>
-                </div>
-
-                <!-- LOAN CARD -->
-                <div class="portal-card">
-                    <div>
-                        <span class="label">Status Kasbon</span>
-                        <h2 id="statusKasbon">Rp 0</h2>
-                        <p id="infoKasbon" style="color: var(--portal-subtext); font-size: 0.9rem; margin-top: 5px;">
-                            Tidak ada pinjaman aktif</p>
-                    </div>
-                    <div class="action-btns">
-                        <button class="btn-card primary" onclick="bukaModal('modalKasbon')">Ajukan Kasbon</button>
-                    </div>
-                </div>
-                <!-- MOU CARD -->
-                <div class="portal-card">
-                    <div>
-                        <span class="label">Dokumen Kontrak</span>
-                        <h2 id="mouStatus" class="mou-status-pending">MEMBACA...</h2>
-                        <p id="mouDateInfo" style="color: var(--portal-subtext); font-size: 0.9rem; margin-top: 5px;">
-                            Harap segera lengkapi</p>
-                    </div>
-                    <div class="action-btns">
-                        <button id="btnBukaMOU" class="btn-card primary" onclick="bukaModalMOU()">Lihat Kontrak</button>
+        
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>TANGGAL & WAKTU</th>
+                                    <th>STATUS</th>
+                                    <th>KETERANGAN</th>
+                                </tr>
+                            </thead>
+                            <tbody id="historyTableBody">
+                                <!-- Content injected by JS -->
+                            </tbody>
+                        </table>
                     </div>
                 </div>
-            </div>
-
-            <div class="section-header">
-                <h3>Riwayat Absensi</h3>
-                <p style="color: var(--portal-subtext); font-size: 0.85rem; font-weight: 600;">7 Hari Terakhir</p>
-            </div>
-
-            <div class="table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>TANGGAL & WAKTU</th>
-                            <th>STATUS</th>
-                            <th>KETERANGAN</th>
-                        </tr>
-                    </thead>
-                    <tbody id="historyTableBody">
-                        <!-- Content injected by JS -->
-                    </tbody>
-                </table>
-            </div>
+            </section>
         </main>
+
+        <!-- FOOTER -->
+        <footer style="background: #0f172a; color: white; padding: 40px 5%; text-align: center; font-size: 0.9rem;">
+            <img src="images/koboi.png" alt="Logo" style="width: 50px; opacity: 0.5; margin-bottom: 20px;">
+            <p style="margin: 0; opacity: 0.7;">&copy; 2026 PT. KOLA BORASI INDONESIA. All rights reserved.</p>
+            <p style="margin-top: 10px; opacity: 0.4; font-size: 0.75rem;">KOBOI HRIS v2.5 - Employee Self Service Portal</p>
+        </footer>
     </div>
 
     <!-- MODAL CUTI -->

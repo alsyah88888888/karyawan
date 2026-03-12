@@ -18,6 +18,7 @@ let isDrawing = false;
 // 1. INITIALIZATION
 window.onload = () => {
     checkSession();
+    initScrollReveal();
 };
 
 function showLoading(show) {
@@ -560,4 +561,29 @@ async function saveMOU() {
     } finally {
         showLoading(false);
     }
+}
+
+// 8. UI ENHANCEMENTS (PHASE 29)
+function initScrollReveal() {
+    const sections = document.querySelectorAll('.portal-section');
+    
+    const options = {
+        threshold: 0.1,
+        rootMargin: "0px 0px -50px 0px"
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('reveal');
+            } else {
+                // Jangan hapus reveal jika ingin tetap muncul setelah di-reveal
+                // entry.target.classList.remove('reveal'); 
+            }
+        });
+    }, options);
+
+    sections.forEach(section => {
+        observer.observe(section);
+    });
 }
