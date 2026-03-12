@@ -413,7 +413,9 @@ function renderKaryawanTable() {
   body.innerHTML = "";
 
   KARYAWAN.forEach((k, index) => {
-    const d = hitungDetailGaji(k.gaji || 0, k.nama);
+    const userLogs = logs.filter(l => l.nama === k.nama).slice(0, 30);
+    const userKasbon = kasbonData.filter(kb => kb.nama === k.nama);
+    const d = hitungDetailGaji(k.gaji || 0, userLogs, userKasbon, k.nik);
     body.innerHTML += `
       <tr style="font-size: 0.85rem;">
         <td>
@@ -1159,8 +1161,9 @@ async function confirmResetKasbon() {
 }
 
 function kirimWaSlip(index) {
-  const k = KARYAWAN[index];
-  const d = hitungDetailGaji(k.gaji || 0, k.nama);
+  const userLogs = logs.filter(l => l.nama === k.nama).slice(0, 30);
+  const userKasbon = kasbonData.filter(kb => kb.nama === k.nama);
+  const d = hitungDetailGaji(k.gaji || 0, userLogs, userKasbon, k.nik);
   const bulanIndo = [
     "JANUARI", "FEBRUARI", "MARET", "APRIL", "MEI", "JUNI",
     "JULI", "AGUSTUS", "SEPTEMBER", "OKTOBER", "NOVEMBER", "DESEMBER",
@@ -1300,7 +1303,6 @@ function adminCetakMOU(index) {
                     p { margin-bottom: 10px; text-align: justify; }
                 </style>
             </head>
-</head>
             <body>
                 ${bodyMOU}
                 <script>
