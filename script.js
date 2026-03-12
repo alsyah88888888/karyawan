@@ -430,7 +430,7 @@ function renderKaryawanTable() {
           <div style="font-size:0.65rem; color:var(--text-muted);">Hari</div>
         </td>
         <td>
-          <div style="font-weight:600; line-height:1.1;">Rp ${k.gaji.toLocaleString('id-ID')}</div>
+          <div style="font-weight:600; line-height:1.1;">Rp ${(k.gaji || 0).toLocaleString('id-ID')}</div>
           <div style="font-size:0.65rem; color:var(--text-muted);">Mulai: ${k.tahun_bergabung || "-"}</div>
         </td>
         <td style="color:var(--accent); font-weight:800;">
