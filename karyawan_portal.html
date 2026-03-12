@@ -502,35 +502,7 @@
         }
 
         /* RESPONSIVE */
-        @media (max-width: 768px) {
-            .dashboard-content {
-                padding: 20px 5%;
-                width: 90%;
-            }
-
-            .stats-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .welcome-section h1 {
-                font-size: 1.8rem;
-            }
-
-            .dashboard-nav h2 {
-                display: none;
-            }
-
-            .action-btns {
-                flex-direction: column;
-            }
-
-            th:nth-child(3),
-            td:nth-child(3) {
-                display: none;
-        }
-    }
-
-    /* MOU Modal & Signature */
+        /* Basic resets removed here as they are now handled in the centralized block below */MOU Modal & Signature */
         .mou-content {
             height: 300px;
             overflow-y: auto;
@@ -563,16 +535,28 @@
             font-weight: 700;
         }
 
-        /* --- PORTAL MODERNIZATION (PHASE 29) --- */
+        /* --- PORTAL MODERNIZATION & RESPONSIVENESS (PHASE 29 & 30) --- */
         html {
             scroll-behavior: smooth;
         }
 
+        .dashboard-content {
+            padding: 0;
+            max-width: none;
+            width: 100%;
+        }
+
         .portal-section {
-            padding: 60px 0;
+            padding: 80px 5%;
             opacity: 0;
             transform: translateY(30px);
             transition: all 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        .section-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 90%;
         }
 
         .portal-section.reveal {
@@ -581,7 +565,7 @@
         }
 
         .portal-section:nth-child(even) {
-            background: rgba(241, 245, 249, 0.5); /* Soft slate alternate */
+            background: rgba(241, 245, 249, 0.5);
             border-top: 1px solid #e2e8f0;
             border-bottom: 1px solid #e2e8f0;
         }
@@ -592,8 +576,72 @@
 
         .portal-card:hover {
             transform: translateY(-8px) scale(1.02);
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
             border-color: var(--portal-primary);
+        }
+
+        /* RESPONSIVE OVERRIDES */
+        @media (max-width: 1024px) {
+            .stats-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .portal-section {
+                padding: 40px 20px;
+            }
+
+            .section-container {
+                width: 100%;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .dashboard-nav {
+                padding: 15px 20px;
+            }
+
+            .dashboard-nav h2 {
+                display: none;
+            }
+
+            .welcome-section h1 {
+                font-size: 1.8rem;
+            }
+
+            .modal-card {
+                width: 95%;
+                padding: 20px;
+                margin: 10px;
+            }
+
+            .modal-actions {
+                flex-direction: column-reverse;
+            }
+
+            .table-container {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            /* Hide less important columns on mobile */
+            th:nth-child(3),
+            td:nth-child(3) {
+                display: none;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .portal-card {
+                padding: 20px;
+            }
+
+            .btn-card {
+                width: 100%;
+            }
         }
 
         .section-header h3 {
@@ -679,10 +727,10 @@
             </div>
         </nav>
 
-        <main class="dashboard-content" style="padding: 0; max-width: none; width: 100%;">
+        <main class="dashboard-content">
             <!-- SECTION 1: WELCOME & SUMMARY -->
-            <section class="portal-section reveal" id="sectionWelcome" style="padding: 60px 5%;">
-                <div style="max-width: 1400px; margin: 0 auto; width: 90%;">
+            <section class="portal-section reveal" id="sectionWelcome">
+                <div class="section-container">
                     <div class="welcome-section">
                         <h1>Halo, <span id="welcomeName">Karyawan</span>! 👋</h1>
                         <p id="userDept">Departemen • Jabatan</p>
@@ -743,8 +791,8 @@
             </section>
     
             <!-- SECTION 2: ATTENDANCE HISTORY -->
-            <section class="portal-section" id="sectionHistory" style="padding: 80px 5%;">
-                <div style="max-width: 1400px; margin: 0 auto; width: 90%;">
+            <section class="portal-section" id="sectionHistory">
+                <div class="section-container">
                     <div class="section-header">
                         <h3>Riwayat Absensi</h3>
                         <p style="color: var(--portal-subtext); font-size: 0.85rem; font-weight: 600;">7 Hari Terakhir</p>
