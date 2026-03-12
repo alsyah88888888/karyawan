@@ -1119,6 +1119,9 @@ function kirimWaSlip(index) {
   let clearWa = k.nomor_wa.replace(/\D/g, '');
   if (clearWa.startsWith('0')) clearWa = '62' + clearWa.substring(1);
   
+  // Dual trigger: Buka juga tampilan PDF agar admin bisa simpan/kirim filenya
+  cetakSlip(index);
+
   const pesan = `
 *SLIP GAJI DIGITAL - PT. KOLA BORASI INDONESIA*
 ------------------------------------------
@@ -1135,11 +1138,18 @@ Halo *${k.nama}*, Berikut rincian gaji Anda bulan ini:
 
 *TOTAL TERIMA (THP): Rp ${Math.floor(d.thp).toLocaleString('id-ID')}*
 ------------------------------------------
+
+Terima kasih atas dedikasi dan kontribusi luar biasa Anda bagi *PT. Kola Borasi Indonesia*. Semoga apa yang kita cita-citakan bersama dapat tercapai untuk kemajuan perusahaan dan kesejahteraan kita semua. 
+
+Tetap semangat dan salam profesional! 🚀🤝🇮🇩
+
 _Pesan ini dikirim otomatis melalui KOBOI Apps._
 `.trim();
 
   const url = `https://wa.me/${clearWa}?text=${encodeURIComponent(pesan)}`;
-  window.open(url, "_blank");
+  setTimeout(() => {
+    window.open(url, "_blank");
+  }, 500); // Beri jeda sedikit agar jendela PDF tidak terblokir
 }
 
 function adminCetakMOU(index) {
