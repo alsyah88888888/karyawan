@@ -643,7 +643,7 @@ function cetakSlip(index) {
   const tgl = new Date();
   const bulanIndo = [
     "JANUARI", "FEBRUARI", "MARET", "APRIL", "MEI", "JUNI",
-    "JULI", "AGUSTUS", "SEPTEMBER", "OKTOBER", "NOVEMBER", "DESEMBER",
+    "JULI", "AGUSTUS", "SEPTEMBER", "OKTOBER", "NOVEMBER", "DESEMBER"
   ];
 
   const printStyles = `
@@ -1239,7 +1239,7 @@ function adminCetakMOU(index) {
   `;
 
   const content = `
-    <div class="mou-print-container">
+    <div id="mouPrintArea" class="mou-print-container" style="text-align:justify; color: #000; font-family: 'Times New Roman', serif;">
         <div style="text-align:center; margin-bottom: 20px;">
             <img src="images/koboi.png" style="width: 60px; margin-bottom: 10px;">
             <p style="font-weight:800; font-size:1.3rem; margin:0;">PT. KOLA BORASI INDONESIA</p>
@@ -1253,7 +1253,7 @@ function adminCetakMOU(index) {
         <p>Yang bertanda tangan di bawah ini:</p>
         <div style="margin-left:20px; margin-bottom:15px;">
             <strong>1. PT. KOLA BORASI INDONESIA</strong>, dalam hal ini diwakili oleh Manajemen HRD, selanjutnya disebut <strong>"PIHAK PERTAMA"</strong>.<br>
-            <strong>2. ${user.nama}</strong>, ID/NIK: ${user.nik || "-"}, Jabatan: ${user.jabatan || user.dept}, selanjutnya disebut <strong>"PIHAK KEDUA"</strong>.
+            <strong>2. ${user.nama}</strong>, ID/NIK: ${user.nik}, Jabatan: ${user.jabatan || user.dept}, selanjutnya disebut <strong>"PIHAK KEDUA"</strong>.
         </div>
 
         <p>KEDUA BELAH PIHAK sepakat untuk menjalin hubungan kerja profesional dengan ketentuan mengikat sebagai berikut:</p>
