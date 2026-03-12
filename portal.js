@@ -562,7 +562,7 @@ function cetakMOU() {
                     body { font-family: 'Times New Roman', serif; padding: 40px; line-height: 1.5; color: #000; }
                     img { max-width: 100%; }
                     @page { margin: 2cm; }
-                    p { margin-bottom: 10px; }
+                    p { margin-bottom: 10px; text-align: justify; }
                 </style>
             </head>
             <body>

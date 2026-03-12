@@ -121,12 +121,12 @@ window.onload = async () => {
 };
 
 // --- LOGIKA PAYROLL ---
-function hitungDetailGaji(gapok, logsData, kasbonData) {
+function hitungDetailGaji(gapok, logsData, kasbonData, nikKaryawan) {
   const g = parseFloat(gapok) || 0;
   const standarHari = 22;
   const gajiHarian = g / standarHari;
 
-  const info = KARYAWAN.find(k => k.nik === (currentUser?.nik || "")); // Fallback to current if needed, but in Admin we use info passed
+  const info = KARYAWAN.find(k => k.nik === nikKaryawan);
   const ptkpStatus = info?.status_ptkp || "TK/0";
 
   // Group logs by Date for Overtime
@@ -640,7 +640,7 @@ function cetakSlip(index) {
   const k = KARYAWAN[index];
   const userLogs = logs.filter(l => l.nama === k.nama).slice(0, 30);
   const userKasbon = kasbonData.filter(kb => kb.nama === k.nama);
-  const d = hitungDetailGaji(k.gaji, userLogs, userKasbon);
+  const d = hitungDetailGaji(k.gaji, userLogs, userKasbon, k.nik);
   
   const tgl = new Date();
   const bulanIndo = [
@@ -1211,7 +1211,10 @@ _Pesan ini diterbitkan secara digital melalui KOBOI Apps._
   const url = `https://wa.me/${clearWa}?text=${encodeURIComponent(pesan)}`;
   setTimeout(() => {
     window.open(url, "_blank");
-  }, 8function adminCetakMOU(index) {
+  }, 800);
+}
+
+function adminCetakMOU(index) {
     const user = KARYAWAN[index];
     
     // Custom clauses based on department
@@ -1307,7 +1310,5 @@ _Pesan ini diterbitkan secara digital melalui KOBOI Apps._
         </html>
     `);
     windowPrint.document.close();
-}
-se();
 }
 
