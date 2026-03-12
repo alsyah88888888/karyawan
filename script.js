@@ -1214,7 +1214,10 @@ _Pesan ini diterbitkan secara digital melalui KOBOI Apps._
   const url = `https://wa.me/${clearWa}?text=${encodeURIComponent(pesan)}`;
   setTimeout(() => {
     window.open(url, "_blank");
-  }, 8function adminCetakMOU(index) {
+  }, 800);
+}
+
+function adminCetakMOU(index) {
     const user = KARYAWAN[index];
     const thn = new Date().getFullYear();
     const tglSekarang = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -1320,7 +1323,5 @@ _Pesan ini diterbitkan secara digital melalui KOBOI Apps._
         </html>
     `);
     windowPrint.document.close();
-}
-se();
 }
 
