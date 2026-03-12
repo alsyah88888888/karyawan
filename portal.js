@@ -482,7 +482,7 @@ function bukaModalMOU() {
     }
 
     const bodyMOU = `
-        <div id="mouPrintArea" class="mou-print-container" style="text-align:justify; color: #000; font-family: 'Arial', sans-serif; font-size: 0.9rem; line-height: 1.5;">
+        <div id="mouPrintArea" class="mou-print-container" style="text-align:justify; color: #000; font-family: 'Arial', sans-serif; font-size: 0.9rem; line-height: 1.5; max-width: 800px; margin: 0 auto;">
             <!-- KOP SURAT PROFESIONAL -->
             <div style="display: flex; align-items: center; border-bottom: 3px double #000; padding-bottom: 10px; margin-bottom: 20px;">
                 <img src="images/koboi.png" style="width: 60px; margin-right: 15px;">
@@ -520,12 +520,12 @@ function bukaModalMOU() {
             <p style="margin-bottom: 10px;"><strong>PASAL 6: PENYELESAIAN SENGKETA</strong><br>
             Apabila terjadi perselisihan, KEDUA BELAH PIHAK sepakat untuk menyelesaikan secara musyawarah untuk mufakat sebelum menempuh jalur hukum yang berlaku.</p>
 
-            <div style="margin-top:40px; display: flex; justify-content: space-between;">
-                <div style="text-align:center; width: 45%;">
+            <div style="margin-top:40px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 20px;">
+                <div style="text-align:center; min-width: 200px; flex: 1;">
                     <p style="margin-bottom: 60px;">PIHAK PERTAMA,</p>
                     <p style="font-weight: bold; border-bottom: 1px solid #000; display: inline-block; padding: 0 10px;">( Manajemen HRD )</p>
                 </div>
-                <div style="text-align:center; width: 45%;">
+                <div style="text-align:center; min-width: 200px; flex: 1;">
                     <p style="margin-bottom: 10px;">PIHAK KEDUA,</p>
                     <div id="printSignatureArea" style="height: 60px; display: flex; justify-content: center; align-items: center; margin-bottom: 10px;">
                         <!-- Signature image injected here for printing -->
