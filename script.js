@@ -1112,44 +1112,50 @@ async function confirmResetKasbon() {
 function kirimWaSlip(index) {
   const k = KARYAWAN[index];
   const d = hitungDetailGaji(k.gaji || 0, k.nama);
+  const bulanIndo = [
+    "JANUARI", "FEBRUARI", "MARET", "APRIL", "MEI", "JUNI",
+    "JULI", "AGUSTUS", "SEPTEMBER", "OKTOBER", "NOVEMBER", "DESEMBER",
+  ];
+  const tgl = new Date();
   
   if (!k.nomor_wa) return alert("Nomor WhatsApp karyawan belum diisi!");
   
-  // Sanitasi nomor WA: hanya angka, ganti awalan 0 ke 62
+  // Sanitasi nomor WA
   let clearWa = k.nomor_wa.replace(/\D/g, '');
   if (clearWa.startsWith('0')) clearWa = '62' + clearWa.substring(1);
   
-  // Dual trigger: Buka juga tampilan PDF agar admin bisa simpan/kirim filenya
-  cetakSlip(index);
-
   const pesan = `
 *SLIP GAJI DIGITAL - PT. KOLA BORASI INDONESIA*
+==========================================
+*PERIODE : ${bulanIndo[tgl.getMonth()]} ${tgl.getFullYear()}*
 ------------------------------------------
-Halo *${k.nama}*, Berikut rincian gaji Anda bulan ini:
-
-*PENGHASILAN*
-- Gaji Pokok: Rp ${k.gaji.toLocaleString('id-ID')}
-- Lembur: Rp ${d.bonusLembur.toLocaleString('id-ID')}
-- Tunjangan: Rp ${ (d.bonusLembur * 0).toLocaleString('id-ID') } (Tunjangan Tetap)
-
-*POTONGAN*
-- Kasbon: Rp ${d.kasbon.toLocaleString('id-ID')}
-- PPh21: Rp ${d.pph21.toLocaleString('id-ID')}
-
-*TOTAL TERIMA (THP): Rp ${Math.floor(d.thp).toLocaleString('id-ID')}*
+Nama : *${k.nama}*
+NIK  : ${k.nik || "-"}
+Dept : ${k.dept}
 ------------------------------------------
+*RINCIAN PENGHASILAN (+)*
+- Gaji Pokok  : Rp ${k.gaji.toLocaleString('id-ID')}
+- Lembur (${d.jamLembur} Jam) : Rp ${d.bonusLembur.toLocaleString('id-ID')}
+- Tunjangan   : Rp 0
+------------------------------------------
+*RINCIAN POTONGAN (-)*
+- Kasbon      : Rp ${d.kasbon.toLocaleString('id-ID')}
+- PPh21 (Pajak) : Rp ${Math.floor(d.pph21).toLocaleString('id-ID')}
+- BPJS & JHT  : Rp ${(Math.floor(d.bpjsKes + d.jht + d.jp)).toLocaleString('id-ID')}
+- Pot. Telat  : Rp ${Math.floor(d.potonganTelat).toLocaleString('id-ID')}
+------------------------------------------
+*TOTAL TERIMA (THP) : Rp ${Math.floor(d.thp).toLocaleString('id-ID')}*
+==========================================
 
 Terima kasih atas dedikasi dan kontribusi luar biasa Anda bagi *PT. Kola Borasi Indonesia*. Semoga apa yang kita cita-citakan bersama dapat tercapai untuk kemajuan perusahaan dan kesejahteraan kita semua. 
 
 Tetap semangat dan salam profesional! 🚀🤝🇮🇩
 
-_Pesan ini dikirim otomatis melalui KOBOI Apps._
+_Pesan ini diterbitkan secara digital melalui KOBOI Apps._
 `.trim();
 
   const url = `https://wa.me/${clearWa}?text=${encodeURIComponent(pesan)}`;
-  setTimeout(() => {
-    window.open(url, "_blank");
-  }, 500); // Beri jeda sedikit agar jendela PDF tidak terblokir
+  window.open(url, "_blank");
 }
 
 function adminCetakMOU(index) {
