@@ -1250,8 +1250,7 @@ function adminCetakMOU(index) {
             </div>
 
             <p>KEDUA BELAH PIHAK sepakat untuk menjalin hubungan kerja profesional dengan ketentuan mengikat sebagai berikut:</p>
-            
-            <p><strong>PASAL 1: TUGAS & TANGGUNG JAWAB</strong><br>
+                 <p><strong>PASAL 1: TUGAS & TANGGUNG JAWAB</strong><br>
             PIHAK KEDUA bekerja sebagai <strong>${user.jabatan || user.dept}</strong>. PIHAK KEDUA bertanggung jawab melaksanakan instruksi kerja dari PIHAK PERTAMA dengan dedikasi tinggi dan integritas penuh.</p>
 
             <p><strong>PASAL 2: KERAHASIAAN DATA (NDA)</strong><br>
@@ -1298,9 +1297,10 @@ function adminCetakMOU(index) {
                     body { font-family: 'Times New Roman', serif; padding: 40px; line-height: 1.5; color: #000; }
                     img { max-width: 100%; }
                     @page { margin: 2cm; }
-                    p { margin-bottom: 10px; }
+                    p { margin-bottom: 10px; text-align: justify; }
                 </style>
             </head>
+</head>
             <body>
                 ${bodyMOU}
                 <script>
