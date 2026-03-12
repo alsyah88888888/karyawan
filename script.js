@@ -539,22 +539,29 @@ async function simpanKaryawan() {
 // FITUR EDIT KARYAWAN
 function showEditModal(index) {
   const k = KARYAWAN[index];
-  document.getElementById("editOriginalNik").value = k.nik;
-  document.getElementById("editNik").value = k.nik;
-  document.getElementById("editNama").value = k.nama;
-  document.getElementById("editDept").value = k.dept;
-  document.getElementById("editJabatan").value = k.jabatan || "";
-  document.getElementById("editGaji").value = k.gaji || 0;
-  document.getElementById("editTahun").value = k.tahun_bergabung || "";
-  document.getElementById("editPin").value = k.pin || "";
-  document.getElementById("editCuti").value = k.sisa_cuti ?? 12;
-  document.getElementById("editNikKtp").value = k.nik_ktp || "";
-  document.getElementById("editNpwp").value = k.npwp || "";
-  document.getElementById("editWa").value = k.nomor_wa || "";
-  document.getElementById("editPtkp").value = k.status_ptkp || "TK/0";
+  const setVal = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.value = val;
+  };
+
+  setVal("editOriginalNik", k.nik);
+  setVal("editNik", k.nik);
+  setVal("editNama", k.nama);
+  setVal("editDept", k.dept);
+  setVal("editJabatan", k.jabatan || "");
+  setVal("editGaji", k.gaji || 0);
+  setVal("editTahun", k.tahun_bergabung || ""); // Terjaga oleh setVal
+  setVal("editPin", k.pin || "");
+  setVal("editCuti", k.sisa_cuti ?? 12);
+  setVal("editNikKtp", k.nik_ktp || "");
+  setVal("editNpwp", k.npwp || "");
+  setVal("editWa", k.nomor_wa || "");
+  setVal("editPtkp", k.status_ptkp || "TK/0");
 
   console.log("Loading Edit Modal for:", k);
-  document.getElementById("modalEdit").classList.add("active");
+  const modal = document.getElementById("modalEdit");
+  if (modal) modal.classList.add("active");
+  else console.error("Modal Edit not found!");
 }
 
 function hideEditModal() {
@@ -1003,9 +1010,10 @@ function renderAkunTable() {
   body.innerHTML = "";
 
   KARYAWAN.forEach((k, index) => {
+    const searchData = `${(k.nama || "").toLowerCase()} ${(k.nik || "").toLowerCase()}`;
     body.innerHTML += `
-      <tr class="akun-row" data-search="${k.nama.toLowerCase()} ${k.nik.toLowerCase()}">
-        <td><strong>${k.nama}</strong><br><small>PTKP: ${k.status_ptkp || "-"}</small></td>
+      <tr class="akun-row" data-search="${searchData}">
+        <td><strong>${k.nama || "-"}</strong><br><small>PTKP: ${k.status_ptkp || "-"}</small></td>
         <td>
           <code style="background:#f1f5f9; padding:4px 8px; border-radius:6px; font-weight:bold;">${k.nik || "-"}</code><br>
           <small>KTP: ${k.nik_ktp || "-"}</small>
@@ -1130,46 +1138,57 @@ function adminCetakMOU(index) {
   
   let deptClauses = "";
   if (user.dept === "OPERASIONAL") {
-      deptClauses = `<p><strong>PASAL 5: KESELAMATAN & OPERASIONAL</strong><br>PIHAK KEDUA wajib mematuhi seluruh SOP keselamatan kerja. Kelalaian mengakibatkan kerusakan alat menjadi tanggung jawab PIHAK KEDUA.</p>`;
+      deptClauses = `
+          <p><strong>PASAL 5: KESELAMATAN & OPERASIONAL</strong><br>
+          PIHAK KEDUA wajib mematuhi seluruh Standar Operasional Prosedur (SOP) keselamatan kerja. Segala bentuk kelalaian yang mengakibatkan kerusakan alat atau kerugian operasional menjadi tanggung jawab PIHAK KEDUA dan dapat dikenakan ganti rugi atau sanksi berat.</p>
+      `;
   } else {
-      deptClauses = `<p><strong>PASAL 5: PROFESIONALISME & DEADLINE</strong><br>PIHAK KEDUA wajib menyelesaikan laporan sesuai dengan tenggat waktu. Kegagalan berulang akan menjadi bahan evaluasi kinerja.</p>`;
+      deptClauses = `
+          <p><strong>PASAL 5: PROFESIONALISME & DEADLINE</strong><br>
+          PIHAK KEDUA wajib menyelesaikan laporan dan tugas sesuai dengan tenggat waktu (deadline) yang ditentukan. Kegagalan berulang dalam memenuhi standar kualitas kerja kantor akan menjadi bahan evaluasi kinerja bulanan dan pemberian SP.</p>
+      `;
   }
 
   const content = `
-    <div style="padding:40px; font-family:'Times New Roman', serif; text-align:justify; color:#000;">
+    <div style="padding:40px; font-family:'Times New Roman', serif; text-align:justify; color:#000; border: 1px solid #ccc;">
         <div style="text-align:center; border-bottom: 2px solid #000; padding-bottom:10px; margin-bottom:20px;">
-            <h2 style="margin:0;">PT. KOLA BORASI INDONESIA</h2>
-            <p style="margin:5px 0;">Surat Perjanjian Kerja Digital</p>
+            <p style="font-weight:800; font-size:1.3rem; margin:0;">PT. KOLA BORASI INDONESIA</p>
+            <p style="font-size:0.8rem; margin:0;">Kompeten, Loyal, Berintegritas</p>
         </div>
         <h3 style="text-align:center; text-decoration:underline;">MEMORANDUM OF UNDERSTANDING (MOU)</h3>
         <p style="text-align:center;">Nomor: MOU/KBI/ADM/${user.nik}/${new Date().getFullYear()}</p>
         
-        <p>Dengan ini menyatakan bahwa:</p>
-        <p><strong>1. PIHAK PERTAMA:</strong> PT. KOLA BORASI INDONESIA</p>
-        <p><strong>2. PIHAK KEDUA:</strong> ${user.nama} (NIK: ${user.nik})</p>
+        <p><strong>PIHAK PERTAMA:</strong> PT. KOLA BORASI INDONESIA</p>
+        <p><strong>PIHAK KEDUA:</strong> ${user.nama} (NIK: ${user.nik})</p>
         
-        <p><strong>PASAL 1: KERAHASIAAN (NDA)</strong><br>PIHAK KEDUA dilarang membocorkan data perusahaan. Pelanggaran akan diproses HUKUM.</p>
-        <p><strong>PASAL 2: PENJAGAAN ASET</strong><br>PIHAK KEDUA wajib menjaga aset perusahaan. Kehilangan adalah tanggung jawab PIHAK KEDUA.</p>
+        <p><strong>PASAL 1: TUGAS & TANGGUNG JAWAB</strong><br>PIHAK KEDUA bekerja sebagai <strong>${user.jabatan || user.dept}</strong>. PIHAK KEDUA bertanggung jawab melaksanakan instruksi kerja dengan dedikasi tinggi.</p>
+        <p><strong>PASAL 2: KERAHASIAAN DATA (NDA)</strong><br>PIHAK KEDUA dilarang membocorkan data perusahaan. Pelanggaran akan diproses secara HUKUM.</p>
+        <p><strong>PASAL 3: PENJAGAAN ASET</strong><br>PIHAK KEDUA wajib menjaga aset perusahaan. Kehilangan adalah tanggung jawab PIHAK KEDUA.</p>
+        <p><strong>PASAL 4: KEDISIPLINAN</strong><br>Kehadiran dihitung real-time. Pelanggaran jam kerja dikenakan sanksi/SP.</p>
         ${deptClauses}
+        <p><strong>PASAL 6: SANKSI & PHK</strong><br>PHK dapat dilakukan seketika jika ditemukan Fraud, Pencurian, atau Narkoba.</p>
         
         <div style="margin-top:50px; display:flex; justify-content:space-between;">
-            <div style="text-align:center;">
-                <p>Mengetahui,</p>
+            <div style="text-align:center; width:45%;">
+                <p>PIHAK PERTAMA,</p>
                 <div style="height:60px;"></div>
-                <p>( HR Manager )</p>
+                <p>( Manajemen HRD )</p>
             </div>
-            <div style="text-align:center;">
-                <p>Karyawan,</p>
+            <div style="text-align:center; width:45%;">
+                <p>PIHAK KEDUA,</p>
                 <div style="height:60px; display:flex; align-items:center; justify-content:center;">
-                    ${user.mou_signed ? `<img src="${user.mou_signature}" style="height:60px;">` : '<p style="color:red;">[BELUM TTD]</p>'}
+                    ${user.mou_signed ? `<img src="${user.mou_signature}" style="height:60px;">` : '<p style="color:red; font-size:0.8rem;">[BELUM TANDA TANGAN]</p>'}
                 </div>
                 <p>( ${user.nama} )</p>
             </div>
         </div>
+        <p style="font-size: 0.7rem; color: #64748b; margin-top: 50px; text-align: center; border-top: 1px dashed #ccc; padding-top: 10px;">
+            Dokumen digital KOBOI Apps - Memiliki kekuatan hukum yang sama dengan cetak fisik.
+        </p>
     </div>
   `;
 
-  const windowPrint = window.open('', '', 'width=800,height=900');
+  const windowPrint = window.open('', '', 'width=850,height=900');
   windowPrint.document.write(`<html><head><title>MOU-${user.nama}</title></head><body>${content}</body><script>window.onload=function(){window.print();window.close();};</script></html>`);
   windowPrint.document.close();
 }
