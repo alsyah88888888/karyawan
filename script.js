@@ -1216,79 +1216,84 @@ _Pesan ini diterbitkan secara digital melalui KOBOI Apps._
     window.open(url, "_blank");
   }, 8function adminCetakMOU(index) {
     const user = KARYAWAN[index];
+    const thn = new Date().getFullYear();
+    const tglSekarang = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
     
-    // Custom clauses based on department
-    let deptClauses = "";
+    // Logic for Scope of Work & Purpose based on Dept/Jabatan
+    let s_maksud = "Meningkatkan efisiensi dan profesionalitas kerja di lingkungan perusahaan.";
+    let s_lingkup = "Melaksanakan tugas harian sesuai dengan Instruksi Kerja (IK) yang diberikan atasan.";
+    
     if (user.dept === "OPERASIONAL") {
-        deptClauses = `
-            <p><strong>PASAL 5: KESELAMATAN & OPERASIONAL</strong><br>
-            PIHAK KEDUA wajib mematuhi seluruh Standar Operasional Prosedur (SOP) keselamatan kerja. Segala bentuk kelalaian yang mengakibatkan kerusakan alat atau kerugian operasional menjadi tanggung jawab PIHAK KEDUA.</p>
-        `;
-    } else {
-        deptClauses = `
-            <p><strong>PASAL 5: PROFESIONALISME & DEADLINE</strong><br>
-            PIHAK KEDUA wajib menyelesaikan laporan dan tugas sesuai dengan tenggat waktu (deadline). Kegagalan berulang akan menjadi bahan evaluasi kinerja bulanan dan pemberian SP.</p>
-        `;
+        s_maksud = "Menghasilkan output operasional yang aman, tepat waktu, dan berkualitas tinggi.";
+        s_lingkup = "Pemeliharaan alat kerja, kepatuhan SOP Keselamatan (K3), dan pelaporan logistik lapangan.";
+    } else if (user.dept === "IT" || user.dept === "TEKNIS") {
+        s_maksud = "Menjamin stabilitas sistem digital dan infrastruktur teknologi perusahaan.";
+        s_lingkup = "Pemeliharaan aplikasi KOBOI, manajemen database, dan troubleshooting perangkat kerja.";
+    } else if (user.dept === "FINANCE" || user.dept === "AKUNTANSI") {
+        s_maksud = "Menjaga integritas data keuangan dan ketepatan administrasi transaksi.";
+        s_lingkup = "Pencatatan invoice, verifikasi laporan pengeluaran, dan penyiapan data payroll/pajak.";
+    } else if (user.dept === "MARKETING" || user.dept === "SALES") {
+        s_maksud = "Memperluas jangkauan pasar dan menjaga hubungan baik dengan klien.";
+        s_lingkup = "Acquisition klien baru, manajemen media sosial, dan presentasi profil perusahaan.";
+    } else if (user.dept === "HRD" || user.dept === "GA") {
+        s_maksud = "Mengoptimalkan manajemen SDM dan kenyamanan kerja seluruh staf.";
+        s_lingkup = "Monitoring absensi rincian, rekrutmen, dan pemeliharaan fasilitas kantor.";
     }
 
     const bodyMOU = `
-        <div id="mouPrintArea" class="mou-print-container" style="text-align:justify; color: #000; font-family: 'Arial', sans-serif; font-size: 0.75rem; line-height: 1.2;">
-            <!-- KOP SURAT PROFESIONAL (Identik Slip Gaji) -->
-            <div style="display: flex; align-items: center; border-bottom: 3px double #000; padding-bottom: 8px; margin-bottom: 10px;">
-                <img src="images/koboi.png" style="width: 45px; margin-right: 12px;">
+        <div id="mouPrintArea" class="mou-print-container" style="text-align:justify; color: #000; font-family: 'Arial', sans-serif; font-size: 0.65rem; line-height: 1.15;">
+            <!-- KOP SURAT PROFESIONAL -->
+            <div style="display: flex; align-items: center; border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 8px;">
+                <img src="images/koboi.png" style="width: 40px; margin-right: 10px;">
                 <div style="flex: 1;">
-                    <h2 style="margin: 0; font-size: 0.9rem; font-weight: 900; color: #000;">PT. KOLA BORASI INDONESIA</h2>
-                    <p style="margin: 1px 0; font-size: 0.55rem; line-height: 1.2;">
-                        Jl. Arjuna IV Green Kartika Residence Blok EE NO.2, CIBINONG, BOGOR - JAWA BARAT, 16911<br>
-                        <strong>PHONE:</strong> 0857-7444-4805 | <strong>WEB:</strong> www.kolaborasi.id
-                    </p>
+                    <h2 style="margin: 0; font-size: 0.85rem; font-weight: 900;">PT. KOLA BORASI INDONESIA</h2>
+                    <p style="margin: 0; font-size: 0.5rem;">Jl. Arjuna IV Green Kartika Residence Blok EE NO.2, CIBINONG, BOGOR | 0857-7444-4805 | www.kolaborasi.id</p>
                 </div>
             </div>
 
-            <p style="text-align:center; font-weight:800; font-size:0.85rem; text-decoration: underline; margin-bottom: 2px;">SURAT PERJANJIAN KERJA (MOU)</p>
-            <p style="text-align:center; margin-bottom:12px; font-size: 0.7rem;">Nomor: MOU/KBI/${user.nik}/${new Date().getFullYear()}</p>
+            <p style="text-align:center; font-weight:800; font-size:0.8rem; text-decoration: underline; margin-bottom: 1px;">SURAT PERJANJIAN KERJA (MOU)</p>
+            <p style="text-align:center; margin-bottom:8px; font-size: 0.6rem;">Nomor: MOU/KBI/${user.nik}/${thn}</p>
             
-            <p style="margin-bottom: 5px;">Yang bertanda tangan di bawah ini:</p>
-            <div style="margin-left:15px; margin-bottom:10px;">
-                <strong>1. PT. KOLA BORASI INDONESIA</strong>, diwakili oleh Manajemen HRD, selanjutnya disebut <strong>"PIHAK PERTAMA"</strong>.<br>
-                <strong>2. ${user.nama}</strong>, ID/NIK: ${user.nik}, Jabatan: ${user.jabatan || user.dept}, selanjutnya disebut <strong>"PIHAK KEDUA"</strong>.
+            <p style="margin-bottom: 3px;">Pada hari ini, <strong>${tglSekarang}</strong>, kami yang bertanda tangan di bawah ini:</p>
+            <div style="margin-left:10px; margin-bottom:8px;">
+                <strong>1. PT. KOLA BORASI INDONESIA</strong>, beralamat di Cibinong, Bogor, diwakili oleh Manajemen HRD, selanjutnya disebut <strong>"PIHAK PERTAMA"</strong>.<br>
+                <strong>2. ${user.nama}</strong>, ID/NIK: ${user.nik}, Jabatan: ${user.jabatan || user.dept}, beralamat sesuai data database, disebut <strong>"PIHAK KEDUA"</strong>.
             </div>
 
-            <p style="margin-bottom: 5px;">KEDUA BELAH PIHAK sepakat menjalin hubungan kerja profesional dengan ketentuan sebagai berikut:</p>
-            
-            <p style="margin-bottom: 5px;"><strong>PASAL 1: TUGAS & TANGGUNG JAWAB</strong><br>
-            PIHAK KEDUA bekerja sebagai <strong>${user.jabatan || user.dept}</strong>. PIHAK KEDUA wajib melaksanakan instruksi dari PIHAK PERTAMA dengan dedikasi tinggi.</p>
+            <p style="margin-bottom: 4px;"><strong>PASAL 1: LATAR BELAKANG & MAKSUD TUJUAN</strong><br>
+            Bahwa PIHAK PERTAMA adalah perusahaan yang bergerak di bidang jasa/produk profesional dan PIHAK KEDUA memiliki kompetensi untuk mendukung visi tersebut. Adapun tujuannya adalah: <em>${s_maksud}</em></p>
 
-            <p style="margin-bottom: 5px;"><strong>PASAL 2: KERAHASIAAN DATA (NDA)</strong><br>
-            PIHAK KEDUA dilarang membocorkan data perusahaan atau klien kepada pihak ketiga tanpa izin. Pelanggaran akan diproses secara HUKUM.</p>
+            <p style="margin-bottom: 4px;"><strong>PASAL 2: RUANG LINGKUP & JANGKA WAKTU</strong><br>
+            PIHAK KEDUA bertugas sebagai <strong>${user.jabatan || user.dept}</strong> dengan lingkup: ${s_lingkup}. Perjanjian ini berlaku selama masa aktif penempatan di KOBOI Apps.</p>
 
-            <p style="margin-bottom: 5px;"><strong>PASAL 3: PENJAGAAN ASET</strong><br>
-            PIHAK KEDUA wajib menjaga seluruh aset perusahaan. Segala bentuk kehilangan atau penyalahgunaan aset adalah pelanggaran berat.</p>
+            <p style="margin-bottom: 4px;"><strong>PASAL 3: HAK & KEWAJIBAN</strong><br>
+            PIHAK KEDUA wajib mematuhi jam kerja, menjaga kerahasiaan data (NDA), dan memelihara aset. PIHAK PERTAMA berkewajiban memberikan kompensasi sesuai rincian payroll digital dan fasilitas pendukung kerja.</p>
 
-            <p style="margin-bottom: 5px;"><strong>PASAL 4: KEDISIPLINAN & ABSENSI</strong><br>
-            Kehadiran dihitung via KOBOI Apps. Ketidakhadiran tanpa alasan sah akan dikenakan pemotongan gaji dan SP.</p>
+            <p style="margin-bottom: 4px;"><strong>PASAL 4: KETENTUAN BIAYA & PENDANAAN</strong><br>
+            Segala pengeluaran tak Tis (operational expenses) yang dilakukan PIHAK KEDUA demi tugas wajib mendapatkan persetujuan PIHAK PERTAMA melalui sistem Reimbursement digital.</p>
 
-            ${deptClauses}
+            <p style="margin-bottom: 4px;"><strong>PASAL 5: PELANGGARAN & SANKSI</strong><br>
+            Ketidakhadiran tanpa izin atau pelanggaran SOP keselamatan dapat dikenakan sanksi berupa pemotongan gaji sistematis atau Surat Peringatan (SP) berjenjang hingga pemutusan hubungan.</p>
 
-            <p style="margin-bottom: 5px;"><strong>PASAL 6: SANKSI & PEMUTUSAN HUBUNGAN</strong><br>
-            Perusahaan berhak melakukan PHK seketika tanpa kompensasi jika PIHAK KEDUA ditemukan melakukan Fraud, Pencurian, Narkoba, atau tindakan asusila.</p>
+            <p style="margin-bottom: 4px;"><strong>PASAL 6: PENYELESAIAN SENGKETA</strong><br>
+            Apabila terjadi perselisihan, KEDUA BELAH PIHAK sepakat untuk menyelesaikan secara musyawarah untuk mufakat sebelum menempuh jalur hukum yang berlaku.</p>
 
-            <div style="margin-top:20px; display: flex; justify-content: space-between;">
+            <div style="margin-top:15px; display: flex; justify-content: space-between;">
                 <div style="text-align:center; width: 45%;">
-                    <p style="margin-bottom: 30px;">PIHAK PERTAMA,</p>
+                    <p style="margin-bottom: 25px;">PIHAK PERTAMA,</p>
                     <p style="font-weight: bold;">( Manajemen HRD )</p>
                 </div>
                 <div style="text-align:center; width: 45%;">
-                    <p style="margin-bottom: 5px;">PIHAK KEDUA,</p>
-                    <div style="height: 45px; display: flex; justify-content: center; align-items: center; margin-bottom: 5px;">
-                        ${user.mou_signed ? `<img src="${user.mou_signature}" style="max-height: 45px; width: auto;">` : '<p style="color:red; font-size:0.6rem; border:1px dashed red; padding:3px;">[BELUM TTD]</p>'}
+                    <p style="margin-bottom: 4px;">PIHAK KEDUA,</p>
+                    <div style="height: 40px; display: flex; justify-content: center; align-items: center; margin-bottom: 4px;">
+                        ${user.mou_signed ? `<img src="${user.mou_signature}" style="max-height: 40px; width: auto;">` : '<p style="color:red; font-size:0.5rem; border:1px dashed red; padding:2px;">[BELUM TTD]</p>'}
                     </div>
                     <p style="font-weight: bold;">( ${user.nama} )</p>
                 </div>
             </div>
             
-            <p style="font-size: 0.6rem; color: #64748b; margin-top: 15px; text-align: center; border-top: 1px dashed #cbd5e1; padding-top: 5px;">
-                Dokumen digital KOBOI Apps memiliki kekuatan hukum yang sah.
+            <p style="font-size: 0.55rem; color: #64748b; margin-top: 10px; text-align: center; border-top: 1px dashed #cbd5e1; padding-top: 4px;">
+                Dokumen digital ini diterbitkan otomatis melalui KOBOI Apps dan bersifat mengikat secara hukum.
             </p>
         </div>
     `;
