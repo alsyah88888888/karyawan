@@ -1124,6 +1124,9 @@ function kirimWaSlip(index) {
   let clearWa = k.nomor_wa.replace(/\D/g, '');
   if (clearWa.startsWith('0')) clearWa = '62' + clearWa.substring(1);
   
+  // TRIGGER PDF (Agar admin bisa save/cetak filenya untuk dilampirkan)
+  cetakSlip(index);
+
   const pesan = `
 *SLIP GAJI DIGITAL - PT. KOLA BORASI INDONESIA*
 ==========================================
@@ -1151,11 +1154,15 @@ Terima kasih atas dedikasi dan kontribusi luar biasa Anda bagi *PT. Kola Borasi 
 
 Tetap semangat dan salam profesional! 🚀🤝🇮🇩
 
+_(Lampiran PDF Slip Gaji akan dikirimkan oleh Admin setelah pesan ini)_
+
 _Pesan ini diterbitkan secara digital melalui KOBOI Apps._
 `.trim();
 
   const url = `https://wa.me/${clearWa}?text=${encodeURIComponent(pesan)}`;
-  window.open(url, "_blank");
+  setTimeout(() => {
+    window.open(url, "_blank");
+  }, 800); 
 }
 
 function adminCetakMOU(index) {
