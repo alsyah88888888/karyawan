@@ -1115,6 +1115,10 @@ function kirimWaSlip(index) {
   
   if (!k.nomor_wa) return alert("Nomor WhatsApp karyawan belum diisi!");
   
+  // Sanitasi nomor WA: hanya angka, ganti awalan 0 ke 62
+  let clearWa = k.nomor_wa.replace(/\D/g, '');
+  if (clearWa.startsWith('0')) clearWa = '62' + clearWa.substring(1);
+  
   const pesan = `
 *SLIP GAJI DIGITAL - PT. KOLA BORASI INDONESIA*
 ------------------------------------------
@@ -1122,11 +1126,11 @@ Halo *${k.nama}*, Berikut rincian gaji Anda bulan ini:
 
 *PENGHASILAN*
 - Gaji Pokok: Rp ${k.gaji.toLocaleString('id-ID')}
-- Lembur: Rp ${d.lembur.toLocaleString('id-ID')}
-- Tunjangan: Rp ${d.tunjangan.toLocaleString('id-ID')}
+- Lembur: Rp ${d.bonusLembur.toLocaleString('id-ID')}
+- Tunjangan: Rp ${ (d.bonusLembur * 0).toLocaleString('id-ID') } (Tunjangan Tetap)
 
 *POTONGAN*
-- Kasbon: Rp ${d.potonganKasbon.toLocaleString('id-ID')}
+- Kasbon: Rp ${d.kasbon.toLocaleString('id-ID')}
 - PPh21: Rp ${d.pph21.toLocaleString('id-ID')}
 
 *TOTAL TERIMA (THP): Rp ${Math.floor(d.thp).toLocaleString('id-ID')}*
@@ -1134,7 +1138,7 @@ Halo *${k.nama}*, Berikut rincian gaji Anda bulan ini:
 _Pesan ini dikirim otomatis melalui KOBOI Apps._
 `.trim();
 
-  const url = `https://wa.me/${k.nomor_wa}?text=${encodeURIComponent(pesan)}`;
+  const url = `https://wa.me/${clearWa}?text=${encodeURIComponent(pesan)}`;
   window.open(url, "_blank");
 }
 
