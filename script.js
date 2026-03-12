@@ -728,8 +728,10 @@ function cetakSlip(index) {
     </div>`;
 
   const w = window.open("", "_blank");
-  w.document.write(`<html><head><title>Slip - ${k.nama}</title>${printStyles}</head><body>${isiSlip}<script>window.onload=function(){window.print();window.close();}<\/script></body></html>`);
-  w.document.close();
+  if (w) {
+    w.document.write(`<html><head><title>Slip - ${k.nama}</title>${printStyles}</head><body>${isiSlip}<script>window.onload=function(){window.print();window.close();}<\/script></body></html>`);
+    w.document.close();
+  }
 }
 
 // --- UTILITAS ---
