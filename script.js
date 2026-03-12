@@ -570,19 +570,24 @@ function hideEditModal() {
 
 async function updateKaryawan() {
   try {
-    const originalNik = document.getElementById("editOriginalNik").value;
-    const nik = document.getElementById("editNik").value.trim();
-    const nama = document.getElementById("editNama").value.trim().toUpperCase();
-    const dept = document.getElementById("editDept").value;
-    const jabatan = document.getElementById("editJabatan").value.trim() || dept;
-    const gaji = parseFloat(document.getElementById("editGaji").value) || 0;
-    const tahun = document.getElementById("editTahun").value.trim();
-    const pin = document.getElementById("editPin").value.trim();
-    const sisa_cuti = parseInt(document.getElementById("editCuti").value) || 0;
+    const getVal = (id) => {
+      const el = document.getElementById(id);
+      return el ? el.value.trim() : "";
+    };
 
-    const nik_ktp = document.getElementById("editNikKtp")?.value.trim() || "";
-    const npwp = document.getElementById("editNpwp")?.value.trim() || "";
-    const nomor_wa = document.getElementById("editWa")?.value.trim() || "";
+    const originalNik = getVal("editOriginalNik");
+    const nik = getVal("editNik");
+    const nama = getVal("editNama").toUpperCase();
+    const dept = document.getElementById("editDept")?.value || "";
+    const jabatan = getVal("editJabatan") || dept;
+    const gaji = parseFloat(getVal("editGaji")) || 0;
+    const tahun = getVal("editTahun"); 
+    const pin = getVal("editPin");
+    const sisa_cuti = parseInt(getVal("editCuti")) || 0;
+
+    const nik_ktp = getVal("editNikKtp");
+    const npwp = getVal("editNpwp");
+    const nomor_wa = getVal("editWa");
     const status_ptkp = document.getElementById("editPtkp")?.value || "";
 
     if (!nama || !gaji) return alert("Nama dan Gaji tidak boleh kosong!");
