@@ -646,14 +646,31 @@ function cetakSlip(index) {
     "JULI", "AGUSTUS", "SEPTEMBER", "OKTOBER", "NOVEMBER", "DESEMBER",
   ];
 
+  const printStyles = `
+    <style>
+      @page { size: A5; margin: 0; }
+      body { margin: 0; padding: 0; -webkit-print-color-adjust: exact; }
+      .print-container { 
+        width: 148mm; 
+        height: 210mm; 
+        padding: 10mm; 
+        box-sizing: border-box; 
+        background: #fff; 
+        position: relative;
+        overflow: hidden;
+      }
+      * { box-sizing: border-box; }
+    </style>
+  `;
+
   const isiSlip = `
-    <div style="width: 500px; padding: 40px; border: 1px solid #000; font-family: 'Arial', sans-serif; background: #fff; color: #000;">
+    <div class="print-container" style="border: 1px solid #000; font-family: 'Arial', sans-serif; color: #000;">
         <!-- KOP SURAT PROFESIONAL -->
-        <div style="display: flex; align-items: center; border-bottom: 3px double #000; padding-bottom: 20px; margin-bottom: 20px;">
-            <img src="images/koboi.png" style="width: 80px; margin-right: 20px;">
+        <div style="display: flex; align-items: center; border-bottom: 3px double #000; padding-bottom: 15px; margin-bottom: 15px;">
+            <img src="images/koboi.png" style="width: 60px; margin-right: 15px;">
             <div style="flex: 1;">
-                <h2 style="margin: 0; font-size: 1.4rem; font-weight: 900; color: #000;">PT. KOLA BORASI INDONESIA</h2>
-                <p style="margin: 4px 0; font-size: 0.7rem; line-height: 1.3;">
+                <h2 style="margin: 0; font-size: 1.1rem; font-weight: 900; color: #000;">PT. KOLA BORASI INDONESIA</h2>
+                <p style="margin: 2px 0; font-size: 0.6rem; line-height: 1.3;">
                     Jl. Arjuna IV Green Kartika Residence Blok EE NO.2, CIBINONG,<br>
                     KAB. BOGOR - JAWA BARAT, 16911<br>
                     <strong>PHONE:</strong> 0857-7444-4805 | <strong>WEB:</strong> www.kolaborasi.id
@@ -661,11 +678,11 @@ function cetakSlip(index) {
             </div>
         </div>
 
-        <p style="text-align:center; font-weight:900; font-size: 1.1rem; text-decoration: underline; margin-bottom: 20px;">
+        <p style="text-align:center; font-weight:900; font-size: 0.9rem; text-decoration: underline; margin-bottom: 15px;">
             SLIP GAJI KARYAWAN - ${bulanIndo[tgl.getMonth()]} ${tgl.getFullYear()}
         </p>
         
-        <div style="display:grid; grid-template-columns: 140px 10px 1fr; line-height: 1.8; font-size:0.85rem;">
+        <div style="display:grid; grid-template-columns: 110px 10px 1fr; line-height: 1.6; font-size:0.75rem;">
             <span>ID KARYAWAN</span><span>:</span><span>${k.nik || "-"}</span>
             <span>NAMA LENGKAP</span><span>:</span><span style="font-weight:bold;">${k.nama}</span>
             <span>STATUS PAJAK</span><span>:</span><span>${d.ptkpStatus}</span>
@@ -673,45 +690,45 @@ function cetakSlip(index) {
             <span>TOTAL KEHADIRAN</span><span>:</span><span>${d.hadir} / 22 Hari</span>
         </div>
 
-        <div style="border-top:1px dashed #000; margin-top:20px; padding-top:15px;">
-            <div style="display:flex; justify-content:space-between;"><span>Gaji Pokok Full</span><span>Rp ${d.gapok.toLocaleString("id-ID")}</span></div>
-            <div style="display:flex; justify-content:space-between;"><span>Gaji Pro-rata (Sesuai Hadir)</span><span>Rp ${Math.floor(d.gajiPro).toLocaleString("id-ID")}</span></div>
-            <div style="display:flex; justify-content:space-between; color: #15803d; font-weight:bold;"><span>Bonus Lembur (${d.jamLembur} Jam)</span><span>+Rp ${d.bonusLembur.toLocaleString("id-ID")}</span></div>
+        <div style="border-top:1px dashed #000; margin-top:15px; padding-top:10px;">
+            <div style="display:flex; justify-content:space-between; font-size: 0.75rem;"><span>Gaji Pokok Full</span><span>Rp ${d.gapok.toLocaleString("id-ID")}</span></div>
+            <div style="display:flex; justify-content:space-between; font-size: 0.75rem;"><span>Gaji Pro-rata (Hadir)</span><span>Rp ${Math.floor(d.gajiPro).toLocaleString("id-ID")}</span></div>
+            <div style="display:flex; justify-content:space-between; color: #15803d; font-weight:bold; font-size: 0.75rem;"><span>Bonus Lembur (${d.jamLembur} Jam)</span><span>+Rp ${d.bonusLembur.toLocaleString("id-ID")}</span></div>
         </div>
 
-        <p style="margin: 20px 0 5px 0; font-weight:bold; text-decoration: underline; font-size: 0.8rem;">POTONGAN, PAJAK & KASBON</p>
-        <div style="line-height: 1.6; font-size:0.8rem;">
+        <p style="margin: 15px 0 5px 0; font-weight:bold; text-decoration: underline; font-size: 0.7rem;">POTONGAN, PAJAK & KASBON</p>
+        <div style="line-height: 1.5; font-size:0.75rem;">
             <div style="display:flex; justify-content:space-between;"><span>BPJS Kesehatan (1%)</span><span>-Rp ${Math.floor(d.bpjsKes).toLocaleString("id-ID")}</span></div>
             <div style="display:flex; justify-content:space-between;"><span>JHT (2%)</span><span>-Rp ${Math.floor(d.jht).toLocaleString("id-ID")}</span></div>
             <div style="display:flex; justify-content:space-between;"><span>JP (1%)</span><span>-Rp ${Math.floor(d.jp).toLocaleString("id-ID")}</span></div>
-            <div style="display:flex; justify-content:space-between;"><span>PPh 21 (Pajak Penghasilan)</span><span>-Rp ${Math.floor(d.pph21).toLocaleString("id-ID")}</span></div>
-            <div style="display:flex; justify-content:space-between; color: #ef4444;"><span>Potongan Keterlambatan (${d.jumlahTelat}x)</span><span>-Rp ${Math.floor(d.potonganTelat).toLocaleString("id-ID")}</span></div>
+            <div style="display:flex; justify-content:space-between;"><span>PPh 21 (Pajak)</span><span>-Rp ${Math.floor(d.pph21).toLocaleString("id-ID")}</span></div>
+            <div style="display:flex; justify-content:space-between; color: #ef4444;"><span>Potongan Telat (${d.jumlahTelat}x)</span><span>-Rp ${Math.floor(d.potonganTelat).toLocaleString("id-ID")}</span></div>
             <div style="display:flex; justify-content:space-between; font-weight:bold; color:#1e293b; border-top:1px dashed #ccc; margin-top:5px; padding-top:5px;"><span>POTONGAN KASBON</span><span>-Rp ${d.kasbon.toLocaleString("id-ID")}</span></div>
         </div>
 
-        <div style="border: 2px solid #000; margin-top:20px; padding:15px; display:flex; justify-content:space-between; font-weight:900; font-size:1.2rem; background:#f8fafc;">
+        <div style="border: 2px solid #000; margin-top:15px; padding:10px; display:flex; justify-content:space-between; font-weight:900; font-size:1rem; background:#f8fafc;">
             <span>TAKE HOME PAY</span><span>Rp ${Math.floor(d.thp).toLocaleString("id-ID")}</span>
         </div>
         
-        <div style="margin-top: 30px; display: flex; justify-content: space-between; font-size: 0.75rem;">
-            <div style="text-align: center; width: 150px;">
+        <div style="margin-top: 25px; display: flex; justify-content: space-between; font-size: 0.7rem;">
+            <div style="text-align: center; width: 120px;">
                 Penerima,<br><br><br><br>
                 ( ________________ )
             </div>
-            <div style="text-align: center; width: 150px;">
+            <div style="text-align: center; width: 120px;">
                 Hormat Kami,<br><br><br><br>
                 <strong>HRD KOBOI</strong>
             </div>
         </div>
 
-        <p style="text-align:center; font-size:0.65rem; margin-top:30px; color: #64748b; font-style: italic;">
+        <p style="text-align:center; font-size:0.55rem; margin-top:20px; color: #64748b; font-style: italic;">
             Dokumen ini sah dikeluarkan secara digital oleh KOBOI HRIS Management System.<br>
             Waktu Cetak: ${tgl.toLocaleString("id-ID")}
         </p>
     </div>`;
 
   const w = window.open("", "_blank");
-  w.document.write(`<html><head><title>Dokumen PT. Kola Borasi Indonesia</title></head><body style="display:flex;justify-content:center;padding:20px;">${isiSlip}<script>window.onload=function(){window.print();}<\/script></body></html>`);
+  w.document.write(`<html><head><title>Slip - ${k.nama}</title>${printStyles}</head><body>${isiSlip}<script>window.onload=function(){window.print();window.close();}<\/script></body></html>`);
   w.document.close();
 }
 
@@ -1203,71 +1220,89 @@ _Pesan ini diterbitkan secara digital melalui KOBOI Apps._
     deptClauses = `
           <p><strong>PASAL 5: PROFESIONALISME & DEADLINE</strong><br>
           PIHAK KEDUA wajib menyelesaikan laporan dan tugas sesuai dengan tenggat waktu (deadline) yang ditentukan. Kegagalan berulang dalam memenuhi standar kualitas kerja kantor akan menjadi bahan evaluasi kinerja bulanan dan pemberian SP.</p>
-      `;
-  }
+        const printStyles = `
+    <style>
+      @page { size: A5; margin: 0; }
+      body { margin: 0; padding: 0; -webkit-print-color-adjust: exact; }
+      .print-container { 
+        width: 148mm; 
+        height: 210mm; 
+        padding: 12mm; 
+        box-sizing: border-box; 
+        background: #fff; 
+        position: relative;
+        overflow: hidden;
+      }
+      * { box-sizing: border-box; }
+      p, div { font-size: 0.85rem; line-height: 1.4; }
+      h2 { font-size: 1.2rem; }
+    </style>
+  `;
 
   const content = `
-    <div style="padding:40px; max-width: 800px; margin: auto; font-family:'Times New Roman', serif; text-align:justify; color:#000; border: 1px solid #eee;">
-        <div style="text-align:center; margin-bottom: 20px;">
-            <img src="images/koboi.png" style="width: 70px; margin-bottom: 10px;">
-            <p style="font-weight:800; font-size:1.4rem; margin:0; line-height: 1.2;">PT. KOLA BORASI INDONESIA</p>
-            <p style="font-size:0.9rem; margin:0;">Kompeten, Loyal, Berintegritas</p>
-            <hr style="border: 1px solid #000; margin-top:15px;">
+    <div class="print-container" style="font-family:'Times New Roman', serif; text-align:justify; color:#000; border: 1px solid #eee;">
+        <div style="text-align:center; margin-bottom: 15px;">
+            <img src="images/koboi.png" style="width: 60px; margin-bottom: 8px;">
+            <p style="font-weight:800; font-size:1.2rem; margin:0; line-height: 1.1;">PT. KOLA BORASI INDONESIA</p>
+            <p style="font-size:0.75rem; margin:0;">Kompeten, Loyal, Berintegritas</p>
+            <hr style="border: 1px solid #000; margin-top:10px;">
         </div>
 
-        <p style="text-align:center; font-weight:800; font-size:1.2rem; text-decoration: underline; margin-bottom: 5px;">SURAT PERJANJIAN KERJA (MOU)</p>
-        <p style="text-align:center; margin-bottom:30px; font-size: 0.9rem;">Nomor: MOU/KBI/ADM/${user.nik || 'XXX'}/${new Date().getFullYear()}</p>
+        <p style="text-align:center; font-weight:800; font-size:1rem; text-decoration: underline; margin-bottom: 2px;">SURAT PERJANJIAN KERJA (MOU)</p>
+        <p style="text-align:center; margin-bottom:20px; font-size: 0.8rem;">Nomor: MOU/KBI/ADM/${user.nik || 'XXX'}/${new Date().getFullYear()}</p>
         
-        <p>Yang bertanda tangan di bawah ini:</p>
-        <div style="margin-left:20px; margin-bottom:20px; line-height: 1.6;">
+        <p style="margin-bottom: 10px;">Yang bertanda tangan di bawah ini:</p>
+        <div style="margin-left:15px; margin-bottom:15px; line-height: 1.4; font-size: 0.85rem;">
             <strong>1. PT. KOLA BORASI INDONESIA</strong>, dalam hal ini diwakili oleh Manajemen HRD, selanjutnya disebut <strong>"PIHAK PERTAMA"</strong>.<br>
             <strong>2. ${user.nama}</strong>, ID/NIK: ${user.nik || "-"}, Jabatan: ${user.jabatan || user.dept}, selanjutnya disebut <strong>"PIHAK KEDUA"</strong>.
         </div>
 
-        <p>KEDUA BELAH PIHAK sepakat untuk menjalin hubungan kerja profesional dengan ketentuan mengikat sebagai berikut:</p>
+        <p style="margin-bottom: 10px;">KEDUA BELAH PIHAK sepakat untuk menjalin hubungan kerja profesional dengan ketentuan sebagai berikut:</p>
         
-        <p><strong>PASAL 1: TUGAS & TANGGUNG JAWAB</strong><br>
-        PIHAK KEDUA bekerja sebagai <strong>${user.jabatan || user.dept}</strong>. PIHAK KEDUA bertanggung jawab melaksanakan instruksi kerja dari PIHAK PERTAMA dengan dedikasi tinggi dan integritas penuh.</p>
+        <p style="margin-bottom: 8px;"><strong>PASAL 1: TUGAS</strong><br>
+        PIHAK KEDUA bekerja sebagai <strong>${user.jabatan || user.dept}</strong> dengan dedikasi tinggi.</p>
 
-        <p><strong>PASAL 2: KERAHASIAAN DATA (NDA)</strong><br>
-        PIHAK KEDUA dilarang keras membocorkan, menyebarkan, atau menyalahgunakan data perusahaan, strategi bisnis, maupun informasi klien kepada pihak ketiga tanpa izin tertulis. Pelanggaran terhadap pasal ini akan diproses secara HUKUM.</p>
+        <p style="margin-bottom: 8px;"><strong>PASAL 2: KERAHASIAAN</strong><br>
+        PIHAK KEDUA dilarang menyebarkan data perusahaan. Pelanggaran diproses secara HUKUM.</p>
 
-        <p><strong>PASAL 3: PENJAGAAN ASET</strong><br>
-        PIHAK KEDUA wajib menjaga seluruh aset perusahaan yang dipercayakan kepadanya. Segala bentuk kehilangan atau penyalahgunaan aset untuk kepentingan pribadi adalah pelanggaran berat.</p>
+        <p style="margin-bottom: 8px;"><strong>PASAL 3: ASET</strong><br>
+        PIHAK KEDUA wajib menjaga seluruh aset perusahaan yang dipercayakan kepadanya.</p>
 
-        <p><strong>PASAL 4: KEDISIPLINAN & ABSENSI</strong><br>
-        Kehadiran dihitung berdasarkan sistem real-time KOBOI Apps. Ketidakmampuan mengikuti jam kerja tanpa alasan yang sah akan dikenakan pemotongan gaji secara sistematis dan pemberian Surat Peringatan (SP).</p>
+        <p style="margin-bottom: 8px;"><strong>PASAL 4: KEDISIPLINAN</strong><br>
+        Kehadiran dihitung real-time via KOBOI Apps. Pelanggaran jam kerja dikenakan sanksi/SP.</p>
 
-        ${deptClauses}
+        <div style="margin-bottom: 8px;">${deptClauses}</div>
 
-        <p><strong>PASAL 6: SANKSI & PEMUTUSAN HUBUNGAN</strong><br>
-        Perusahaan berhak melakukan pemutusan hubungan kerja (PHK) seketika tanpa kompensasi apabila PIHAK KEDUA ditemukan melakukan tindakan Fraud, Pencurian, Narkoba, atau tindakan asusila di lingkungan kerja.</p>
+        <p style="margin-bottom: 8px;"><strong>PASAL 6: SANKSI & PHK</strong><br>
+        PHK dapat dilakukan seketika jika ditemukan Fraud, Pencurian, Narkoba, atau Asusila.</p>
 
-        <div style="margin-top:50px; display: flex; justify-content: space-between;">
+        <div style="margin-top:30px; display: flex; justify-content: space-between; font-size: 0.85rem;">
             <div style="text-align:center; width: 45%;">
                 <p>PIHAK PERTAMA,</p>
-                <div style="height: 80px;"></div>
+                <div style="height: 60px;"></div>
                 <p>( Manajemen HRD )</p>
             </div>
             <div style="text-align:center; width: 45%;">
                 <p>PIHAK KEDUA,</p>
-                <div style="height: 80px; display: flex; justify-content: center; align-items: center;">
-                    ${user.mou_signed ? `<img src="${user.mou_signature}" style="max-height: 80px; width: auto;">` : '<p style="color:red; font-size:0.8rem; border:1px dashed red; padding:5px;">[BELUM TANDA TANGAN]</p>'}
+                <div style="height: 60px; display: flex; justify-content: center; align-items: center;">
+                    ${user.mou_signed ? `<img src="${user.mou_signature}" style="max-height: 60px; width: auto;">` : '<p style="color:red; font-size:0.7rem; border:1px dashed red; padding:3px;">[BELUM TTD]</p>'}
                 </div>
                 <p>( ${user.nama} )</p>
             </div>
         </div>
         
-        <p style="font-size: 0.75rem; color: #64748b; margin-top: 60px; text-align: center; border-top: 1px dashed #cbd5e1; padding-top: 15px;">
-            Dokumen ini diterbitkan secara digital melalui KOBOI Apps dan memiliki kekuatan hukum yang sah setara dengan cetak fisik.<br>
-            Waktu Cetak: ${new Date().toLocaleString("id-ID")}
+        <p style="font-size: 0.65rem; color: #64748b; margin-top: 30px; text-align: center; border-top: 1px dashed #cbd5e1; padding-top: 10px;">
+            Dokumen ini diterbitkan secara digital via KOBOI Apps dan sah secara hukum.<br>
+            Cetak: ${new Date().toLocaleString("id-ID")}
         </p>
     </div>
   `;
 
   const windowPrint = window.open('', '', 'width=850,height=900');
-  windowPrint.document.write(`<html><head><title>MOU - ${user.nama}</title></head><body style="padding:20px;">${content}</body><script>window.onload=function(){window.print();window.close();};</script></html>`);
+  windowPrint.document.write(`<html><head><title>MOU - ${user.nama}</title>${printStyles}</head><body>${content}</body><script>window.onload=function(){window.print();window.close();};</script></html>`);
   windowPrint.document.close();
+}
+ose();
 }ose();
 }
 

@@ -348,16 +348,31 @@ function downloadSlipPribadi() {
     const bulanIndo = [
         "JANUARI", "FEBRUARI", "MARET", "APRIL", "MEI", "JUNI",
         "JULI", "AGUSTUS", "SEPTEMBER", "OKTOBER", "NOVEMBER", "DESEMBER"
-    ];
-    
+    ];    const printStyles = `
+        <style>
+            @page { size: A5; margin: 0; }
+            body { margin: 0; padding: 0; -webkit-print-color-adjust: exact; }
+            .print-container { 
+                width: 148mm; 
+                height: 210mm; 
+                padding: 10mm; 
+                box-sizing: border-box; 
+                background: #fff; 
+                position: relative;
+                overflow: hidden;
+            }
+            * { box-sizing: border-box; }
+        </style>
+    `;
+
     const isiSlip = `
-        <div style="width: 500px; padding: 40px; border: 1px solid #000; font-family: 'Arial', sans-serif; background: #fff; color: #000;">
+        <div class="print-container" style="border: 1px solid #000; font-family: 'Arial', sans-serif; color: #000;">
             <!-- KOP SURAT PROFESIONAL -->
-            <div style="display: flex; align-items: center; border-bottom: 3px double #000; padding-bottom: 20px; margin-bottom: 20px;">
-                <img src="images/koboi.png" style="width: 80px; margin-right: 20px;">
+            <div style="display: flex; align-items: center; border-bottom: 3px double #000; padding-bottom: 15px; margin-bottom: 15px;">
+                <img src="images/koboi.png" style="width: 60px; margin-right: 15px;">
                 <div style="flex: 1;">
-                    <h2 style="margin: 0; font-size: 1.4rem; font-weight: 900; color: #000;">PT. KOLA BORASI INDONESIA</h2>
-                    <p style="margin: 4px 0; font-size: 0.7rem; line-height: 1.3;">
+                    <h2 style="margin: 0; font-size: 1.1rem; font-weight: 900; color: #000;">PT. KOLA BORASI INDONESIA</h2>
+                    <p style="margin: 2px 0; font-size: 0.6rem; line-height: 1.3;">
                         Jl. Arjuna IV Green Kartika Residence Blok EE NO.2, CIBINONG,<br>
                         KAB. BOGOR - JAWA BARAT, 16911<br>
                         <strong>PHONE:</strong> 0857-7444-4805 | <strong>WEB:</strong> www.kolaborasi.id
@@ -365,11 +380,11 @@ function downloadSlipPribadi() {
                 </div>
             </div>
 
-            <p style="text-align:center; font-weight:900; font-size: 1.1rem; text-decoration: underline; margin-bottom: 20px;">
+            <p style="text-align:center; font-weight:900; font-size: 0.9rem; text-decoration: underline; margin-bottom: 15px;">
                 SLIP GAJI KARYAWAN (E-PORTAL) - ${bulanIndo[tgl.getMonth()]} ${tgl.getFullYear()}
             </p>
             
-            <div style="display:grid; grid-template-columns: 140px 10px 1fr; line-height: 1.8; font-size:0.85rem;">
+            <div style="display:grid; grid-template-columns: 110px 10px 1fr; line-height: 1.6; font-size:0.75rem;">
                 <span>ID KARYAWAN</span><span>:</span><span>${k.nik || "-"}</span>
                 <span>NAMA LENGKAP</span><span>:</span><span style="font-weight:bold;">${k.nama}</span>
                 <span>STATUS PAJAK</span><span>:</span><span>${d.ptkpStatus}</span>
@@ -377,38 +392,38 @@ function downloadSlipPribadi() {
                 <span>TOTAL KEHADIRAN</span><span>:</span><span>${d.hadir} / 22 Hari</span>
             </div>
     
-            <div style="border-top:1px dashed #000; margin-top:20px; padding-top:15px;">
-                <div style="display:flex; justify-content:space-between;"><span>Gaji Pokok Full</span><span>Rp ${d.gapok.toLocaleString("id-ID")}</span></div>
-                <div style="display:flex; justify-content:space-between;"><span>Gaji Pro-rata (Sesuai Hadir)</span><span>Rp ${Math.floor(d.gajiPro).toLocaleString("id-ID")}</span></div>
-                <div style="display:flex; justify-content:space-between; color: #15803d; font-weight:bold;"><span>Bonus Lembur (${d.jamLembur} Jam)</span><span>+Rp ${d.bonusLembur.toLocaleString("id-ID")}</span></div>
+            <div style="border-top:1px dashed #000; margin-top:15px; padding-top:10px;">
+                <div style="display:flex; justify-content:space-between; font-size: 0.75rem;"><span>Gaji Pokok Full</span><span>Rp ${d.gapok.toLocaleString("id-ID")}</span></div>
+                <div style="display:flex; justify-content:space-between; font-size: 0.75rem;"><span>Gaji Pro-rata (Hadir)</span><span>Rp ${Math.floor(d.gajiPro).toLocaleString("id-ID")}</span></div>
+                <div style="display:flex; justify-content:space-between; color: #15803d; font-weight:bold; font-size: 0.75rem;"><span>Bonus Lembur (${d.jamLembur} Jam)</span><span>+Rp ${d.bonusLembur.toLocaleString("id-ID")}</span></div>
             </div>
     
-            <p style="margin: 20px 0 5px 0; font-weight:bold; text-decoration: underline; font-size: 0.8rem;">POTONGAN, PAJAK & KASBON</p>
-            <div style="line-height: 1.6; font-size:0.8rem;">
+            <p style="margin: 15px 0 5px 0; font-weight:bold; text-decoration: underline; font-size: 0.7rem;">POTONGAN, PAJAK & KASBON</p>
+            <div style="line-height: 1.5; font-size:0.75rem;">
                 <div style="display:flex; justify-content:space-between;"><span>BPJS Kesehatan (1%)</span><span>-Rp ${Math.floor(d.bpjsKes).toLocaleString("id-ID")}</span></div>
                 <div style="display:flex; justify-content:space-between;"><span>JHT (2%)</span><span>-Rp ${Math.floor(d.jht).toLocaleString("id-ID")}</span></div>
                 <div style="display:flex; justify-content:space-between;"><span>JP (1%)</span><span>-Rp ${Math.floor(d.jp).toLocaleString("id-ID")}</span></div>
-                <div style="display:flex; justify-content:space-between;"><span>PPh 21 (Pajak Penghasilan)</span><span>-Rp ${Math.floor(d.pph21).toLocaleString("id-ID")}</span></div>
-                <div style="display:flex; justify-content:space-between; color: #ef4444;"><span>Potongan Keterlambatan (${d.jumlahTelat}x)</span><span>-Rp ${Math.floor(d.potonganTelat).toLocaleString("id-ID")}</span></div>
+                <div style="display:flex; justify-content:space-between;"><span>PPh 21 (Pajak)</span><span>-Rp ${Math.floor(d.pph21).toLocaleString("id-ID")}</span></div>
+                <div style="display:flex; justify-content:space-between; color: #ef4444;"><span>Potongan Telat (${d.jumlahTelat}x)</span><span>-Rp ${Math.floor(d.potonganTelat).toLocaleString("id-ID")}</span></div>
                 <div style="display:flex; justify-content:space-between; font-weight:bold; color:#1e293b; border-top:1px dashed #ccc; margin-top:5px; padding-top:5px;"><span>POTONGAN KASBON</span><span>-Rp ${d.kasbon.toLocaleString("id-ID")}</span></div>
             </div>
     
-            <div style="border: 2px solid #000; margin-top:20px; padding:15px; display:flex; justify-content:space-between; font-weight:900; font-size:1.2rem; background:#f8fafc;">
+            <div style="border: 2px solid #000; margin-top:15px; padding:10px; display:flex; justify-content:space-between; font-weight:900; font-size:1rem; background:#f8fafc;">
                 <span>TAKE HOME PAY</span><span>Rp ${Math.floor(d.thp).toLocaleString("id-ID")}</span>
             </div>
             
-            <div style="margin-top: 30px; display: flex; justify-content: space-between; font-size: 0.75rem;">
-                <div style="text-align: center; width: 150px;">
+            <div style="margin-top: 25px; display: flex; justify-content: space-between; font-size: 0.7rem;">
+                <div style="text-align: center; width: 120px;">
                     Penerima,<br><br><br><br>
                     ( ________________ )
                 </div>
-                <div style="text-align: center; width: 150px;">
+                <div style="text-align: center; width: 120px;">
                     Hormat Kami,<br><br><br><br>
                     <strong>HRD KOBOI</strong>
                 </div>
             </div>
-
-            <p style="text-align:center; font-size:0.65rem; margin-top:30px; color: #64748b; font-style: italic;">
+    
+            <p style="text-align:center; font-size:0.55rem; margin-top:20px; color: #64748b; font-style: italic;">
                 E-Slip sah dikeluarkan secara digital via KOBOI Employee Portal.<br>
                 Waktu Cetak: ${tgl.toLocaleString("id-ID")}
             </p>
@@ -416,8 +431,9 @@ function downloadSlipPribadi() {
     
     const w = window.open("", "_blank");
     if (w) {
-        w.document.write(`<html><head><title>Dokumen PT. Kola Borasi Indonesia</title></head><body style="display:flex;justify-content:center;padding:20px;">${isiSlip}<script>window.onload=function(){window.print();}<\/script></body></html>`);
+        w.document.write(`<html><head><title>Slip - ${k.nama}</title>${printStyles}</head><body>${isiSlip}<script>window.onload=function(){window.print();window.close();}<\/script></body></html>`);
         w.document.close();
+    }
     }
 }
 // 7. MOU & DIGITAL SIGNATURE
