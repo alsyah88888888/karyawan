@@ -1190,10 +1190,7 @@ _Pesan ini diterbitkan secara digital melalui KOBOI Apps._
   const url = `https://wa.me/${clearWa}?text=${encodeURIComponent(pesan)}`;
   setTimeout(() => {
     window.open(url, "_blank");
-  }, 800);
-}
-
-function adminCetakMOU(index) {
+  }, 8function adminCetakMOU(index) {
   const user = KARYAWAN[index];
 
   let deptClauses = "";
@@ -1210,46 +1207,67 @@ function adminCetakMOU(index) {
   }
 
   const content = `
-    <div style="padding:40px; font-family:'Times New Roman', serif; text-align:justify; color:#000; border: 1px solid #ccc;">
-        <div style="text-align:center; border-bottom: 2px solid #000; padding-bottom:10px; margin-bottom:20px;">
-            <p style="font-weight:800; font-size:1.3rem; margin:0;">PT. KOLA BORASI INDONESIA</p>
-            <p style="font-size:0.8rem; margin:0;">Kompeten, Loyal, Berintegritas</p>
+    <div style="padding:40px; max-width: 800px; margin: auto; font-family:'Times New Roman', serif; text-align:justify; color:#000; border: 1px solid #eee;">
+        <div style="text-align:center; margin-bottom: 20px;">
+            <img src="images/koboi.png" style="width: 70px; margin-bottom: 10px;">
+            <p style="font-weight:800; font-size:1.4rem; margin:0; line-height: 1.2;">PT. KOLA BORASI INDONESIA</p>
+            <p style="font-size:0.9rem; margin:0;">Kompeten, Loyal, Berintegritas</p>
+            <hr style="border: 1px solid #000; margin-top:15px;">
         </div>
-        <h3 style="text-align:center; text-decoration:underline;">MEMORANDUM OF UNDERSTANDING (MOU)</h3>
-        <p style="text-align:center;">Nomor: MOU/KBI/ADM/${user.nik}/${new Date().getFullYear()}</p>
+
+        <p style="text-align:center; font-weight:800; font-size:1.2rem; text-decoration: underline; margin-bottom: 5px;">SURAT PERJANJIAN KERJA (MOU)</p>
+        <p style="text-align:center; margin-bottom:30px; font-size: 0.9rem;">Nomor: MOU/KBI/ADM/${user.nik || 'XXX'}/${new Date().getFullYear()}</p>
         
-        <p><strong>PIHAK PERTAMA:</strong> PT. KOLA BORASI INDONESIA</p>
-        <p><strong>PIHAK KEDUA:</strong> ${user.nama} (NIK: ${user.nik})</p>
+        <p>Yang bertanda tangan di bawah ini:</p>
+        <div style="margin-left:20px; margin-bottom:20px; line-height: 1.6;">
+            <strong>1. PT. KOLA BORASI INDONESIA</strong>, dalam hal ini diwakili oleh Manajemen HRD, selanjutnya disebut <strong>"PIHAK PERTAMA"</strong>.<br>
+            <strong>2. ${user.nama}</strong>, ID/NIK: ${user.nik || "-"}, Jabatan: ${user.jabatan || user.dept}, selanjutnya disebut <strong>"PIHAK KEDUA"</strong>.
+        </div>
+
+        <p>KEDUA BELAH PIHAK sepakat untuk menjalin hubungan kerja profesional dengan ketentuan mengikat sebagai berikut:</p>
         
-        <p><strong>PASAL 1: TUGAS & TANGGUNG JAWAB</strong><br>PIHAK KEDUA bekerja sebagai <strong>${user.jabatan || user.dept}</strong>. PIHAK KEDUA bertanggung jawab melaksanakan instruksi kerja dengan dedikasi tinggi.</p>
-        <p><strong>PASAL 2: KERAHASIAAN DATA (NDA)</strong><br>PIHAK KEDUA dilarang membocorkan data perusahaan. Pelanggaran akan diproses secara HUKUM.</p>
-        <p><strong>PASAL 3: PENJAGAAN ASET</strong><br>PIHAK KEDUA wajib menjaga aset perusahaan. Kehilangan adalah tanggung jawab PIHAK KEDUA.</p>
-        <p><strong>PASAL 4: KEDISIPLINAN</strong><br>Kehadiran dihitung real-time. Pelanggaran jam kerja dikenakan sanksi/SP.</p>
+        <p><strong>PASAL 1: TUGAS & TANGGUNG JAWAB</strong><br>
+        PIHAK KEDUA bekerja sebagai <strong>${user.jabatan || user.dept}</strong>. PIHAK KEDUA bertanggung jawab melaksanakan instruksi kerja dari PIHAK PERTAMA dengan dedikasi tinggi dan integritas penuh.</p>
+
+        <p><strong>PASAL 2: KERAHASIAAN DATA (NDA)</strong><br>
+        PIHAK KEDUA dilarang keras membocorkan, menyebarkan, atau menyalahgunakan data perusahaan, strategi bisnis, maupun informasi klien kepada pihak ketiga tanpa izin tertulis. Pelanggaran terhadap pasal ini akan diproses secara HUKUM.</p>
+
+        <p><strong>PASAL 3: PENJAGAAN ASET</strong><br>
+        PIHAK KEDUA wajib menjaga seluruh aset perusahaan yang dipercayakan kepadanya. Segala bentuk kehilangan atau penyalahgunaan aset untuk kepentingan pribadi adalah pelanggaran berat.</p>
+
+        <p><strong>PASAL 4: KEDISIPLINAN & ABSENSI</strong><br>
+        Kehadiran dihitung berdasarkan sistem real-time KOBOI Apps. Ketidakmampuan mengikuti jam kerja tanpa alasan yang sah akan dikenakan pemotongan gaji secara sistematis dan pemberian Surat Peringatan (SP).</p>
+
         ${deptClauses}
-        <p><strong>PASAL 6: SANKSI & PHK</strong><br>PHK dapat dilakukan seketika jika ditemukan Fraud, Pencurian, atau Narkoba.</p>
-        
-        <div style="margin-top:50px; display:flex; justify-content:space-between;">
-            <div style="text-align:center; width:45%;">
+
+        <p><strong>PASAL 6: SANKSI & PEMUTUSAN HUBUNGAN</strong><br>
+        Perusahaan berhak melakukan pemutusan hubungan kerja (PHK) seketika tanpa kompensasi apabila PIHAK KEDUA ditemukan melakukan tindakan Fraud, Pencurian, Narkoba, atau tindakan asusila di lingkungan kerja.</p>
+
+        <div style="margin-top:50px; display: flex; justify-content: space-between;">
+            <div style="text-align:center; width: 45%;">
                 <p>PIHAK PERTAMA,</p>
-                <div style="height:60px;"></div>
+                <div style="height: 80px;"></div>
                 <p>( Manajemen HRD )</p>
             </div>
-            <div style="text-align:center; width:45%;">
+            <div style="text-align:center; width: 45%;">
                 <p>PIHAK KEDUA,</p>
-                <div style="height:60px; display:flex; align-items:center; justify-content:center;">
-                    ${user.mou_signed ? `<img src="${user.mou_signature}" style="height:60px;">` : '<p style="color:red; font-size:0.8rem;">[BELUM TANDA TANGAN]</p>'}
+                <div style="height: 80px; display: flex; justify-content: center; align-items: center;">
+                    ${user.mou_signed ? `<img src="${user.mou_signature}" style="max-height: 80px; width: auto;">` : '<p style="color:red; font-size:0.8rem; border:1px dashed red; padding:5px;">[BELUM TANDA TANGAN]</p>'}
                 </div>
                 <p>( ${user.nama} )</p>
             </div>
         </div>
-        <p style="font-size: 0.7rem; color: #64748b; margin-top: 50px; text-align: center; border-top: 1px dashed #ccc; padding-top: 10px;">
-            Dokumen digital KOBOI Apps - Memiliki kekuatan hukum yang sama dengan cetak fisik.
+        
+        <p style="font-size: 0.75rem; color: #64748b; margin-top: 60px; text-align: center; border-top: 1px dashed #cbd5e1; padding-top: 15px;">
+            Dokumen ini diterbitkan secara digital melalui KOBOI Apps dan memiliki kekuatan hukum yang sah setara dengan cetak fisik.<br>
+            Waktu Cetak: ${new Date().toLocaleString("id-ID")}
         </p>
     </div>
   `;
 
   const windowPrint = window.open('', '', 'width=850,height=900');
-  windowPrint.document.write(`<html><head><title>MOU-${user.nama}</title></head><body>${content}</body><script>window.onload=function(){window.print();window.close();};</script></html>`);
+  windowPrint.document.write(`<html><head><title>MOU - ${user.nama}</title></head><body style="padding:20px;">${content}</body><script>window.onload=function(){window.print();window.close();};</script></html>`);
   windowPrint.document.close();
+}ose();
 }
 
