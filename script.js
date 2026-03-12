@@ -431,11 +431,21 @@ function renderKaryawanTable() {
           <span style="color: ${k.mou_signed ? '#10b981' : '#f59e0b'}; font-weight:bold; font-size:0.75rem;">
             ${k.mou_signed ? '✅ SUDAH TTD' : '⏳ BELUM TTD'}
           </span>
+          <br>
+          <button onclick="resetMOU(${index})" style="background:none; border:none; color:var(--danger); font-size:0.6rem; cursor:pointer; padding:0;">[RESET MOU]</button>
         </td>
         <td style="text-align:center;">
-          <button onclick="cetakSlip(${index})" class="btn-s" style="background:var(--primary); color:white; padding:8px 16px; border-radius:8px; border:none; cursor:pointer; font-weight:700;">
-            CETAK SLIP
-          </button>
+          <div style="display:flex; flex-direction:column; gap:5px;">
+            <button onclick="cetakSlip(${index})" class="btn-s" style="background:var(--primary); color:white; padding:8px; border-radius:8px; border:none; cursor:pointer; font-weight:700; font-size:0.7rem;">
+              SLIP (PDF)
+            </button>
+            <button onclick="kirimWaSlip(${index})" class="btn-s" style="background:#25d366; color:white; padding:8px; border-radius:8px; border:none; cursor:pointer; font-weight:700; font-size:0.7rem;">
+              SLIP (WA)
+            </button>
+            <button onclick="adminCetakMOU(${index})" class="btn-s" style="background:#64748b; color:white; padding:8px; border-radius:8px; border:none; cursor:pointer; font-weight:700; font-size:0.7rem;">
+              CETAK MOU
+            </button>
+          </div>
         </td>
       </tr>`;
   });
@@ -465,6 +475,7 @@ async function simpanKaryawan() {
     const jabatan = jabEl?.value.trim() || dept;
     const tahun = document.getElementById("inpTahun")?.value.trim() || "";
     const pin = pinEl ? pinEl.value.trim() : "";
+    const nomor_wa = document.getElementById("inpWa")?.value.trim() || "";
     const sisa_cuti = cutiEl ? parseInt(cutiEl.value) || 12 : 12;
 
     const nik_ktp = document.getElementById("inpNikKtp")?.value.trim() || "";
@@ -488,6 +499,7 @@ async function simpanKaryawan() {
       gaji: nominalGaji,
       tahun_bergabung: tahun,
       pin,
+      nomor_wa,
       sisa_cuti,
       nik_ktp,
       npwp,
@@ -511,6 +523,7 @@ async function simpanKaryawan() {
     if (jabEl) jabEl.value = "";
     if (document.getElementById("inpTahun")) document.getElementById("inpTahun").value = "";
     if (pinEl) pinEl.value = "";
+    if (document.getElementById("inpWa")) document.getElementById("inpWa").value = "";
     if (cutiEl) cutiEl.value = "12";
     if (document.getElementById("inpNikKtp")) document.getElementById("inpNikKtp").value = "";
     if (document.getElementById("inpNpwp")) document.getElementById("inpNpwp").value = "";
@@ -537,7 +550,7 @@ function showEditModal(index) {
   document.getElementById("editCuti").value = k.sisa_cuti ?? 12;
   document.getElementById("editNikKtp").value = k.nik_ktp || "";
   document.getElementById("editNpwp").value = k.npwp || "";
-  document.getElementById("editNpwp").value = k.npwp || "";
+  document.getElementById("editWa").value = k.nomor_wa || "";
   document.getElementById("editPtkp").value = k.status_ptkp || "TK/0";
 
   console.log("Loading Edit Modal for:", k);
@@ -562,6 +575,7 @@ async function updateKaryawan() {
 
     const nik_ktp = document.getElementById("editNikKtp")?.value.trim() || "";
     const npwp = document.getElementById("editNpwp")?.value.trim() || "";
+    const nomor_wa = document.getElementById("editWa")?.value.trim() || "";
     const status_ptkp = document.getElementById("editPtkp")?.value || "";
 
     if (!nama || !gaji) return alert("Nama dan Gaji tidak boleh kosong!");
@@ -577,6 +591,7 @@ async function updateKaryawan() {
       sisa_cuti,
       nik_ktp,
       npwp,
+      nomor_wa,
       status_ptkp
     };
 
@@ -1029,3 +1044,133 @@ document.addEventListener("DOMContentLoaded", () => {
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") hideEditModal();
 });
+
+async function resetMOU(index) {
+  const k = KARYAWAN[index];
+  if (!confirm(`Apakah Anda yakin ingin me-reset status MOU untuk ${k.nama}?`)) return;
+  
+  try {
+    const { error } = await supabaseClient
+      .from("karyawan")
+      .update({ mou_signed: false, mou_signature: null, mou_date: null })
+      .eq("nik", k.nik);
+    
+    if (error) throw error;
+    alert("Status MOU berhasil di-reset!");
+    await syncData();
+  } catch (err) {
+    alert("Gagal reset MOU: " + err.message);
+  }
+}
+
+async function confirmResetCuti() {
+  if (!confirm("Peringatan: Ini akan me-reset SISA CUTI seluruh karyawan menjadi 12 hari. Lanjutkan?")) return;
+  
+  try {
+    const { error } = await supabaseClient
+      .from("karyawan")
+      .update({ sisa_cuti: 12 });
+    
+    if (error) throw error;
+    alert("Seluruh kuota cuti berhasil di-reset ke 12 hari!");
+    await syncData();
+  } catch (err) {
+    alert("Gagal reset cuti: " + err.message);
+  }
+}
+
+async function confirmResetKasbon() {
+  if (!confirm("Peringatan: Ini akan MENGHAPUS SELURUH RIWAYAT KASBON di database. Lanjutkan?")) return;
+  
+  try {
+    const { error } = await supabaseClient
+      .from("kasbon")
+      .delete()
+      .not("id", "eq", 0); 
+    
+    if (error) throw error;
+    alert("Seluruh riwayat kasbon telah dikosongkan!");
+    await syncData();
+  } catch (err) {
+    alert("Gagal kosongkan kasbon: " + err.message);
+  }
+}
+
+function kirimWaSlip(index) {
+  const k = KARYAWAN[index];
+  const d = hitungDetailGaji(k.gaji || 0, k.nama);
+  
+  if (!k.nomor_wa) return alert("Nomor WhatsApp karyawan belum diisi!");
+  
+  const pesan = `
+*SLIP GAJI DIGITAL - PT. KOLA BORASI INDONESIA*
+------------------------------------------
+Halo *${k.nama}*, Berikut rincian gaji Anda bulan ini:
+
+*PENGHASILAN*
+- Gaji Pokok: Rp ${k.gaji.toLocaleString('id-ID')}
+- Lembur: Rp ${d.lembur.toLocaleString('id-ID')}
+- Tunjangan: Rp ${d.tunjangan.toLocaleString('id-ID')}
+
+*POTONGAN*
+- Kasbon: Rp ${d.potonganKasbon.toLocaleString('id-ID')}
+- PPh21: Rp ${d.pph21.toLocaleString('id-ID')}
+
+*TOTAL TERIMA (THP): Rp ${Math.floor(d.thp).toLocaleString('id-ID')}*
+------------------------------------------
+_Pesan ini dikirim otomatis melalui KOBOI Apps._
+`.trim();
+
+  const url = `https://wa.me/${k.nomor_wa}?text=${encodeURIComponent(pesan)}`;
+  window.open(url, "_blank");
+}
+
+function adminCetakMOU(index) {
+  const user = KARYAWAN[index];
+  
+  let deptClauses = "";
+  if (user.dept === "OPERASIONAL") {
+      deptClauses = `<p><strong>PASAL 5: KESELAMATAN & OPERASIONAL</strong><br>PIHAK KEDUA wajib mematuhi seluruh SOP keselamatan kerja. Kelalaian mengakibatkan kerusakan alat menjadi tanggung jawab PIHAK KEDUA.</p>`;
+  } else {
+      deptClauses = `<p><strong>PASAL 5: PROFESIONALISME & DEADLINE</strong><br>PIHAK KEDUA wajib menyelesaikan laporan sesuai dengan tenggat waktu. Kegagalan berulang akan menjadi bahan evaluasi kinerja.</p>`;
+  }
+
+  const content = `
+    <div style="padding:40px; font-family:'Times New Roman', serif; text-align:justify; color:#000;">
+        <div style="text-align:center; border-bottom: 2px solid #000; padding-bottom:10px; margin-bottom:20px;">
+            <h2 style="margin:0;">PT. KOLA BORASI INDONESIA</h2>
+            <p style="margin:5px 0;">Surat Perjanjian Kerja Digital</p>
+        </div>
+        <h3 style="text-align:center; text-decoration:underline;">MEMORANDUM OF UNDERSTANDING (MOU)</h3>
+        <p style="text-align:center;">Nomor: MOU/KBI/ADM/${user.nik}/${new Date().getFullYear()}</p>
+        
+        <p>Dengan ini menyatakan bahwa:</p>
+        <p><strong>1. PIHAK PERTAMA:</strong> PT. KOLA BORASI INDONESIA</p>
+        <p><strong>2. PIHAK KEDUA:</strong> ${user.nama} (NIK: ${user.nik})</p>
+        
+        <p><strong>PASAL 1: KERAHASIAAN (NDA)</strong><br>PIHAK KEDUA dilarang membocorkan data perusahaan. Pelanggaran akan diproses HUKUM.</p>
+        <p><strong>PASAL 2: PENJAGAAN ASET</strong><br>PIHAK KEDUA wajib menjaga aset perusahaan. Kehilangan adalah tanggung jawab PIHAK KEDUA.</p>
+        ${deptClauses}
+        
+        <div style="margin-top:50px; display:flex; justify-content:space-between;">
+            <div style="text-align:center;">
+                <p>Mengetahui,</p>
+                <div style="height:60px;"></div>
+                <p>( HR Manager )</p>
+            </div>
+            <div style="text-align:center;">
+                <p>Karyawan,</p>
+                <div style="height:60px; display:flex; align-items:center; justify-content:center;">
+                    ${user.mou_signed ? `<img src="${user.mou_signature}" style="height:60px;">` : '<p style="color:red;">[BELUM TTD]</p>'}
+                </div>
+                <p>( ${user.nama} )</p>
+            </div>
+        </div>
+    </div>
+  `;
+
+  const windowPrint = window.open('', '', 'width=800,height=900');
+  windowPrint.document.write(`<html><head><title>MOU-${user.nama}</title></head><body>${content}</body><script>window.onload=function(){window.print();window.close();};</script></html>`);
+  windowPrint.document.close();
+}
+
