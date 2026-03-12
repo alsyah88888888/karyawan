@@ -141,12 +141,12 @@ function hitungDetailGaji(gapok, namaKaryawan) {
   let totalLemburRp = 0;
   let totalJamLembur = 0;
   const uniqueDates = Object.keys(logsByDate);
-  const hariHadir = uniqueDates.filter(d => 
+  const hariHadir = uniqueDates.filter(d =>
     logsByDate[d].some(l => l.status === "MASUK" || l.status === "BERANGKAT")
   ).length;
 
   uniqueDates.forEach(date => {
-    const dayLogs = logsByDate[date].sort((a,b) => new Date(a.waktu) - new Date(b.waktu));
+    const dayLogs = logsByDate[date].sort((a, b) => new Date(a.waktu) - new Date(b.waktu));
     const firstIn = dayLogs.find(l => l.status === "MASUK" || l.status === "BERANGKAT");
     const lastOut = [...dayLogs].reverse().find(l => l.status === "PULANG");
 
@@ -184,10 +184,10 @@ function hitungDetailGaji(gapok, namaKaryawan) {
 
   const brutoNeto = gajiPro - (bpjsKes + jht + jp);
   const pkpBulanan = brutoNeto - ptkpBulanan;
-  
+
   let pph21 = 0;
   if (pkpBulanan > 0) {
-    pph21 = pkpBulanan * 0.05; 
+    pph21 = pkpBulanan * 0.05;
   }
 
   const totalPotongan = bpjsKes + jht + jp + pph21 + potonganTelat + totalKasbon;
@@ -195,8 +195,8 @@ function hitungDetailGaji(gapok, namaKaryawan) {
 
   return {
     gapok: g, gajiPro, hadir: hariHadir, jumlahTelat, potonganTelat,
-    bpjsKes, jht, jp, pph21, kasbon: totalKasbon, bonusLembur: totalLemburRp, 
-    jamLembur: totalJamLembur, totalPotongan, 
+    bpjsKes, jht, jp, pph21, kasbon: totalKasbon, bonusLembur: totalLemburRp,
+    jamLembur: totalJamLembur, totalPotongan,
     thp: thp > 0 ? thp : 0, ptkpStatus, ptkpBulanan
   };
 }
@@ -581,7 +581,7 @@ async function updateKaryawan() {
     const dept = document.getElementById("editDept")?.value || "";
     const jabatan = getVal("editJabatan") || dept;
     const gaji = parseFloat(getVal("editGaji")) || 0;
-    const tahun = getVal("editTahun"); 
+    const tahun = getVal("editTahun");
     const pin = getVal("editPin");
     const sisa_cuti = parseInt(getVal("editCuti")) || 0;
 
@@ -616,10 +616,10 @@ async function updateKaryawan() {
 
     alert("Data berhasil diperbarui!");
     hideEditModal();
-    
+
     // Refresh local KARYAWAN array immediately to reflect changes in UI
     await syncData();
-    
+
   } catch (e) {
     console.error("Update Error:", e);
     alert("Gagal update data: " + e.message);
@@ -960,7 +960,7 @@ function renderKasbonTable() {
     let actionBtns = `
       <button onclick="hapusKasbon(${k.id})" style="background:#ef4444; color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer;" title="Hapus Permanen">Hapus</button>
     `;
-    
+
     if (k.status === "PENDING") {
       actionBtns = `
                 <button onclick="updateStatusKasbon(${k.id}, 'APPROVED')" style="background:green; color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer;">Cairkan</button>
@@ -1061,13 +1061,13 @@ document.addEventListener("keydown", (e) => {
 async function resetMOU(index) {
   const k = KARYAWAN[index];
   if (!confirm(`Apakah Anda yakin ingin me-reset status MOU untuk ${k.nama}?`)) return;
-  
+
   try {
     const { error } = await supabaseClient
       .from("karyawan")
       .update({ mou_signed: false, mou_signature: null, mou_date: null })
       .eq("nik", k.nik);
-    
+
     if (error) throw error;
     alert("Status MOU berhasil di-reset!");
     await syncData();
@@ -1078,12 +1078,12 @@ async function resetMOU(index) {
 
 async function confirmResetCuti() {
   if (!confirm("Peringatan: Ini akan me-reset SISA CUTI seluruh karyawan menjadi 12 hari. Lanjutkan?")) return;
-  
+
   try {
     const { error } = await supabaseClient
       .from("karyawan")
       .update({ sisa_cuti: 12 });
-    
+
     if (error) throw error;
     alert("Seluruh kuota cuti berhasil di-reset ke 12 hari!");
     await syncData();
@@ -1094,13 +1094,13 @@ async function confirmResetCuti() {
 
 async function confirmResetKasbon() {
   if (!confirm("Peringatan: Ini akan MENGHAPUS SELURUH RIWAYAT KASBON di database. Lanjutkan?")) return;
-  
+
   try {
     const { error } = await supabaseClient
       .from("kasbon")
       .delete()
-      .not("id", "eq", 0); 
-    
+      .not("id", "eq", 0);
+
     if (error) throw error;
     alert("Seluruh riwayat kasbon telah dikosongkan!");
     await syncData();
@@ -1117,13 +1117,13 @@ function kirimWaSlip(index) {
     "JULI", "AGUSTUS", "SEPTEMBER", "OKTOBER", "NOVEMBER", "DESEMBER",
   ];
   const tgl = new Date();
-  
+
   if (!k.nomor_wa) return alert("Nomor WhatsApp karyawan belum diisi!");
-  
+
   // Sanitasi nomor WA
   let clearWa = k.nomor_wa.replace(/\D/g, '');
   if (clearWa.startsWith('0')) clearWa = '62' + clearWa.substring(1);
-  
+
   // TRIGGER PDF (Agar admin bisa save/cetak filenya untuk dilampirkan)
   cetakSlip(index);
 
@@ -1152,7 +1152,7 @@ Dept : ${k.dept}
 
 Terima kasih atas dedikasi dan kontribusi luar biasa Anda bagi *PT. Kola Borasi Indonesia*. Semoga apa yang kita cita-citakan bersama dapat tercapai untuk kemajuan perusahaan dan kesejahteraan kita semua. 
 
-Tetap semangat dan salam profesional! 🚀🤝🇮🇩
+Tetap semangat dan salam profesional!
 
 _(Lampiran PDF Slip Gaji akan dikirimkan oleh Admin setelah pesan ini)_
 
@@ -1162,20 +1162,20 @@ _Pesan ini diterbitkan secara digital melalui KOBOI Apps._
   const url = `https://wa.me/${clearWa}?text=${encodeURIComponent(pesan)}`;
   setTimeout(() => {
     window.open(url, "_blank");
-  }, 800); 
+  }, 800);
 }
 
 function adminCetakMOU(index) {
   const user = KARYAWAN[index];
-  
+
   let deptClauses = "";
   if (user.dept === "OPERASIONAL") {
-      deptClauses = `
+    deptClauses = `
           <p><strong>PASAL 5: KESELAMATAN & OPERASIONAL</strong><br>
           PIHAK KEDUA wajib mematuhi seluruh Standar Operasional Prosedur (SOP) keselamatan kerja. Segala bentuk kelalaian yang mengakibatkan kerusakan alat atau kerugian operasional menjadi tanggung jawab PIHAK KEDUA dan dapat dikenakan ganti rugi atau sanksi berat.</p>
       `;
   } else {
-      deptClauses = `
+    deptClauses = `
           <p><strong>PASAL 5: PROFESIONALISME & DEADLINE</strong><br>
           PIHAK KEDUA wajib menyelesaikan laporan dan tugas sesuai dengan tenggat waktu (deadline) yang ditentukan. Kegagalan berulang dalam memenuhi standar kualitas kerja kantor akan menjadi bahan evaluasi kinerja bulanan dan pemberian SP.</p>
       `;
