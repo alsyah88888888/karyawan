@@ -457,19 +457,28 @@ function renderMOUStatus(user) {
 
 function bukaModalMOU() {
     const user = currentUser;
+    const thn = new Date().getFullYear();
+    const tglSekarang = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
     
-    // Custom clauses based on department
-    let deptClauses = "";
+    // Logic for Scope of Work & Purpose based on Dept/Jabatan
+    let s_maksud = "Meningkatkan efisiensi dan profesionalitas kerja di lingkungan perusahaan.";
+    let s_lingkup = "Melaksanakan tugas harian sesuai dengan Instruksi Kerja (IK) yang diberikan atasan.";
+    
     if (user.dept === "OPERASIONAL") {
-        deptClauses = `
-            <p><strong>PASAL 5: KESELAMATAN & OPERASIONAL</strong><br>
-            PIHAK KEDUA wajib mematuhi seluruh Standar Operasional Prosedur (SOP) keselamatan kerja. Segala bentuk kelalaian yang mengakibatkan kerusakan alat atau kerugian operasional menjadi tanggung jawab PIHAK KEDUA dan dapat dikenakan ganti rugi atau sanksi berat.</p>
-        `;
-    } else {
-        deptClauses = `
-            <p><strong>PASAL 5: PROFESIONALISME & DEADLINE</strong><br>
-            PIHAK KEDUA wajib menyelesaikan laporan dan tugas sesuai dengan tenggat waktu (deadline) yang ditentukan. Kegagalan berulang dalam memenuhi standar kualitas kerja kantor akan menjadi bahan evaluasi kinerja bulanan dan pemberian SP.</p>
-        `;
+        s_maksud = "Menghasilkan output operasional yang aman, tepat waktu, dan berkualitas tinggi.";
+        s_lingkup = "Pemeliharaan alat kerja, kepatuhan SOP Keselamatan (K3), dan pelaporan logistik lapangan.";
+    } else if (user.dept === "IT" || user.dept === "TEKNIS") {
+        s_maksud = "Menjamin stabilitas sistem digital dan infrastruktur teknologi perusahaan.";
+        s_lingkup = "Pemeliharaan aplikasi KOBOI, manajemen database, dan troubleshooting perangkat kerja.";
+    } else if (user.dept === "FINANCE" || user.dept === "AKUNTANSI") {
+        s_maksud = "Menjaga integritas data keuangan dan ketepatan administrasi transaksi.";
+        s_lingkup = "Pencatatan invoice, verifikasi laporan pengeluaran, dan penyiapan data payroll/pajak.";
+    } else if (user.dept === "MARKETING" || user.dept === "SALES") {
+        s_maksud = "Memperluas jangkauan pasar dan menjaga hubungan baik dengan klien.";
+        s_lingkup = "Acquisition klien baru, manajemen media sosial, dan presentasi profil perusahaan.";
+    } else if (user.dept === "HRD" || user.dept === "GA") {
+        s_maksud = "Mengoptimalkan manajemen SDM dan kenyamanan kerja seluruh staf.";
+        s_lingkup = "Monitoring absensi rincian, rekrutmen, dan pemeliharaan fasilitas kantor.";
     }
 
     const bodyMOU = `
