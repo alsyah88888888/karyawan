@@ -645,9 +645,9 @@ table {
 
 th {
   background: #f8fafc;
-  padding: 20px 24px;
+  padding: 12px 15px;
   text-align: left;
-  font-size: 0.8rem;
+  font-size: 0.7rem;
   font-weight: 800;
   color: var(--text-muted);
   text-transform: uppercase;
@@ -660,9 +660,9 @@ th {
 }
 
 td {
-  padding: 24px;
+  padding: 12px 15px;
   border-bottom: 1px solid #f1f5f9;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   vertical-align: middle;
   color: var(--text-main);
 }

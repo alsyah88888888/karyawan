@@ -416,40 +416,35 @@ function renderKaryawanTable() {
   KARYAWAN.forEach((k, index) => {
     const d = hitungDetailGaji(k.gaji || 0, k.nama);
     body.innerHTML += `
-      <tr>
-        <td style="min-width:180px;">
-          <div style="font-weight:800; color:var(--text-main);">${k.nama}</div>
-          <div style="font-size:0.75rem; color:var(--text-muted);">${k.nik || "-"}</div>
+      <tr style="font-size: 0.85rem;">
+        <td>
+          <div style="font-weight:800; line-height:1.1;">${k.nama}</div>
+          <div style="font-size:0.65rem; color:var(--text-muted);">NIK: ${k.nik || "-"} | TTD: ${k.mou_signed ? '✅' : '⏳'}</div>
         </td>
         <td>
-          <div style="font-weight:600;">${k.jabatan || k.dept}</div>
-          <div style="font-size:0.75rem; color:var(--text-muted);">Hadir: ${d.hadir}/22 Hari</div>
+          <div style="font-weight:600; line-height:1.1;">${k.dept}</div>
+          <div style="font-size:0.65rem; color:var(--text-muted);">${k.jabatan || "-"}</div>
+        </td>
+        <td style="text-align:center;">
+          <div style="font-weight:600;">${d.hadir}</div>
+          <div style="font-size:0.65rem; color:var(--text-muted);">Hari</div>
         </td>
         <td>
-          <div style="font-weight:600;">Rp ${(k.gaji || 0).toLocaleString("id-ID")}</div>
-          <div style="font-size:0.75rem; color:var(--text-muted);">Gabung: ${k.tahun_bergabung || "-"}</div>
+          <div style="font-weight:600; line-height:1.1;">Rp ${k.gaji.toLocaleString('id-ID')}</div>
+          <div style="font-size:0.65rem; color:var(--text-muted);">Mulai: ${k.tahun_bergabung || "-"}</div>
         </td>
         <td style="color:var(--accent); font-weight:800;">
           Rp ${Math.floor(d.thp).toLocaleString("id-ID")}
           <div style="font-size:0.65rem; color:var(--text-muted); font-weight:normal;">PTKP: ${k.status_ptkp || "-"}</div>
         </td>
-        <td style="font-size: 0.75rem; color:var(--text-muted);">
-          KTP: ${k.nik_ktp || "-"}<br>
-          NPWP: ${k.npwp || "-"}
+        <td style="font-size: 0.65rem; color:var(--text-muted); line-height:1.1; max-width:120px;">
+          KTP: ${k.nik_ktp || "-"}<br>NPWP: ${k.npwp || "-"}
         </td>
         <td>
-          <span class="status-tag" style="background: ${k.mou_signed ? '#dcfce7' : '#fef3c7'}; color: ${k.mou_signed ? '#15803d' : '#92400e'}; font-size:0.65rem; padding:4px 8px;">
-            ${k.mou_signed ? '✅ SIGNED' : '⏳ PENDING'}
-          </span>
-          <div style="margin-top:4px;">
-            <button onclick="resetMOU(${index})" style="background:none; border:none; color:var(--danger); font-size:0.6rem; cursor:pointer; padding:0; text-decoration:underline;">[RESET]</button>
-          </div>
-        </td>
-        <td>
-          <div style="display:flex; gap:5px; flex-wrap:wrap;">
-            <button onclick="cetakSlip(${index})" class="status-tag status-masuk" style="border:none; cursor:pointer; font-size:0.65rem;">PDF</button>
-            <button onclick="kirimWaSlip(${index})" class="status-tag" style="background:#dcfce7; color:#15803d; border:none; cursor:pointer; font-size:0.65rem;">WA</button>
-            <button onclick="adminCetakMOU(${index})" class="status-tag status-pulang" style="border:none; cursor:pointer; font-size:0.65rem;">MOU</button>
+          <div style="display:flex; gap:3px;">
+            <button onclick="cetakSlip(${index})" class="status-tag status-masuk" style="border:none; cursor:pointer; font-size:0.6rem; padding:3px 6px;">PDF</button>
+            <button onclick="kirimWaSlip(${index})" class="status-tag" style="background:#dcfce7; color:#15803d; border:none; cursor:pointer; font-size:0.6rem; padding:3px 6px;">WA</button>
+            <button onclick="adminCetakMOU(${index})" class="status-tag status-pulang" style="border:none; cursor:pointer; font-size:0.6rem; padding:3px 6px;">MOU</button>
           </div>
         </td>
       </tr>`;
