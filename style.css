@@ -568,9 +568,9 @@ body {
 
 .content {
   flex: 1;
-  min-width: 0; /* Important constraint to prevent flex item blowout */
-  padding: 30px;
-  overflow: hidden; /* Each tab section manages its own scroll via .table-scroll */
+  min-width: 0;
+  padding: 15px 20px;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   background: #f8fafc;
