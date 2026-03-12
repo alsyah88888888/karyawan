@@ -457,20 +457,27 @@ function bukaModalMOU() {
 
 function initSignaturePad() {
     sigCanvas = document.getElementById("signaturePad");
+    if (!sigCanvas) return console.error("Canvas signaturePad tidak ditemukan!");
     sigContext = sigCanvas.getContext("2d");
     
-    // Resize canvas to match display size
-    const dpr = window.devicePixelRatio || 1;
-    const rect = sigCanvas.getBoundingClientRect();
-    sigCanvas.width = rect.width * dpr;
-    sigCanvas.height = rect.height * dpr;
-    sigContext.scale(dpr, dpr);
-    sigCanvas.style.width = rect.width + "px";
-    sigCanvas.style.height = rect.height + "px";
-
-    sigContext.strokeStyle = "#4f46e5";
-    sigContext.lineWidth = 2;
-    sigContext.lineCap = "round";
+    // Gunakan timeout kecil untuk memastikan modal sudah ter-render sempurna
+    setTimeout(() => {
+        const rect = sigCanvas.getBoundingClientRect();
+        const dpr = window.devicePixelRatio || 1;
+        
+        // Set internal size
+        sigCanvas.width = rect.width * dpr;
+        sigCanvas.height = rect.height * dpr;
+        
+        // Set display size
+        sigCanvas.style.width = rect.width + "px";
+        sigCanvas.style.height = rect.height + "px";
+        
+        sigContext.scale(dpr, dpr);
+        sigContext.strokeStyle = "#4f46e5";
+        sigContext.lineWidth = 2;
+        sigContext.lineCap = "round";
+    }, 100);
 
     // Mouse / Touch events
     sigCanvas.addEventListener("mousedown", startDrawing);
@@ -518,11 +525,18 @@ function renderExistingSignature(base64) {
 }
 
 async function saveMOU() {
+    if (!currentUser) return alert("Sesi tidak valid, silakan login kembali.");
+    if (!sigCanvas) return alert("Sistem tanda tangan belum siap.");
+
     if (!confirm("Apakah Anda yakin data tanda tangan sudah benar dan ingin menyetujui MOU ini?")) return;
 
     showLoading(true);
     try {
         const signatureData = sigCanvas.toDataURL("image/png");
+        
+        // Log untuk debug (bisa dihapus nanti)
+        console.log("Saving MOU for:", currentUser.nik);
+
         const { error } = await supabaseClient
             .from("karyawan")
             .update({
@@ -532,13 +546,17 @@ async function saveMOU() {
             })
             .eq("nik", currentUser.nik);
 
-        if (error) throw error;
+        if (error) {
+            console.error("Supabase Update Error:", error);
+            throw new Error(`Database Error: ${error.message} (${error.code || 'n/a'})`);
+        }
 
         alert("MOU Berhasil ditandatangani! Terima kasih atas kerjasama Anda.");
         tutupModal('modalMOU');
         loadDashboard(currentUser.nik);
     } catch (e) {
-        alert("Gagal menyimpan tanda tangan: " + e.message);
+        alert("Gagal menyimpan tanda tangan:\n" + e.message);
+        console.error("Save MOU Catch:", e);
     } finally {
         showLoading(false);
     }
