@@ -150,9 +150,12 @@ function hitungDetailGaji(gapok, logsData, kasbonData, nikKaryawan) {
     const lastOut = [...dayLogs].reverse().find(l => l.status === "PULANG");
 
     if (firstIn && lastOut) {
-      const hours = (new Date(lastOut.waktu) - new Date(firstIn.waktu)) / (1000 * 3600);
-      if (hours > 9) {
-        const overtime = hours - 9;
+      const lastOutDate = new Date(lastOut.waktu);
+      const cutoff = new Date(lastOutDate);
+      cutoff.setHours(18, 0, 0, 0); // Cutoff 18:00
+
+      if (lastOutDate > cutoff) {
+        const overtime = (lastOutDate - cutoff) / (1000 * 3600);
         totalJamLembur += overtime;
         totalLemburRp += overtime * 10000;
       }
@@ -641,7 +644,7 @@ async function hapusKaryawan(idKaryawan) {
 
 function cetakSlip(index) {
   const k = KARYAWAN[index];
-  const userLogs = logs.filter(l => l.nama === k.nama).slice(0, 30);
+  const userLogs = logs.filter(l => l.nama === k.nama).slice(0, 100);
   const userKasbon = kasbonData.filter(kb => kb.nama === k.nama);
   const d = hitungDetailGaji(k.gaji, userLogs, userKasbon, k.nik);
   
@@ -1162,7 +1165,7 @@ async function confirmResetKasbon() {
 }
 
 function kirimWaSlip(index) {
-  const userLogs = logs.filter(l => l.nama === k.nama).slice(0, 30);
+  const userLogs = logs.filter(l => l.nama === k.nama).slice(0, 100);
   const userKasbon = kasbonData.filter(kb => kb.nama === k.nama);
   const d = hitungDetailGaji(k.gaji || 0, userLogs, userKasbon, k.nik);
   const bulanIndo = [

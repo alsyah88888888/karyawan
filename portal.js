@@ -471,6 +471,7 @@ function renderMOUStatus(user) {
 
 function bukaModalMOU() {
     const user = currentUser;
+
     const thn = new Date().getFullYear();
     const tglSekarang = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
 
