@@ -691,7 +691,7 @@ function cetakSlip(index) {
             <span>NAMA LENGKAP</span><span>:</span><span style="font-weight:bold;">${k.nama}</span>
             <span>STATUS PAJAK</span><span>:</span><span>${d.ptkpStatus}</span>
             <span>DEPT / JABATAN</span><span>:</span><span>${k.dept} / ${k.jabatan || "-"}</span>
-            <span>TOTAL KEHADIRAN</span><span>:</span><span>${d.hadir} / 22 Hari</span>
+            <span>TOTAL KEHADIRAN</span><span>:</span><span>${d.hadir} / 24 Hari</span>
         </div>
 
         <div style="border-top:1px dashed #000; margin-top:15px; padding-top:10px;">
