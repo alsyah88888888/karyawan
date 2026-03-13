@@ -5,7 +5,7 @@
 
 const SB_URL = "https://ulmwpmzcaiuyubgehptt.supabase.co";
 const SB_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVsbXdwbXpjYWl1eXViZ2VocHR0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE4MzI2MjUsImV4cCI6MjA4NzQwODYyNX0._Y2MkIiRDM52CVMsZEp-lSRBQ93ZYGkwkFbmxfZ5tFo";
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVsbXdwbXpjYWl1eXViZ2VocHR0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE4MzI2MjUsImV4cCI6MjA4NzQwODYyNX0._Y2MkIiRDM52CVMsZEp-lSRBQ93ZYGkwkFbmxfZ5tFo";
 const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
 
 let currentUser = null;
@@ -71,7 +71,7 @@ async function loginKaryawan() {
 }
 
 function logoutKaryawan() {
-    if(confirm("Yakin ingin keluar?")) {
+    if (confirm("Yakin ingin keluar?")) {
         sessionStorage.removeItem("empNIK");
         window.location.reload();
     }
@@ -88,7 +88,7 @@ async function loadDashboard(nik) {
             .select("*")
             .eq("nik", nik)
             .single();
-        
+
         if (errUser) throw errUser;
         currentUser = user;
 
@@ -97,9 +97,9 @@ async function loadDashboard(nik) {
         document.getElementById("welcomeName").innerText = user.nama.split(' ')[0];
         document.getElementById("userDept").innerText = `${user.dept} • ${user.jabatan || '-'}`;
         document.getElementById("sisaCuti").innerText = user.sisa_cuti ?? 12;
-        
+
         // Initial Avatar
-        const initials = user.nama.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
+        const initials = user.nama.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
         document.getElementById("userInitial").innerText = initials;
 
         // C. Fetch Logs (Last 30 Days)
@@ -148,17 +148,17 @@ function renderHistory(logs) {
     }
 
     logs.slice(0, 7).forEach(l => {
-        const waktu = new Date(l.waktu).toLocaleString("id-ID", { 
-            weekday: 'long', 
-            year: 'numeric', 
-            month: 'short', 
-            day: 'numeric', 
-            hour: '2-digit', 
-            minute: '2-digit' 
+        const waktu = new Date(l.waktu).toLocaleString("id-ID", {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
         });
         const statusClass = (l.status === "MASUK" || l.status === "BERANGKAT") ? "status-masuk" : "status-pulang";
         const lateBadge = l.isLate ? '<span class="badge-late">TELAT</span>' : '';
-        
+
         tbody.innerHTML += `
             <tr>
                 <td style="font-weight: 500;">${waktu}</td>
@@ -172,9 +172,9 @@ function renderHistory(logs) {
 function renderKasbonStatus(kasbon) {
     const activeLoan = kasbon.filter(k => k.status === 'APPROVED').reduce((sum, k) => sum + parseFloat(k.nominal), 0);
     const pendingLoan = kasbon.filter(k => k.status === 'PENDING').reduce((sum, k) => sum + parseFloat(k.nominal), 0);
-    
+
     document.getElementById("statusKasbon").innerText = `Rp ${activeLoan.toLocaleString("id-ID")}`;
-    
+
     if (pendingLoan > 0) {
         document.getElementById("infoKasbon").innerHTML = `<span style="color: #f59e0b; font-weight: 600;">⚠️ Menunggu Persetujuan: Rp ${pendingLoan.toLocaleString("id-ID")}</span>`;
     } else if (activeLoan > 0) {
@@ -203,12 +203,12 @@ function hitungDetailGaji(gapok, logsData, kasbonData) {
     let totalLemburRp = 0;
     let totalJamLembur = 0;
     const uniqueDates = Object.keys(logsByDate);
-    const hariHadir = uniqueDates.filter(d => 
+    const hariHadir = uniqueDates.filter(d =>
         logsByDate[d].some(l => l.status === "MASUK" || l.status === "BERANGKAT")
     ).length;
 
     uniqueDates.forEach(date => {
-        const dayLogs = logsByDate[date].sort((a,b) => new Date(a.waktu) - new Date(b.waktu));
+        const dayLogs = logsByDate[date].sort((a, b) => new Date(a.waktu) - new Date(b.waktu));
         const firstIn = dayLogs.find(l => l.status === "MASUK" || l.status === "BERANGKAT");
         const lastOut = [...dayLogs].reverse().find(l => l.status === "PULANG");
 
@@ -231,12 +231,12 @@ function hitungDetailGaji(gapok, logsData, kasbonData) {
         : 0;
 
     const gajiPro = (hariHadir / standarHari) * g;
-    const potonganTelat = jumlahTelat * (gajiHarian * 0.02); 
+    const potonganTelat = jumlahTelat * (gajiHarian * 0.02);
 
     const bpjsKes = gajiPro * 0.01;
     const jht = gajiPro * 0.02;
     const jp = gajiPro * 0.01;
-    
+
     // LOGIKA PTKP & PPh21
     const ptkpMap = {
         "TK/0": 54000000, "TK/1": 58500000, "TK/2": 63000000, "TK/3": 67500000,
@@ -247,10 +247,10 @@ function hitungDetailGaji(gapok, logsData, kasbonData) {
 
     const brutoNeto = gajiPro - (bpjsKes + jht + jp);
     const pkpBulanan = brutoNeto - ptkpBulanan;
-    
+
     let pph21 = 0;
     if (pkpBulanan > 0) {
-        pph21 = pkpBulanan * 0.05; 
+        pph21 = pkpBulanan * 0.05;
     }
 
     const totalPotongan = bpjsKes + jht + jp + pph21 + potonganTelat + totalKasbon;
@@ -258,7 +258,7 @@ function hitungDetailGaji(gapok, logsData, kasbonData) {
 
     return {
         gapok: g, gajiPro, hadir: hariHadir, jumlahTelat, potonganTelat,
-        bpjsKes, jht, jp, pph21, kasbon: totalKasbon, bonusLembur: totalLemburRp, 
+        bpjsKes, jht, jp, pph21, kasbon: totalKasbon, bonusLembur: totalLemburRp,
         jamLembur: totalJamLembur, totalPotongan, thp: thp > 0 ? thp : 0,
         ptkpStatus, ptkpBulanan
     };
@@ -300,11 +300,11 @@ async function submitCuti() {
         }]);
 
         if (error) throw error;
-        
+
         alert("Pengajuan berhasil dikirim! Menunggu persetujuan Admin.");
         tutupModal('modalCuti');
         loadDashboard(currentUser.nik);
-    } catch(e) {
+    } catch (e) {
         alert("Gagal mengirim pengajuan: " + e.message);
     } finally {
         showLoading(false);
@@ -329,11 +329,11 @@ async function submitKasbon() {
         }]);
 
         if (error) throw error;
-        
+
         alert("Pengajuan Kasbon berhasil dikirim! Menunggu persetujuan Admin.");
         tutupModal('modalKasbon');
         loadDashboard(currentUser.nik);
-    } catch(e) {
+    } catch (e) {
         alert("Gagal mengirim pengajuan kasbon: " + e.message);
     } finally {
         showLoading(false);
@@ -429,7 +429,7 @@ function downloadSlipPribadi() {
                 Waktu Cetak: ${tgl.toLocaleString("id-ID")}
             </p>
         </div>`;
-    
+
     const w = window.open("", "_blank");
     if (w) {
         w.document.write(`<html><head><title>Slip - ${k.nama}</title>${printStyles}</head><body>${isiSlip}<script>window.onload=function(){window.print();window.close();}<\/script></body></html>`);
@@ -459,11 +459,11 @@ function bukaModalMOU() {
     const user = currentUser;
     const thn = new Date().getFullYear();
     const tglSekarang = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
-    
+
     // Logic for Scope of Work & Purpose based on Dept/Jabatan
     let s_maksud = "Meningkatkan efisiensi dan profesionalitas kerja di lingkungan perusahaan.";
     let s_lingkup = "Melaksanakan tugas harian sesuai dengan Instruksi Kerja (IK) yang diberikan atasan.";
-    
+
     if (user.dept === "OPERASIONAL") {
         s_maksud = "Menghasilkan output operasional yang aman, tepat waktu, dan berkualitas tinggi.";
         s_lingkup = "Pemeliharaan alat kerja, kepatuhan SOP Keselamatan (K3), dan pelaporan logistik lapangan.";
@@ -550,7 +550,7 @@ function bukaModalMOU() {
         document.getElementById("btnSimpanMOU").style.display = "none";
         btnPrint.style.display = "inline-block";
         renderExistingSignature(user.mou_signature);
-        
+
         // Prepare signature for print view
         const printSigArea = document.getElementById("printSignatureArea");
         printSigArea.innerHTML = `<img src="${user.mou_signature}" style="max-height: 80px; width: auto;">`;
@@ -591,20 +591,20 @@ function initSignaturePad() {
     sigCanvas = document.getElementById("signaturePad");
     if (!sigCanvas) return console.error("Canvas signaturePad tidak ditemukan!");
     sigContext = sigCanvas.getContext("2d");
-    
+
     // Gunakan timeout kecil untuk memastikan modal sudah ter-render sempurna
     setTimeout(() => {
         const rect = sigCanvas.getBoundingClientRect();
         const dpr = window.devicePixelRatio || 1;
-        
+
         // Set internal size
         sigCanvas.width = rect.width * dpr;
         sigCanvas.height = rect.height * dpr;
-        
+
         // Set display size
         sigCanvas.style.width = rect.width + "px";
         sigCanvas.style.height = rect.height + "px";
-        
+
         sigContext.scale(dpr, dpr);
         sigContext.strokeStyle = "#4f46e5";
         sigContext.lineWidth = 2;
@@ -648,7 +648,7 @@ function clearSignature() {
 }
 
 function renderExistingSignature(base64) {
-    if(!base64) return;
+    if (!base64) return;
     const img = new Image();
     img.src = base64;
     img.onload = () => {
@@ -665,7 +665,7 @@ async function saveMOU() {
     showLoading(true);
     try {
         const signatureData = sigCanvas.toDataURL("image/png");
-        
+
         // Log untuk debug (bisa dihapus nanti)
         console.log("Saving MOU for:", currentUser.nik);
 
@@ -697,7 +697,7 @@ async function saveMOU() {
 // 8. UI ENHANCEMENTS (PHASE 29)
 function initScrollReveal() {
     const sections = document.querySelectorAll('.portal-section');
-    
+
     const options = {
         threshold: 0.1,
         rootMargin: "0px 0px -50px 0px"
