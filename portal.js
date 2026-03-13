@@ -215,7 +215,7 @@ function hitungDetailGaji(gapok, logsData, kasbonData) {
         if (firstIn && lastOut) {
             const hours = (new Date(lastOut.waktu) - new Date(firstIn.waktu)) / (1000 * 3600);
             if (hours > 9) {
-                const overtime = Math.floor(hours - 9);
+                const overtime = hours - 9; // Automatic overtime (can be fractional)
                 totalJamLembur += overtime;
                 totalLemburRp += overtime * 10000;
             }
