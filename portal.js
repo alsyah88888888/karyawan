@@ -195,7 +195,7 @@ function hitungDetailGaji(gapok, logsData, kasbonData) {
     // Group logs by Date for Overtime
     const logsByDate = {};
     logsData.forEach(l => {
-        const d = new Date(l.waktu).toLocaleDateString();
+        const d = new Date(l.waktu).toLocaleDateString("id-ID");
         if (!logsByDate[d]) logsByDate[d] = [];
         logsByDate[d].push(l);
     });
@@ -267,6 +267,17 @@ function hitungDetailGaji(gapok, logsData, kasbonData) {
 function renderEstimasiGaji(user, logsData, kasbonData) {
     const detail = hitungDetailGaji(user.gaji, logsData, kasbonData);
     document.getElementById("estimasiGaji").innerText = `Rp ${Math.floor(detail.thp).toLocaleString("id-ID")}`;
+    
+    // Tampilkan rincian lembur jika ada
+    const overtimeInfo = document.getElementById("overtimeDetail");
+    if (overtimeInfo) {
+        if (detail.jamLembur > 0) {
+            overtimeInfo.innerHTML = `Lembur: <strong>${detail.jamLembur.toFixed(1)} Jam</strong> (Rp ${detail.bonusLembur.toLocaleString("id-ID")})`;
+            overtimeInfo.style.display = "block";
+        } else {
+            overtimeInfo.style.display = "none";
+        }
+    }
 }
 
 // 5. MODAL CONTROL

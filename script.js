@@ -132,7 +132,7 @@ function hitungDetailGaji(gapok, logsData, kasbonData, nikKaryawan) {
   // Group logs by Date for Overtime
   const logsByDate = {};
   logsData.forEach(l => {
-    const d = new Date(l.waktu).toLocaleDateString();
+    const d = new Date(l.waktu).toLocaleDateString("id-ID");
     if (!logsByDate[d]) logsByDate[d] = [];
     logsByDate[d].push(l);
   });
@@ -437,6 +437,7 @@ function renderKaryawanTable() {
         <td style="color:var(--accent); font-weight:800;">
           Rp ${Math.floor(d.thp).toLocaleString("id-ID")}
           <div style="font-size:0.65rem; color:var(--text-muted); font-weight:normal;">PTKP: ${k.status_ptkp || "-"}</div>
+          <div style="font-size:0.65rem; color:#15803d; font-weight:600;">Lembur: ${d.jamLembur.toFixed(1)}j (Rp ${d.bonusLembur.toLocaleString("id-ID")})</div>
         </td>
         <td style="font-size: 0.65rem; color:var(--text-muted); line-height:1.1; max-width:120px;">
           KTP: ${k.nik_ktp || "-"}<br>NPWP: ${k.npwp || "-"}
