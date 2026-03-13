@@ -123,7 +123,7 @@ window.onload = async () => {
 // --- LOGIKA PAYROLL ---
 function hitungDetailGaji(gapok, logsData, kasbonData, nikKaryawan) {
   const g = parseFloat(gapok) || 0;
-  const standarHari = 22;
+  const standarHari = 24;
   const gajiHarian = g / standarHari;
 
   const info = KARYAWAN.find(k => k.nik === nikKaryawan);

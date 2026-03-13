@@ -187,7 +187,7 @@ function renderKasbonStatus(kasbon) {
 // 4. PAYROLL FORMULA
 function hitungDetailGaji(gapok, logsData, kasbonData) {
     const g = parseFloat(gapok) || 0;
-    const standarHari = 22;
+    const standarHari = 24;
     const gajiHarian = g / standarHari;
 
     const ptkpStatus = currentUser?.status_ptkp || "TK/0";
