@@ -413,7 +413,7 @@ function renderKaryawanTable() {
   body.innerHTML = "";
 
   KARYAWAN.forEach((k, index) => {
-    const userLogs = logs.filter(l => l.nama === k.nama).slice(0, 30);
+    const userLogs = logs.filter(l => l.nama === k.nama).slice(0, 100);
     const userKasbon = kasbonData.filter(kb => kb.nama === k.nama);
     const d = hitungDetailGaji(k.gaji || 0, userLogs, userKasbon, k.nik);
     body.innerHTML += `
@@ -698,7 +698,7 @@ function cetakSlip(index) {
         <div style="border-top:1px dashed #000; margin-top:15px; padding-top:10px;">
             <div style="display:flex; justify-content:space-between; font-size: 0.75rem;"><span>Gaji Pokok Full</span><span>Rp ${d.gapok.toLocaleString("id-ID")}</span></div>
             <div style="display:flex; justify-content:space-between; font-size: 0.75rem;"><span>Gaji Pro-rata (Hadir)</span><span>Rp ${Math.floor(d.gajiPro).toLocaleString("id-ID")}</span></div>
-            <div style="display:flex; justify-content:space-between; color: #15803d; font-weight:bold; font-size: 0.75rem;"><span>Bonus Lembur (${d.jamLembur} Jam)</span><span>+Rp ${d.bonusLembur.toLocaleString("id-ID")}</span></div>
+            <div style="display:flex; justify-content:space-between; color: #15803d; font-weight:bold; font-size: 0.75rem;"><span>Bonus Lembur (${d.jamLembur.toFixed(1)} Jam)</span><span>+Rp ${d.bonusLembur.toLocaleString("id-ID")}</span></div>
         </div>
 
         <p style="margin: 15px 0 5px 0; font-weight:bold; text-decoration: underline; font-size: 0.7rem;">POTONGAN, PAJAK & KASBON</p>

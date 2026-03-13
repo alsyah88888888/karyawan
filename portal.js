@@ -108,7 +108,7 @@ async function loadDashboard(nik) {
             .select("*")
             .eq("nama", user.nama)
             .order("waktu", { ascending: false })
-            .limit(30);
+            .limit(100);
 
         if (errLogs) throw errLogs;
         currentLogs = logs || [];
@@ -213,9 +213,12 @@ function hitungDetailGaji(gapok, logsData, kasbonData) {
         const lastOut = [...dayLogs].reverse().find(l => l.status === "PULANG");
 
         if (firstIn && lastOut) {
-            const hours = (new Date(lastOut.waktu) - new Date(firstIn.waktu)) / (1000 * 3600);
-            if (hours > 9) {
-                const overtime = hours - 9; // Automatic overtime (can be fractional)
+            const lastOutDate = new Date(lastOut.waktu);
+            const cutoff = new Date(lastOutDate);
+            cutoff.setHours(18, 0, 0, 0); // Cutoff 18:00
+
+            if (lastOutDate > cutoff) {
+                const overtime = (lastOutDate - cutoff) / (1000 * 3600);
                 totalJamLembur += overtime;
                 totalLemburRp += overtime * 10000;
             }
@@ -407,7 +410,7 @@ function downloadSlipPribadi() {
             <div style="border-top:1px dashed #000; margin-top:15px; padding-top:10px;">
                 <div style="display:flex; justify-content:space-between; font-size: 0.75rem;"><span>Gaji Pokok Full</span><span>Rp ${d.gapok.toLocaleString("id-ID")}</span></div>
                 <div style="display:flex; justify-content:space-between; font-size: 0.75rem;"><span>Gaji Pro-rata (Hadir)</span><span>Rp ${Math.floor(d.gajiPro).toLocaleString("id-ID")}</span></div>
-                <div style="display:flex; justify-content:space-between; color: #15803d; font-weight:bold; font-size: 0.75rem;"><span>Bonus Lembur (${d.jamLembur} Jam)</span><span>+Rp ${d.bonusLembur.toLocaleString("id-ID")}</span></div>
+                <div style="display:flex; justify-content:space-between; color: #15803d; font-weight:bold; font-size: 0.75rem;"><span>Bonus Lembur (${d.jamLembur.toFixed(1)} Jam)</span><span>+Rp ${d.bonusLembur.toLocaleString("id-ID")}</span></div>
             </div>
     
             <p style="margin: 15px 0 5px 0; font-weight:bold; text-decoration: underline; font-size: 0.7rem;">POTONGAN, PAJAK & KASBON</p>
