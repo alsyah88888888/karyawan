@@ -192,12 +192,24 @@ function hitungDetailGaji(gapok, logsData, kasbonData) {
 
     const ptkpStatus = currentUser?.status_ptkp || "TK/0";
 
-    // Group logs by Date for Overtime
+    // Group logs by Date for Overtime (Only Current Month)
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
     const logsByDate = {};
     logsData.forEach(l => {
-        const d = new Date(l.waktu).toLocaleDateString("id-ID");
-        if (!logsByDate[d]) logsByDate[d] = [];
-        logsByDate[d].push(l);
+        const logDate = new Date(l.waktu);
+        if (logDate.getMonth() === currentMonth && logDate.getFullYear() === currentYear) {
+            const d = logDate.toLocaleDateString("id-ID");
+            if (!logsByDate[d]) logsByDate[d] = [];
+            logsByDate[d].push(l);
+        }
+    });
+
+    const currentMonthLogs = logsData.filter(l => {
+        const logDate = new Date(l.waktu);
+        return logDate.getMonth() === currentMonth && logDate.getFullYear() === currentYear;
     });
 
     let totalLemburRp = 0;
@@ -225,7 +237,7 @@ function hitungDetailGaji(gapok, logsData, kasbonData) {
         }
     });
 
-    const jumlahTelat = logsData.filter(
+    const jumlahTelat = currentMonthLogs.filter(
         (l) => (l.status === "MASUK" || l.status === "BERANGKAT") && (l.isLate === true || l.is_late === true),
     ).length;
 
