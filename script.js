@@ -100,8 +100,8 @@ function toggleDriverButtons() {
   btnMasuk.innerText = "MASUK";
   btnMasuk.setAttribute("onclick", "prosesAbsen('MASUK')");
 
-  // Perlakuan Khusus Driver / Helper
-  if (info && (info.dept === "OPERASIONAL" && (info.jabatan === "DRIVER" || info.jabatan === "Helper"))) {
+  // Perlakuan Khusus Driver
+  if (info && info.jabatan === "DRIVER") {
     btnMasuk.innerText = "BERANGKAT";
     btnMasuk.setAttribute("onclick", "prosesAbsen('BERANGKAT')");
   }
@@ -147,7 +147,7 @@ function hitungDetailGaji(gapok, logsData, kasbonData, nikKaryawan) {
   uniqueDates.forEach(date => {
     const dayLogs = logsByDate[date].sort((a, b) => new Date(a.waktu) - new Date(b.waktu));
     const firstIn = dayLogs.find(l => l.status === "MASUK" || l.status === "BERANGKAT");
-    const lastOut = [...dayLogs].reverse().find(l => l.status === "PULANG");
+    const lastOut = [...dayLogs].reverse().find(l => l.status === "PULANG" || l.status === "KEMBALI" || l.status === "SAMPAI");
 
     if (firstIn && lastOut) {
       const lastOutDate = new Date(lastOut.waktu);
@@ -163,7 +163,7 @@ function hitungDetailGaji(gapok, logsData, kasbonData, nikKaryawan) {
   });
 
   const jumlahTelat = logsData.filter(
-    (l) => (l.status === "MASUK" || l.status === "BERANGKAT") && (l.isLate === true || l.is_late === true),
+    (l) => (l.status === "MASUK" || l.status === "BERANGKAT") && (l.is_late === true || l.isLate === true),
   ).length;
 
   const totalKasbon = kasbonData

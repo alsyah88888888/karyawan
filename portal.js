@@ -210,7 +210,7 @@ function hitungDetailGaji(gapok, logsData, kasbonData) {
     uniqueDates.forEach(date => {
         const dayLogs = logsByDate[date].sort((a, b) => new Date(a.waktu) - new Date(b.waktu));
         const firstIn = dayLogs.find(l => l.status === "MASUK" || l.status === "BERANGKAT");
-        const lastOut = [...dayLogs].reverse().find(l => l.status === "PULANG");
+        const lastOut = [...dayLogs].reverse().find(l => l.status === "PULANG" || l.status === "KEMBALI" || l.status === "SAMPAI");
 
         if (firstIn && lastOut) {
             const lastOutDate = new Date(lastOut.waktu);
