@@ -527,7 +527,7 @@
             font-size: 0.9rem;
             line-height: 1.6;
             background: #fff;
-            box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
         }
 
         @media (max-width: 480px) {
@@ -537,7 +537,7 @@
                 font-size: 0.85rem;
             }
         }
-        
+
         #signaturePad {
             border: 2px dashed #cbd5e1;
             border-radius: 12px;
@@ -693,6 +693,7 @@
                 opacity: 0;
                 transform: translateY(-20px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -758,44 +759,51 @@
                         <h1>Halo, <span id="welcomeName">Karyawan</span>! 👋</h1>
                         <p id="userDept">Departemen • Jabatan</p>
                     </div>
-    
+
                     <div class="stats-grid">
                         <!-- LEAVE CARD -->
                         <div class="portal-card">
                             <div>
                                 <span class="label">Sisa Cuti Tahunan</span>
                                 <h2 id="sisaCuti">12</h2>
-                                <p style="color: var(--portal-subtext); font-size: 0.9rem; margin-top: 5px;">Hari tersisa</p>
+                                <p style="color: var(--portal-subtext); font-size: 0.9rem; margin-top: 5px;">Hari
+                                    tersisa</p>
                             </div>
                             <div class="action-btns">
-                                <button class="btn-card primary" onclick="bukaModal('modalCuti')">Ajukan Cuti/Izin</button>
+                                <button class="btn-card primary" onclick="bukaModal('modalCuti')">Ajukan
+                                    Cuti/Izin</button>
                             </div>
                         </div>
-    
+
                         <!-- PAYROLL CARD -->
                         <div class="portal-card">
                             <div>
                                 <span class="label">Estimasi Gaji (THP)</span>
                                 <h2 id="estimasiGaji">Rp 0</h2>
-                                <p id="overtimeDetail" style="color: #10b981; font-size: 0.85rem; margin-top: 2px; display: none;"></p>
-                                <p style="color: #10b981; font-size: 0.9rem; margin-top: 5px; font-weight: 600;">Bulan Berjalan
+                                <p id="overtimeDetail"
+                                    style="color: #10b981; font-size: 0.85rem; margin-top: 2px; display: none;"></p>
+                                <p style="color: #10b981; font-size: 0.9rem; margin-top: 5px; font-weight: 600;">Bulan
+                                    Berjalan
                                 </p>
                             </div>
                             <div class="action-btns">
-                                <button class="btn-card outline" onclick="downloadSlipPribadi()">Unduh Slip Gaji</button>
+                                <button class="btn-card outline" onclick="downloadSlipPribadi()">Unduh Slip
+                                    Gaji</button>
                             </div>
                         </div>
-    
+
                         <!-- LOAN CARD -->
                         <div class="portal-card">
                             <div>
                                 <span class="label">Status Kasbon</span>
                                 <h2 id="statusKasbon">Rp 0</h2>
-                                <p id="infoKasbon" style="color: var(--portal-subtext); font-size: 0.9rem; margin-top: 5px;">
+                                <p id="infoKasbon"
+                                    style="color: var(--portal-subtext); font-size: 0.9rem; margin-top: 5px;">
                                     Tidak ada pinjaman aktif</p>
                             </div>
                             <div class="action-btns">
-                                <button class="btn-card primary" onclick="bukaModal('modalKasbon')">Ajukan Kasbon</button>
+                                <button class="btn-card primary" onclick="bukaModal('modalKasbon')">Ajukan
+                                    Kasbon</button>
                             </div>
                         </div>
                         <!-- MOU CARD -->
@@ -803,25 +811,28 @@
                             <div>
                                 <span class="label">Dokumen Kontrak</span>
                                 <h2 id="mouStatus" class="mou-status-pending">MEMBACA...</h2>
-                                <p id="mouDateInfo" style="color: var(--portal-subtext); font-size: 0.9rem; margin-top: 5px;">
+                                <p id="mouDateInfo"
+                                    style="color: var(--portal-subtext); font-size: 0.9rem; margin-top: 5px;">
                                     Harap segera lengkapi</p>
                             </div>
                             <div class="action-btns">
-                                <button id="btnBukaMOU" class="btn-card primary" onclick="bukaModalMOU()">Lihat Kontrak</button>
+                                <button id="btnBukaMOU" class="btn-card primary" onclick="bukaModalMOU()">Lihat
+                                    Kontrak</button>
                             </div>
                         </div>
                     </div>
                 </div>
             </section>
-    
+
             <!-- SECTION 2: ATTENDANCE HISTORY -->
             <section class="portal-section" id="sectionHistory">
                 <div class="section-container">
                     <div class="section-header">
                         <h3>Riwayat Absensi</h3>
-                        <p style="color: var(--portal-subtext); font-size: 0.85rem; font-weight: 600;">7 Hari Terakhir</p>
+                        <p style="color: var(--portal-subtext); font-size: 0.85rem; font-weight: 600;">7 Hari Terakhir
+                        </p>
                     </div>
-        
+
                     <div class="table-container">
                         <table>
                             <thead>
@@ -844,7 +855,8 @@
         <footer style="background: #0f172a; color: white; padding: 40px 5%; text-align: center; font-size: 0.9rem;">
             <img src="images/koboi.png" alt="Logo" style="width: 50px; opacity: 0.5; margin-bottom: 20px;">
             <p style="margin: 0; opacity: 0.7;">&copy; 2026 PT. KOLA BORASI INDONESIA. All rights reserved.</p>
-            <p style="margin-top: 10px; opacity: 0.4; font-size: 0.75rem;">KOBOI HRIS v2.5 - Employee Self Service Portal</p>
+            <p style="margin-top: 10px; opacity: 0.4; font-size: 0.75rem;">KOBOI HRIS v1.0 - Employee Self Service
+                Portal</p>
         </footer>
     </div>
 
@@ -920,17 +932,21 @@
             </div>
 
             <div id="signatureSection">
-                <label style="font-weight: 700; font-size: 0.85rem; display: block; margin-bottom: 10px;">Goreskan Tanda Tangan Anda di Bawah Ini:</label>
+                <label style="font-weight: 700; font-size: 0.85rem; display: block; margin-bottom: 10px;">Goreskan Tanda
+                    Tangan Anda di Bawah Ini:</label>
                 <canvas id="signaturePad"></canvas>
                 <div style="display: flex; gap: 10px; margin-top: 10px;">
                     <button class="btn-card outline" style="padding: 8px;" onclick="clearSignature()">BERSIHKAN</button>
-                    <span style="font-size: 0.75rem; color: #94a3b8; align-self: center;">Dengan menekan simpan, Anda menyetujui seluruh butir dalam MOU ini.</span>
+                    <span style="font-size: 0.75rem; color: #94a3b8; align-self: center;">Dengan menekan simpan, Anda
+                        menyetujui seluruh butir dalam MOU ini.</span>
                 </div>
             </div>
 
             <div class="modal-actions">
                 <button class="btn-card outline" onclick="tutupModal('modalMOU')">TUTUP</button>
-                <button id="btnPrintMOU" class="btn-card outline" style="display:none; border-color: var(--portal-primary); color: var(--portal-primary);" onclick="cetakMOU()">CETAK MOU (PDF)</button>
+                <button id="btnPrintMOU" class="btn-card outline"
+                    style="display:none; border-color: var(--portal-primary); color: var(--portal-primary);"
+                    onclick="cetakMOU()">CETAK MOU (PDF)</button>
                 <button id="btnSimpanMOU" class="btn-card primary" onclick="saveMOU()">SIMPAN & TANDA TANGAN</button>
             </div>
         </div>
