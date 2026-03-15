@@ -581,7 +581,8 @@ body {
 #tabKaryawan,
 #tabCuti,
 #tabKasbon,
-#tabAkun {
+#tabAkun,
+#tabTracking {
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -906,98 +907,381 @@ tr:hover td {
 }
 
 /* ==========================================
-   RESPONSIVE DESIGN (PHASE 37 - IMPROVED)
+   RESPONSIVE DESIGN - COMPREHENSIVE
    ========================================== */
 
-/* Tablet & Mobile Landscape */
+/* --- Tablet (max 1024px) --- */
 @media (max-width: 1024px) {
   .sidebar {
-    width: 80px;
-    padding: 15px 10px;
+    width: 200px;
+    padding: 12px 10px;
   }
-  .sidebar h2, .nav-label, .stat-box p, .stat-box h3, .nav-group span {
-    display: none;
-  }
-  .admin-nav button {
-    justify-content: center;
-    padding: 15px;
-  }
-  .content {
-    padding: 20px;
-  }
-}
-
-/* Mobile Portrait */
-@media (max-width: 768px) {
-  .admin-container {
-    flex-direction: column;
-    overflow-y: auto;
-  }
-  .sidebar {
-    width: 100%;
-    height: auto;
-    flex-direction: row;
-    overflow-x: auto;
-    padding: 10px;
-    position: sticky;
-    top: 0;
-    z-index: 1000;
-  }
-  .sidebar-header {
-    margin: 0 15px 0 0;
-    padding: 0;
-  }
-  .admin-nav {
-    flex-direction: row;
-    margin: 0;
-  }
-  .nav-group {
-    flex-direction: row;
-    gap: 8px;
-  }
-  .sidebar-logo {
-    width: 30px;
-  }
-  .stat-box {
-    display: none;
+  .sidebar h2 {
+    font-size: 0.85rem;
   }
   .content {
     padding: 15px;
-  }
-  .header-content {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 15px;
   }
   .header-content h2 {
     font-size: 1.25rem;
   }
+}
+
+/* --- Mobile (max 768px) --- */
+@media (max-width: 768px) {
+
+  /* ADMIN LAYOUT: Sidebar becomes top horizontal navbar */
+  .admin-container {
+    flex-direction: column;
+    height: auto;
+    min-height: 100vh;
+    overflow-y: auto;
+  }
+
+  .sidebar {
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    flex-direction: column;
+    padding: 10px;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    overflow: visible;
+    gap: 6px;
+  }
+
+  .sidebar-header {
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 6px;
+    padding: 0;
+    gap: 8px;
+  }
+
+  .sidebar-logo {
+    width: 28px;
+  }
+
+  .sidebar h2 {
+    font-size: 0.8rem;
+    letter-spacing: 1px;
+  }
+
+  .admin-nav {
+    flex-direction: row;
+    overflow-x: auto;
+    gap: 4px;
+    margin-bottom: 0;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .admin-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .nav-group {
+    flex-direction: row;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
+  .admin-nav button {
+    white-space: nowrap;
+    padding: 8px 12px;
+    font-size: 0.7rem;
+    border-radius: 8px;
+    min-width: max-content;
+  }
+
+  .admin-nav button:hover {
+    transform: none;
+  }
+
+  .nav-badge {
+    font-size: 0.6rem;
+    padding: 2px 6px;
+  }
+
+  /* Hide non-essential sidebar items on mobile */
+  .stat-box,
+  .btn-logout-sidebar,
+  .sidebar > div:last-child {
+    display: none;
+  }
+
+  /* CONTENT AREA */
+  .content {
+    padding: 12px;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  #tabLog, #tabKaryawan, #tabCuti, #tabKasbon, #tabAkun, #tabTracking {
+    overflow: visible;
+  }
+
+  .header-content {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 15px;
+  }
+
+  .header-content h2 {
+    font-size: 1.1rem;
+  }
+
+  .header-content h2::before {
+    width: 8px;
+    height: 8px;
+  }
+
+  .header-content > div:last-child {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .header-content input[type="text"],
+  .header-content select,
+  .header-content input[type="date"] {
+    width: 100% !important;
+    font-size: 0.85rem;
+  }
+
+  /* TABLES: horizontal scroll */
   .table-scroll {
     border-radius: 12px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
   }
+
+  table {
+    min-width: 600px;
+  }
+
+  th {
+    font-size: 0.65rem;
+    padding: 10px 12px;
+  }
+
+  td {
+    font-size: 0.8rem;
+    padding: 10px 12px;
+  }
+
+  .img-prev {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+  }
+
+  /* MODAL on mobile */
+  .modal-overlay {
+    padding: 10px;
+    align-items: flex-end;
+  }
+
   .modal-content {
-    max-width: 95%;
-    border-radius: 24px;
+    max-width: 100%;
+    border-radius: 24px 24px 0 0;
+    max-height: 90vh;
   }
+
+  .modal-header {
+    padding: 20px;
+  }
+
+  .modal-header h3 {
+    font-size: 1.2rem;
+  }
+
+  .modal-body {
+    padding: 20px;
+    max-height: 55vh;
+  }
+
   .grid-fields {
     grid-template-columns: 1fr;
+    gap: 0;
   }
+
   .modal-footer {
     grid-template-columns: 1fr;
+    padding: 16px 20px 24px;
+    gap: 10px;
+  }
+
+  /* TRACKING TAB on mobile */
+  #adminMap {
+    height: 350px !important;
+  }
+
+  #trackDriverSelect,
+  #trackDate {
+    width: 100% !important;
+  }
+
+  /* FILTER on mobile */
+  #filterDept {
+    width: 100%;
+    font-size: 0.85rem;
+  }
+
+  /* Portal Page Responsive */
+  .dashboard-content {
+    padding: 20px 4% !important;
+  }
+
+  .welcome-section h1 {
+    font-size: 1.5rem !important;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+
+  .portal-card {
+    padding: 20px !important;
+    border-radius: 16px !important;
+  }
+
+  #driverCard {
+    grid-column: span 1 !important;
+  }
+
+  .dashboard-nav {
+    padding: 10px 4% !important;
+  }
+
+  .user-pill .name {
+    font-size: 0.75rem;
+  }
+
+  .nav-logo h2 {
+    font-size: 1rem !important;
+  }
+
+  /* Action buttons stacking */
+  .action-btns {
+    flex-direction: column;
+    gap: 8px !important;
+  }
+
+  .btn-card {
+    width: 100% !important;
+    text-align: center;
+  }
+
+  /* Login pages */
+  .login-container,
+  .login-card {
+    max-width: 100% !important;
+    padding: 24px !important;
+    border-radius: 20px !important;
+  }
+
+  #liveClock {
+    font-size: 2.5rem !important;
+  }
+
+  .terminal-card {
+    max-width: 100%;
+    border-radius: 20px;
+  }
+
+  .btn-group {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  /* MOU Modal, Signature */
+  .mou-modal-content {
+    width: 95% !important;
+    max-height: 85vh !important;
+  }
+
+  #sigCanvas {
+    width: 100% !important;
+    height: 150px !important;
   }
 }
 
-/* Specific Table Fixes for Small Screens */
+/* --- Small Phones (max 480px) --- */
 @media (max-width: 480px) {
+  .sidebar {
+    padding: 8px;
+  }
+
+  .admin-nav button {
+    padding: 6px 10px;
+    font-size: 0.65rem;
+  }
+
+  .sidebar h2 {
+    font-size: 0.7rem;
+  }
+
+  .content {
+    padding: 10px;
+  }
+
+  .header-content h2 {
+    font-size: 1rem;
+  }
+
+  table {
+    min-width: 500px;
+  }
+
   td, th {
-    padding: 12px;
-    font-size: 0.8rem;
+    padding: 8px 10px;
+    font-size: 0.75rem;
   }
+
   .img-prev {
-    width: 32px;
-    height: 32px;
+    width: 28px;
+    height: 28px;
   }
-  .nav-active {
-    box-shadow: none;
+
+  .btn-m, .btn-p {
+    padding: 12px;
+    font-size: 0.85rem;
+  }
+
+  .modal-header {
+    padding: 16px;
+  }
+
+  .modal-body {
+    padding: 16px;
+  }
+
+  .modal-body input,
+  .modal-body select {
+    padding: 10px 12px;
+    font-size: 0.85rem;
+  }
+
+  #adminMap {
+    height: 280px !important;
+  }
+
+  .welcome-section h1 {
+    font-size: 1.3rem !important;
+  }
+
+  .portal-card h2 {
+    font-size: 1.3rem !important;
+  }
+
+  .portal-card .label {
+    font-size: 0.7rem !important;
+  }
+
+  #mapDriver {
+    height: 150px !important;
   }
 }
