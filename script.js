@@ -159,13 +159,21 @@ function hitungDetailGaji(gapok, logsData, kasbonData, nikKaryawan) {
     const lastOut = [...dayLogs].reverse().find(l => l.status === "PULANG" || l.status === "KEMBALI" || l.status === "SAMPAI");
 
     if (firstIn && lastOut) {
+      const firstInDate = new Date(firstIn.waktu);
       const lastOutDate = new Date(lastOut.waktu);
-      const cutoff = new Date(lastOutDate);
-      cutoff.setHours(18, 0, 0, 0); // Standar Cutoff 18:00
 
-      if (lastOutDate > cutoff) {
-        const overtime = (lastOutDate - cutoff) / (1000 * 3600);
-        totalJamLembur += overtime;
+      // Tentukan batas mulai lembur (18:00) pada hari firstIn (hari masuk)
+      const cutoffStart = new Date(firstInDate);
+      cutoffStart.setHours(18, 0, 0, 0);
+
+      // Jika pulang setelah 18:00 (hari yang sama atau hari berikutnya)
+      if (lastOutDate > cutoffStart) {
+        const overtime = (lastOutDate - cutoffStart) / (1000 * 3600);
+        
+        // Sanity check: batasi lembur maksimal, misal 14 jam (jika lupa absen pulang)
+        if (overtime > 0 && overtime <= 14) {
+             totalJamLembur += overtime;
+        }
       }
     }
   });
