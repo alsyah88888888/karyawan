@@ -141,7 +141,7 @@ function hitungDetailGaji(gapok, logsData, kasbonData, nikKaryawan) {
   const logsByDate = {};
   logsData.forEach(l => {
     const logDate = new Date(l.waktu);
-    
+
     // Logika Shift Lintas Hari: Jika absen di bawah jam 06:00 pagi,
     // anggap itu bagian dari shift hari sebelumnya.
     let shiftDate = new Date(logDate);
@@ -158,7 +158,7 @@ function hitungDetailGaji(gapok, logsData, kasbonData, nikKaryawan) {
 
   let totalJamLembur = 0;
   let totalJamKerja = 0; // Tambahan untuk mengecek jam kerja murni
-  
+
   // Variabel untuk menghitung akumulasi HKE harian dengan penalti telat
   let totalHkeHarianAcumulated = 0;
   let potonganTelatHarianAcumulated = 0;
@@ -183,41 +183,41 @@ function hitungDetailGaji(gapok, logsData, kasbonData, nikKaryawan) {
     const lastOut = [...dayLogs].reverse().find(l => l.status === "PULANG" || l.status === "KEMBALI" || l.status === "SAMPAI");
 
     if (firstIn) {
-        const inTime = new Date(firstIn.waktu);
-        
-        // 1. CEK KETERLAMBATAN UNIVERSAL (Batas max 09:18)
-        const batasTelat = new Date(inTime);
-        batasTelat.setHours(9, 18, 0, 0);
-        
-        if (inTime > batasTelat) {
-            // Telat: Potong 50% dari tarif harian
-            totalHkeHarianAcumulated += (tarifHariDasar * 0.5);
-            potonganTelatHarianAcumulated += (tarifHariDasar * 0.5);
-        } else {
-            // Tepat waktu: Full HKE harian
-            totalHkeHarianAcumulated += tarifHariDasar;
-        }
+      const inTime = new Date(firstIn.waktu);
 
-        // 2. JAM KERJA & OVERTIME (JIKA ADA JAM PULANG)
-        if (lastOut) {
-          const firstInDate = new Date(firstIn.waktu);
-          const lastOutDate = new Date(lastOut.waktu);
+      // 1. CEK KETERLAMBATAN UNIVERSAL (Batas max 09:18)
+      const batasTelat = new Date(inTime);
+      batasTelat.setHours(9, 18, 0, 0);
 
-          // Hitung total jam kerja hari ini (dari absen masuk ke pulang)
-          const jamKerjaHariIni = (lastOutDate - firstInDate) / (1000 * 3600);
-          if (jamKerjaHariIni > 0 && jamKerjaHariIni <= 24) {
-              totalJamKerja += jamKerjaHariIni;
-              
-              // OVERTIME UNIVERSAL: Dihitung dari kelebihan jam kerja harian > 9 Jam
-              if (jamKerjaHariIni > 9) {
-                  const overtimeHariIni = jamKerjaHariIni - 9;
-                  // Sanity check batasan maksimal lembur murni per hari (kasus lupa absen)
-                  if (overtimeHariIni <= 14) {
-                      totalJamLembur += overtimeHariIni;
-                  }
-              }
+      if (inTime > batasTelat) {
+        // Telat: Potong 50% dari tarif harian
+        totalHkeHarianAcumulated += (tarifHariDasar * 0.5);
+        potonganTelatHarianAcumulated += (tarifHariDasar * 0.5);
+      } else {
+        // Tepat waktu: Full HKE harian
+        totalHkeHarianAcumulated += tarifHariDasar;
+      }
+
+      // 2. JAM KERJA & OVERTIME (JIKA ADA JAM PULANG)
+      if (lastOut) {
+        const firstInDate = new Date(firstIn.waktu);
+        const lastOutDate = new Date(lastOut.waktu);
+
+        // Hitung total jam kerja hari ini (dari absen masuk ke pulang)
+        const jamKerjaHariIni = (lastOutDate - firstInDate) / (1000 * 3600);
+        if (jamKerjaHariIni > 0 && jamKerjaHariIni <= 24) {
+          totalJamKerja += jamKerjaHariIni;
+
+          // OVERTIME UNIVERSAL: Dihitung dari kelebihan jam kerja harian > 9 Jam
+          if (jamKerjaHariIni > 9) {
+            const overtimeHariIni = jamKerjaHariIni - 9;
+            // Sanity check batasan maksimal lembur murni per hari (kasus lupa absen)
+            if (overtimeHariIni <= 14) {
+              totalJamLembur += overtimeHariIni;
+            }
           }
         }
+      }
     }
   });
 
@@ -230,13 +230,13 @@ function hitungDetailGaji(gapok, logsData, kasbonData, nikKaryawan) {
   // Evaluasi Incentive Reguler (Berbasis rata-rata jam kerja >= 9 Jam)
   const rataRataJamKerja = hariHadir > 0 ? (totalJamKerja / hariHadir) : 0;
   if (rataRataJamKerja >= 9) {
-      incentiveReguler = 200000;
+    incentiveReguler = 200000;
   } else if (info?.insentif_reguler === "Ya" || info?.insentif_reguler === "YA") {
-      incentiveReguler = 200000;
+    incentiveReguler = 200000;
   }
 
   // 4. PERLAKUAN KHUSUS (PENGECUALIAN & DIVISI)
-  
+
   // A. Pengecualian nama tertentu (Tidak dapat OT & Reguler)
   const namaKaryawan = (info?.nama || "").toUpperCase().trim();
   const daftarPengecualian = ["TATANG", "IMAM MAHDI AMANULLAH GHAZI", "WAWAN KURNIAWAN"];
@@ -248,10 +248,10 @@ function hitungDetailGaji(gapok, logsData, kasbonData, nikKaryawan) {
 
   // B. Divisi Non-Operasional (ADMIN, dll)
   if (!isOperasional) {
-      incentiveLK = 0;
-      incentiveReguler = 0;
-      // Berdasarkan instruksi "hitungamn dari jam kerja lebih karyawan dari jam 9 jam tersebut", Admin DAPAT overtime > 9 jam
-      // Jadi totalOvertimeRp TETAP DIHITUNG untuk Admin.
+    incentiveLK = 0;
+    incentiveReguler = 0;
+    // Berdasarkan instruksi "hitungamn dari jam kerja lebih karyawan dari jam 9 jam tersebut", Admin DAPAT overtime > 9 jam
+    // Jadi totalOvertimeRp TETAP DIHITUNG untuk Admin.
   }
 
   // 5. POTONGAN
@@ -263,7 +263,7 @@ function hitungDetailGaji(gapok, logsData, kasbonData, nikKaryawan) {
 
   // 6. RUMUS UTAMA FINANSIAL - GAJI POKOK HANYA UNTUK TAMPILAN, TIDAK DITAMBAHKAN!
   // Semua Total Penerimaan murni berasal dari Akumulasi HKE Harian (yang sudah memperhitungkan absen & telat) + Tunjangan
-  
+
   // Pendapatan HKE utama menggunakan hasil akumulasi yang sudah dikurangi penalti telat
   let pendapatanHKE = totalHkeHarianAcumulated;
 
@@ -407,7 +407,7 @@ async function loadDriverRute() {
   const select = document.getElementById("trackDriverSelect");
   const dateInput = document.getElementById("trackDate");
   const detailPanel = document.getElementById("routeDetails");
-  
+
   const nik = select.value;
   const tgl = dateInput.value;
 
@@ -479,7 +479,7 @@ function initTrackSelect() {
   drivers.forEach(d => {
     select.innerHTML += `<option value="${d.nik}">${d.nama}</option>`;
   });
-  
+
   const dateInput = document.getElementById("trackDate");
   if (dateInput && !dateInput.value) {
     dateInput.value = new Date().toISOString().split('T')[0];
@@ -852,7 +852,7 @@ function cetakSlip(index) {
   const userLogs = logs.filter(l => l.nama === k.nama).slice(0, 100);
   const userKasbon = kasbonData.filter(kb => kb.nama === k.nama);
   const d = hitungDetailGaji(k.gaji, userLogs, userKasbon, k.nik);
-  
+
   const tgl = new Date();
   const bulanIndo = [
     "JANUARI", "FEBRUARI", "MARET", "APRIL", "MEI", "JUNI",
@@ -881,8 +881,8 @@ function cetakSlip(index) {
   `;
 
   // Contoh tampilan: Bulan: Feb-26 M3 Tgl bayar: 21 Februari 2026 Lokasi: Kantor Pusat Bogor
-  const periodeStr = `${bulanIndo[tgl.getMonth()].substring(0,3)}-${tgl.getFullYear().toString().substring(2)}`;
-  
+  const periodeStr = `${bulanIndo[tgl.getMonth()].substring(0, 3)}-${tgl.getFullYear().toString().substring(2)}`;
+
   const isiSlip = `
     <div class="print-container">
         <div class="header-title">SLIP GAJI KARYAWAN BULAN ${bulanIndo[tgl.getMonth()]} ${tgl.getFullYear()}</div>
@@ -1453,32 +1453,32 @@ _Pesan ini diterbitkan secara digital melalui KOBOI Apps._
 }
 
 function adminCetakMOU(index) {
-    const user = KARYAWAN[index];
-    const thn = new Date().getFullYear();
-    const tglSekarang = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
-    
-    // Logic for Scope of Work & Purpose based on Dept/Jabatan
-    let s_maksud = "Meningkatkan efisiensi dan profesionalitas kerja di lingkungan perusahaan.";
-    let s_lingkup = "Melaksanakan tugas harian sesuai dengan Instruksi Kerja (IK) yang diberikan atasan.";
-    
-    if (user.dept === "OPERASIONAL") {
-        s_maksud = "Menghasilkan output operasional yang aman, tepat waktu, dan berkualitas tinggi.";
-        s_lingkup = "Pemeliharaan alat kerja, kepatuhan SOP Keselamatan (K3), dan pelaporan logistik lapangan.";
-    } else if (user.dept === "IT" || user.dept === "TEKNIS") {
-        s_maksud = "Menjamin stabilitas sistem digital dan infrastruktur teknologi perusahaan.";
-        s_lingkup = "Pemeliharaan aplikasi KOBOI, manajemen database, dan troubleshooting perangkat kerja.";
-    } else if (user.dept === "FINANCE" || user.dept === "AKUNTANSI") {
-        s_maksud = "Menjaga integritas data keuangan dan ketepatan administrasi transaksi.";
-        s_lingkup = "Pencatatan invoice, verifikasi laporan pengeluaran, dan penyiapan data payroll/pajak.";
-    } else if (user.dept === "MARKETING" || user.dept === "SALES") {
-        s_maksud = "Memperluas jangkauan pasar dan menjaga hubungan baik dengan klien.";
-        s_lingkup = "Acquisition klien baru, manajemen media sosial, dan presentasi profil perusahaan.";
-    } else if (user.dept === "HRD" || user.dept === "GA") {
-        s_maksud = "Mengoptimalkan manajemen SDM dan kenyamanan kerja seluruh staf.";
-        s_lingkup = "Monitoring absensi rincian, rekrutmen, dan pemeliharaan fasilitas kantor.";
-    }
+  const user = KARYAWAN[index];
+  const thn = new Date().getFullYear();
+  const tglSekarang = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
 
-    const bodyMOU = `
+  // Logic for Scope of Work & Purpose based on Dept/Jabatan
+  let s_maksud = "Meningkatkan efisiensi dan profesionalitas kerja di lingkungan perusahaan.";
+  let s_lingkup = "Melaksanakan tugas harian sesuai dengan Instruksi Kerja (IK) yang diberikan atasan.";
+
+  if (user.dept === "OPERASIONAL") {
+    s_maksud = "Menghasilkan output operasional yang aman, tepat waktu, dan berkualitas tinggi.";
+    s_lingkup = "Pemeliharaan alat kerja, kepatuhan SOP Keselamatan (K3), dan pelaporan logistik lapangan.";
+  } else if (user.dept === "IT" || user.dept === "TEKNIS") {
+    s_maksud = "Menjamin stabilitas sistem digital dan infrastruktur teknologi perusahaan.";
+    s_lingkup = "Pemeliharaan aplikasi KOBOI, manajemen database, dan troubleshooting perangkat kerja.";
+  } else if (user.dept === "FINANCE" || user.dept === "AKUNTANSI") {
+    s_maksud = "Menjaga integritas data keuangan dan ketepatan administrasi transaksi.";
+    s_lingkup = "Pencatatan invoice, verifikasi laporan pengeluaran, dan penyiapan data payroll/pajak.";
+  } else if (user.dept === "MARKETING" || user.dept === "SALES") {
+    s_maksud = "Memperluas jangkauan pasar dan menjaga hubungan baik dengan klien.";
+    s_lingkup = "Acquisition klien baru, manajemen media sosial, dan presentasi profil perusahaan.";
+  } else if (user.dept === "HRD" || user.dept === "GA") {
+    s_maksud = "Mengoptimalkan manajemen SDM dan kenyamanan kerja seluruh staf.";
+    s_lingkup = "Monitoring absensi rincian, rekrutmen, dan pemeliharaan fasilitas kantor.";
+  }
+
+  const bodyMOU = `
         <div id="mouPrintArea" class="mou-print-container" style="text-align:justify; color: #000; font-family: 'Arial', sans-serif; font-size: 0.9rem; line-height: 1.5; max-width: 800px; margin: 0 auto;">
             <!-- KOP SURAT PROFESIONAL -->
             <div style="display: flex; align-items: center; border-bottom: 3px double #000; padding-bottom: 10px; margin-bottom: 20px;">
@@ -1537,8 +1537,8 @@ function adminCetakMOU(index) {
         </div>
     `;
 
-    const windowPrint = window.open('', '', 'width=900,height=900');
-    windowPrint.document.write(`
+  const windowPrint = window.open('', '', 'width=900,height=900');
+  windowPrint.document.write(`
         <html>
             <head>
                 <title>MOU - ${user.nama}</title>
@@ -1558,6 +1558,6 @@ function adminCetakMOU(index) {
             </body>
         </html>
     `);
-    windowPrint.document.close();
+  windowPrint.document.close();
 }
 
