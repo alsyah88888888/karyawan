@@ -328,100 +328,87 @@ async function prosesAbsen(tipe) {
 }
 
 // --- LOGIKA ADMIN ---
-let adminMap; // State untuk menyimpan instance peta admin
+async function loadDriverRute() {
+  const select = document.getElementById("trackDriverSelect");
+  const dateInput = document.getElementById("trackDate");
+  const detailPanel = document.getElementById("routeDetails");
+  
+  const nik = select.value;
+  const tgl = dateInput.value;
 
-async function loadDriverRute(driverName, date) {
-  const { data, error } = await supabaseClient
-    .from('driver_tracking')
-    .select('*')
-    .eq('driver_name', driverName)
-    .eq('date', date)
-    .order('timestamp', { ascending: true });
+  if (!nik || !tgl) return;
 
-  if (error) {
-    console.error('Error loading driver route:', error);
-    return [];
-  }
-  return data;
-}
+  // Clear previous layers
+  routeLayers.forEach(layer => adminMap.removeLayer(layer));
+  routeLayers = [];
 
-function drawRouteOnMap(routeData) {
-  if (!adminMap) {
-    console.error("Map not initialized.");
-    return;
-  }
+  try {
+    // Note: Database uses 'delivery_logs' table, not 'driver_tracking'
+    const { data: rute, error } = await supabaseClient
+      .from("delivery_logs")
+      .select("*")
+      .eq("nik", nik)
+      .gte("created_at", tgl + "T00:00:00")
+      .lte("created_at", tgl + "T23:59:59")
+      .order("created_at", { ascending: true });
 
-  // Clear previous routes/markers
-  adminMap.eachLayer(layer => {
-    if (layer instanceof L.Polyline || layer instanceof L.Marker) {
-      adminMap.removeLayer(layer);
-    }
-  });
+    if (error) throw error;
 
-  if (routeData.length === 0) {
-    alert("No tracking data found for this driver on the selected date.");
-    return;
-  }
-
-  const latlngs = routeData.map(point => [point.latitude, point.longitude]);
-
-  // Draw polyline
-  const polyline = L.polyline(latlngs, { color: 'blue' }).addTo(adminMap);
-  adminMap.fitBounds(polyline.getBounds());
-
-  // Add start and end markers
-  const startPoint = routeData[0];
-  const endPoint = routeData[routeData.length - 1];
-
-  L.marker([startPoint.latitude, startPoint.longitude])
-    .addTo(adminMap)
-    .bindPopup(`<b>Start:</b> ${new Date(startPoint.timestamp).toLocaleTimeString()}`);
-
-  L.marker([endPoint.latitude, endPoint.longitude])
-    .addTo(adminMap)
-    .bindPopup(`<b>End:</b> ${new Date(endPoint.timestamp).toLocaleTimeString()}`);
-}
-
-function initAdminMap() {
-  if (!adminMap) {
-    adminMap = L.map('mapAdmin').setView([-6.2088, 106.8456], 13); // Default to Jakarta
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-    }).addTo(adminMap);
-  }
-  adminMap.invalidateSize(); // Important for maps in hidden tabs
-}
-
-function initTrackSelect() {
-  const driverSelect = document.getElementById('trackDriverSelect');
-  const dateInput = document.getElementById('trackDateInput');
-  const loadButton = document.getElementById('loadTrackButton');
-
-  // Populate driver select
-  driverSelect.innerHTML = '<option value="">Pilih Driver</option>';
-  const drivers = KARYAWAN.filter(k => k.jabatan === 'Driver'); // Assuming 'Driver' is the job title
-  drivers.forEach(driver => {
-    const option = document.createElement('option');
-    option.value = driver.nama;
-    option.innerText = driver.nama;
-    driverSelect.appendChild(option);
-  });
-
-  // Set default date to today
-  dateInput.valueAsDate = new Date();
-
-  loadButton.onclick = async () => {
-    const selectedDriver = driverSelect.value;
-    const selectedDate = dateInput.value; // YYYY-MM-DD format
-
-    if (!selectedDriver || !selectedDate) {
-      alert("Please select a driver and a date.");
+    if (!rute || rute.length === 0) {
+      detailPanel.innerText = "Tidak ada rute ditemukan pada tanggal ini.";
       return;
     }
 
-    const route = await loadDriverRute(selectedDriver, selectedDate);
-    drawRouteOnMap(route);
-  };
+    const points = [];
+    rute.forEach((pt, idx) => {
+      const pos = [pt.latitude, pt.longitude];
+      points.push(pos);
+      const marker = L.marker(pos).addTo(adminMap)
+        .bindPopup(`<b>Henti #${idx + 1}</b><br>${pt.keterangan}<br>${new Date(pt.created_at).toLocaleTimeString('id-ID')}`);
+      routeLayers.push(marker);
+    });
+
+    if (points.length > 1) {
+      const polyline = L.polyline(points, { color: '#4f46e5', weight: 4 }).addTo(adminMap);
+      routeLayers.push(polyline);
+    }
+
+    const group = new L.featureGroup(routeLayers.filter(l => l instanceof L.Marker));
+    adminMap.fitBounds(group.getBounds().pad(0.3));
+    detailPanel.innerHTML = `Terlacak <b>${rute.length} titik</b> untuk <b>${rute[0].nama}</b>.`;
+
+  } catch (err) {
+    console.error("Load Rute Error:", err);
+  }
+}
+
+
+
+function initAdminMap() {
+  if (adminMap) {
+    adminMap.invalidateSize();
+    return;
+  }
+  adminMap = L.map('adminMap').setView([-6.2000, 106.8166], 12);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap'
+  }).addTo(adminMap);
+}
+
+function initTrackSelect() {
+  const select = document.getElementById("trackDriverSelect");
+  if (!select || select.options.length > 1) return;
+
+  const drivers = KARYAWAN.filter(k => k.jabatan === "DRIVER" || k.jabatan === "Driver");
+  select.innerHTML = `<option value="">-- Pilih Driver --</option>`;
+  drivers.forEach(d => {
+    select.innerHTML += `<option value="${d.nik}">${d.nama}</option>`;
+  });
+  
+  const dateInput = document.getElementById("trackDate");
+  if (dateInput && !dateInput.value) {
+    dateInput.value = new Date().toISOString().split('T')[0];
+  }
 }
 
 function switchTab(tab) {
@@ -461,10 +448,12 @@ function switchTab(tab) {
     document.getElementById("tabAkun").style.display = "block";
     document.getElementById("btnTabAkun").classList.add("nav-active");
     renderAkunTable();
-  document.getElementById("btnTabKaryawan").classList.toggle("nav-active", tab === "karyawan");
-  document.getElementById("btnTabCuti").classList.toggle("nav-active", tab === "cuti");
-  document.getElementById("btnTabKasbon").classList.toggle("nav-active", tab === "kasbon");
-  document.getElementById("btnTabAkun").classList.toggle("nav-active", tab === "akun");
+  } else if (tab === "tracking") {
+    document.getElementById("tabTracking").style.display = "block";
+    document.getElementById("btnTabTracking").classList.add("nav-active");
+    initAdminMap();
+    initTrackSelect();
+  }
 }
 
 function updateBadges() {
