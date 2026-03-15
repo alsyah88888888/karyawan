@@ -569,8 +569,9 @@ body {
 .content {
   flex: 1;
   min-width: 0;
+  min-height: 0; /* Important for child scrolling */
   padding: 15px 20px;
-  overflow: auto;
+  overflow: hidden; /* Changed from auto to hidden */
   display: flex;
   flex-direction: column;
   background: #f8fafc;
@@ -586,7 +587,8 @@ body {
   flex: 1;
   display: flex;
   flex-direction: column;
-  overflow: auto;
+  min-height: 0; /* Important for child scrolling */
+  overflow: hidden; /* Changed from auto to hidden */
   width: 100%;
 }
 
@@ -934,9 +936,8 @@ tr:hover td {
   /* ADMIN LAYOUT: Sidebar becomes top horizontal navbar */
   .admin-container {
     flex-direction: column;
-    height: auto;
-    min-height: 100vh;
-    overflow-y: auto;
+    height: 100vh; /* Changed from auto to 100vh */
+    overflow: hidden; /* Changed from overflow-y: auto to hidden */
   }
 
   .sidebar {
