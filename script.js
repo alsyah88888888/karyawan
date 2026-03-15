@@ -140,8 +140,16 @@ function hitungDetailGaji(gapok, logsData, kasbonData, nikKaryawan) {
   const logsByDate = {};
   logsData.forEach(l => {
     const logDate = new Date(l.waktu);
-    if (logDate.getMonth() === currentMonth && logDate.getFullYear() === currentYear) {
-      const d = logDate.toLocaleDateString("id-ID");
+    
+    // Logika Shift Lintas Hari: Jika absen di bawah jam 06:00 pagi,
+    // anggap itu bagian dari shift hari sebelumnya.
+    let shiftDate = new Date(logDate);
+    if (shiftDate.getHours() < 6) {
+      shiftDate.setDate(shiftDate.getDate() - 1);
+    }
+
+    if (shiftDate.getMonth() === currentMonth && shiftDate.getFullYear() === currentYear) {
+      const d = shiftDate.toLocaleDateString("id-ID");
       if (!logsByDate[d]) logsByDate[d] = [];
       logsByDate[d].push(l);
     }
