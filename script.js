@@ -165,8 +165,8 @@ function hitungDetailGaji(gapok, logsData, kasbonData, nikKaryawan) {
 
   // Tentukan apakah ini operasional
   const namaKaryawan = (info?.nama || "").toUpperCase().trim();
-  const daftarPengecualian = ["TATANG", "IMAM MAHDI AMANULLAH GHAZI", "WAWAN KURNIAWAN"];
-  const isPengecualian = daftarPengecualian.some(exc => namaKaryawan.includes(exc));
+  const daftarPengecualian = ["TATANG", "IMAM MAHDI", "WAWAN KURNIAWAN", "WAWAN"];
+  const isPengecualian = daftarPengecualian.some(exc => exc.includes(namaKaryawan) || namaKaryawan.includes(exc));
 
   // Karyawan operasional adalah Driver, Helper, staf Operasional, ATAU mereka yang masuk daftar pengecualian khusus lapangan
   const isOperasional = jabatan.includes("DRIVER") || jabatan.includes("HELPER") || jabatan.includes("OPERASIONAL") || isPengecualian;
@@ -663,7 +663,7 @@ async function simpanKaryawan() {
     }
 
     const nama = namaEl.value.trim().toUpperCase();
-    const gaji = gajiEl.value;
+    const gaji = parseFloat(gajiEl.value.replace(/\./g, '')) || 0;
     const dept = deptEl.value;
     const nik = nikEl?.value.trim() || "KBI-" + Math.floor(100000 + Math.random() * 900000);
     const jabatan = jabEl?.value.trim() || dept;
@@ -790,7 +790,7 @@ async function updateKaryawan() {
     const nama = getVal("editNama").toUpperCase();
     const dept = document.getElementById("editDept")?.value || "";
     const jabatan = getVal("editJabatan") || dept;
-    const gaji = parseFloat(getVal("editGaji")) || 0;
+    const gaji = parseFloat(getVal("editGaji").replace(/\./g, '')) || 0;
     const tahun = getVal("editTahun");
     const pin = getVal("editPin");
     const sisa_cuti = parseInt(getVal("editCuti")) || 0;
