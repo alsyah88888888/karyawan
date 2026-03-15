@@ -129,15 +129,8 @@ function hitungDetailGaji(gapok, logsData, kasbonData, nikKaryawan) {
   const gapokValue = parseFloat(gapok) || 0;
 
   // 1. PENENTUAN TARIF HKE (Business Rules Feb 2026)
-  let tarifHKE = 0;
-  if (jabatan === "DRIVER") {
-    tarifHKE = 50000;
-  } else if (jabatan === "HELPER") {
-    tarifHKE = gapokValue > 0 ? 50000 : 200000;
-  } else {
-    // Default fallback for other roles (e.g., ADMIN, SALES)
-    tarifHKE = gapokValue > 0 ? 50000 : 0;
-  }
+  // Aturan baru: Gapok > 0 -> 50k, Gapok = 0 -> 200k
+  const tarifHKE = gapokValue > 0 ? 50000 : 200000;
 
   // 2. JAM LEMBUR (OVERTIME)
   const now = new Date();
@@ -831,22 +824,22 @@ function cetakSlip(index) {
             <span>Rp ${d.gapok.toLocaleString("id-ID")}</span>
         </div>
         <div class="item-row">
-            <span>HKE (Hari Kerja Efektif) [${d.hadir} | Rp ${d.tarifHKE.toLocaleString("id-ID")}]</span>
-            <span>Rp ${d.pendapatanHKE.toLocaleString("id-ID")}</span>
+            <span>HKE (Hari Kerja Efektif)</span>
+            <span>${d.hadir} | Rp ${d.tarifHKE.toLocaleString("id-ID")} | Rp ${d.pendapatanHKE.toLocaleString("id-ID")}</span>
         </div>
         ${d.incentiveLK > 0 ? `
         <div class="item-row">
             <span>Incentive (LK)</span>
-            <span>Rp ${d.incentiveLK.toLocaleString("id-ID")}</span>
+            <span>Rp 200.000 | Rp ${d.incentiveLK.toLocaleString("id-ID")}</span>
         </div>` : ""}
         ${d.incentiveReguler > 0 ? `
         <div class="item-row">
             <span>Incentive (Reguler)</span>
-            <span>Rp ${d.incentiveReguler.toLocaleString("id-ID")}</span>
+            <span>Rp 200.000 | Rp ${d.incentiveReguler.toLocaleString("id-ID")}</span>
         </div>` : ""}
         <div class="item-row">
-            <span>Overtime [${Math.floor(d.jamLembur)} | Rp 10.000]</span>
-            <span>Rp ${d.bonusLembur.toLocaleString("id-ID")}</span>
+            <span>Overtime</span>
+            <span>${Math.floor(d.jamLembur)} | Rp 10.000 | Rp ${d.bonusLembur.toLocaleString("id-ID")}</span>
         </div>
         
         <div class="total-box" style="background:#f0f0f0; margin-bottom: 10px;">
