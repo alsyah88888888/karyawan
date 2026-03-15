@@ -1006,7 +1006,6 @@ tr:hover td {
 
   /* Hide non-essential sidebar items on mobile */
   .stat-box,
-  .btn-logout-sidebar,
   .sidebar > div:last-child {
     display: none;
   }

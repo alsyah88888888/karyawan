@@ -39,6 +39,15 @@ function checkSession() {
     }
 }
 
+function logoutKaryawan() {
+    sessionStorage.removeItem("empNIK");
+    currentUser = null;
+    currentLogs = [];
+    currentKasbon = [];
+    document.getElementById("dashboardScreen").style.display = "none";
+    document.getElementById("loginScreen").style.display = "flex";
+}
+
 // 2. LOGIN LOGIC
 async function loginKaryawan() {
     const nik = document.getElementById("loginNik").value.trim();
