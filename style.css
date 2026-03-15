@@ -35,7 +35,7 @@ html, body {
   height: 100%;
   margin: 0;
   padding: 0;
-  overflow: hidden;
+  overflow: auto; /* Allow root scroll if needed, but dashboard will lock it */
 }
 
 body {
@@ -390,12 +390,10 @@ body {
 .admin-container {
   display: flex;
   height: 100vh;
-  width: 100vw;
+  width: 100%;
   background: #f1f5f9;
   overflow: hidden;
-  position: fixed;
-  top: 0;
-  left: 0;
+  position: relative; /* Better than fixed for standard layouts */
 }
 
 .sidebar {
@@ -577,7 +575,7 @@ body {
   flex: 1;
   min-width: 0;
   height: 100%;
-  padding: 20px 25px;
+  padding: 25px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -591,7 +589,7 @@ body {
 #tabAkun,
 #tabTracking {
   flex: 1;
-  display: flex !important;
+  display: flex; /* Remove !important, handled by JS style.display */
   flex-direction: column;
   height: 100%;
   min-height: 0;
@@ -641,8 +639,7 @@ body {
   background: white;
   border-radius: 20px;
   box-shadow: var(--shadow-premium);
-  overflow-y: auto;
-  overflow-x: auto;
+  overflow: auto;
   flex: 1;
   min-height: 0;
   border: 1px solid #e2e8f0;
@@ -652,7 +649,8 @@ body {
 
 table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate; /* Required for sticky header border */
+  border-spacing: 0;
 }
 
 th {
@@ -941,24 +939,22 @@ tr:hover td {
 /* --- Mobile (max 768px) --- */
 @media (max-width: 768px) {
 
-  /* ADMIN LAYOUT: Sidebar becomes top horizontal navbar */
   .admin-container {
     flex-direction: column;
-    height: 100vh; /* Changed from auto to 100vh */
-    overflow: hidden; /* Changed from overflow-y: auto to hidden */
+    height: auto; /* Allow growth on small mobile if needed */
+    min-height: 100vh;
+    overflow-y: auto;
+    position: relative;
   }
 
   .sidebar {
     width: 100%;
     max-width: 100%;
     height: auto;
-    flex-direction: column;
-    padding: 10px;
+    padding: 10px 15px;
     position: sticky;
     top: 0;
     z-index: 1000;
-    overflow: visible;
-    gap: 6px;
   }
 
   .sidebar-header {
