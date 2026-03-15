@@ -7,7 +7,7 @@ const urlsToCache = [
   '/style.css',
   '/script.js',
   '/portal.js',
-  '/images/koboi.png'
+  '/images/koboi.png?v=2'
 ];
 
 self.addEventListener('install', event => {
