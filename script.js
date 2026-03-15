@@ -156,6 +156,7 @@ function hitungDetailGaji(gapok, logsData, kasbonData, nikKaryawan) {
   });
 
   let totalJamLembur = 0;
+  let totalJamKerja = 0; // Tambahan untuk mengecek jam kerja murni
   const uniqueDates = Object.keys(logsByDate);
   const hariHadir = uniqueDates.filter(d =>
     logsByDate[d].some(l => l.status === "MASUK" || l.status === "BERANGKAT")
@@ -169,6 +170,12 @@ function hitungDetailGaji(gapok, logsData, kasbonData, nikKaryawan) {
     if (firstIn && lastOut) {
       const firstInDate = new Date(firstIn.waktu);
       const lastOutDate = new Date(lastOut.waktu);
+
+      // Hitung total jam kerja hari ini (dari absen masuk ke pulang)
+      const jamKerjaHariIni = (lastOutDate - firstInDate) / (1000 * 3600);
+      if (jamKerjaHariIni > 0 && jamKerjaHariIni <= 24) {
+          totalJamKerja += jamKerjaHariIni;
+      }
 
       // Tentukan batas mulai lembur (18:00) pada hari firstIn (hari masuk)
       const cutoffStart = new Date(firstInDate);
@@ -190,7 +197,18 @@ function hitungDetailGaji(gapok, logsData, kasbonData, nikKaryawan) {
 
   // 3. INSENTIF (LK & REGULER)
   const incentiveLK = parseFloat(info?.insentif_lk) || 0;
-  let incentiveReguler = (info?.insentif_reguler === "Ya" || info?.insentif_reguler === "YA") ? 200000 : 0;
+  let incentiveReguler = 0;
+
+  // Otomatisasi Evaluasi Incentive Reguler:
+  // Syarat utama: Rata-rata jam kerja harus >= 9 Jam.
+  const rataRataJamKerja = hariHadir > 0 ? (totalJamKerja / hariHadir) : 0;
+  if (rataRataJamKerja >= 9) {
+      incentiveReguler = 200000;
+  } else if (info?.insentif_reguler === "Ya" || info?.insentif_reguler === "YA") {
+      // Jika nyatanya < 9 jam, namun HRD memaksa men-set "Ya" dari panel, tetap beri 200k.
+      // (Sebagai pintu belakang jika ada pertimbangan khusus HRD)
+      incentiveReguler = 200000;
+  }
 
   // PERLAKUAN KHUSUS: Pengecualian Overtime & Incentive Reguler untuk nama tertentu
   const namaKaryawan = info?.nama?.toUpperCase() || "";
@@ -210,9 +228,59 @@ function hitungDetailGaji(gapok, logsData, kasbonData, nikKaryawan) {
   const pinjaman = parseFloat(info?.pinjaman) || 0;
   const potHKE = parseFloat(info?.pot_hke) || 0;
 
-  // 5. RUMUS UTAMA
-  const pendapatanHKE = hariHadir * tarifHKE;
-  const totalPenerimaan = gapokValue + pendapatanHKE + incentiveLK + incentiveReguler + totalOvertimeRp;
+  // 5. RUMUS UTAMA & PENYESUAIAN DIVISI
+  let pendapatanHKE = hariHadir * tarifHKE;
+  
+  // Variabel baru untuk Admin
+  let adminHkeRate = 0;
+  let adminTotalHke = 0;
+  let adminPotonganTelat = 0;
+
+  // PERLAKUAN KHUSUS UNTUK DIVISI NON-OPERASIONAL (ADMIN, FINANCE, DLL)
+  const isOperasional = jabatan === "DRIVER" || jabatan === "HELPER";
+  
+  if (!isOperasional) {
+      // Admin tidak dapat LK, Reguler, dan Lembur
+      incentiveLK = 0;
+      incentiveReguler = 0;
+      totalOvertimeRp = 0;
+      totalJamLembur = 0;
+      
+      // Simulasi HKE Admin: Gaji Pokok / 26 hari (standar hari kerja sebulan)
+      if (gapokValue > 0) {
+          adminHkeRate = Math.round(gapokValue / 26);
+      }
+      
+      // Cek keterlambatan tiap hari hadir
+      uniqueDates.forEach(date => {
+          const dayLogs = logsByDate[date].sort((a, b) => new Date(a.waktu) - new Date(b.waktu));
+          const firstIn = dayLogs.find(l => l.status === "MASUK" || l.status === "BERANGKAT");
+          
+          if (firstIn) {
+              const inTime = new Date(firstIn.waktu);
+              // Asumsi jam masuk standar semua departemen adalah 09:00 dengan toleransi max 09:18
+              const batasTelat = new Date(inTime);
+              batasTelat.setHours(9, 18, 0, 0);
+              
+              if (inTime > batasTelat) {
+                  // Telat: HKE dipotong 50%
+                  adminTotalHke += (adminHkeRate * 0.5);
+                  adminPotonganTelat += (adminHkeRate * 0.5);
+              } else {
+                  // Tepat waktu: Full HKE
+                  adminTotalHke += adminHkeRate;
+              }
+          }
+      });
+      
+      // Gaji Pokok diset 0 karena Admin dibayar berdasarkan total akumulasi kehadiran HKE-nya
+      // pendapatanHKE diisi dari adminTotalHke
+      pendapatanHKE = adminTotalHke;
+  }
+
+  // Jika bukan operasional, gapok utama tidak ditambahkan karena sudah dikonversi ke HKE
+  const dasarGaji = isOperasional ? gapokValue : 0; 
+  const totalPenerimaan = dasarGaji + pendapatanHKE + incentiveLK + incentiveReguler + totalOvertimeRp;
   const totalPotongan = totalKasbon + pinjaman + potHKE;
   const gajiBersih = totalPenerimaan - totalPotongan;
 
@@ -220,19 +288,20 @@ function hitungDetailGaji(gapok, logsData, kasbonData, nikKaryawan) {
     nama: info?.nama || "Unknown",
     jabatan: jabatan,
     hadir: hariHadir,
-    gapok: gapokValue,
+    gapok: isOperasional ? gapokValue : 0, // Admin gapoknya 0 di struk, diubah ke HKE
     pendapatanHKE,
-    tarifHKE,
+    tarifHKE: isOperasional ? tarifHKE : adminHkeRate,
     incentiveLK,
     incentiveReguler,
     bonusLembur: totalOvertimeRp,
     jamLembur: totalJamLembur,
     kasbon: totalKasbon,
     pinjaman,
-    potHKE,
+    potHKE, // Anda bisa menambahkan adminPotonganTelat ke label ini jika mau, atau biarkan HKE yang berkurang.
     totalPenerimaan,
     totalPotongan,
-    thp: gajiBersih > 0 ? gajiBersih : 0
+    thp: gajiBersih > 0 ? gajiBersih : 0,
+    adminPotonganTelat // Disimpan untuk info tambahan jika ingin ditampilkan
   };
 }
 // --- LOGIKA USER & ABSENSI ---
