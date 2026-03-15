@@ -1,41 +1,9 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
-
-:root {
-  /* Modern Casual Palette (Indigo & Slate) - Synced with Portal */
-  --primary: #6366f1;
-  --primary-hover: #4f46e5;
-  --secondary: #0f172a;
-  --secondary-hover: #1e293b;
-  --accent: #10b981;
-  --danger: #ef4444;
-  --brand-bg: #f8fafc;
-  --brand-text: #1e293b;
-  --brand-btn: #6366f1;
-  --brand-btn-hover: #4f46e5;
-
-  /* UI Tokens */
-  --bg-gradient: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
-  --sidebar-bg: #0f172a;
-  --card-bg: #ffffff;
-  --text-main: #1e293b;
-  --text-muted: #64748b;
-  --glass-bg: rgba(255, 255, 255, 0.95);
-  --glass-border: rgba(99, 102, 241, 0.1);
-  --shadow-premium: 0 10px 15px -3px rgba(0, 0, 0, 0.04), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
-  --shadow-card: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.02);
-}
-
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
+/* --- ROOT & GLOBAL --- */
 html, body {
   height: 100%;
   margin: 0;
   padding: 0;
-  overflow: auto; /* Allow root scroll if needed, but dashboard will lock it */
+  overflow: hidden; /* Lock root scroll to prevent double scrollbars */
 }
 
 body {
@@ -44,6 +12,7 @@ body {
   color: var(--brand-text);
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+  width: 100%;
 }
 
 /* --- CUSTOM PREMIUM SCROLLBAR --- */
@@ -386,14 +355,15 @@ body {
   filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.2));
 }
 
-/* ADMIN DASHBOARD PANELS */
+/* ==========================================
+   ADMIN DASHBOARD LAYOUT (PC & LAPTOP)
+   ========================================== */
 .admin-container {
   display: flex;
   height: 100vh;
-  width: 100%;
+  width: 100vw;
   background: #f1f5f9;
   overflow: hidden;
-  position: relative; /* Better than fixed for standard layouts */
 }
 
 .sidebar {
@@ -657,9 +627,9 @@ body {
   background: white;
   border-radius: 20px;
   box-shadow: var(--shadow-premium);
-  overflow: auto;
+  overflow: auto; /* Allow both Y and X scroll */
   flex: 1;
-  min-height: 0;
+  min-height: 0; /* Crucial: allows flex child to shrink and scroll */
   border: 1px solid #e2e8f0;
   width: 100%;
   position: relative;
@@ -954,292 +924,118 @@ tr:hover td {
   }
 }
 
-/* --- Mobile (max 768px) --- */
-@media (max-width: 768px) {
+/* ==========================================
+   HOLISTIC RESPONSIVE SYSTEM (Fase 38)
+   ========================================== */
 
+/* --- 1. MacBook & Small Laptop (max 1280px) --- */
+@media (max-width: 1280px) {
+  .sidebar {
+    width: 240px;
+  }
+  .content {
+    padding: 20px;
+  }
+  .header-content h2 {
+    font-size: 1.3rem;
+  }
+}
+
+/* --- 2. iPad Pro & Surface (max 1024px) --- */
+@media (max-width: 1024px) {
+  .sidebar {
+    width: 200px;
+  }
+  .sidebar h2 {
+    font-size: 0.85rem;
+  }
+  .nav-group button {
+    padding: 10px;
+    font-size: 0.75rem;
+  }
+  .stat-box {
+    padding: 15px;
+  }
+  .stat-box h3 {
+    font-size: 1.5rem;
+  }
+}
+
+/* --- 3. iPad Mini & Tablet (max 768px --- */
+@media (max-width: 768px) {
   .admin-container {
     flex-direction: column;
-    height: auto; /* Allow growth on small mobile if needed */
-    min-height: 100vh;
-    overflow-y: auto;
-    position: relative;
+    overflow: hidden; /* Keep it contained */
   }
 
   .sidebar {
     width: 100%;
-    max-width: 100%;
     height: auto;
     padding: 10px 15px;
-    position: sticky;
-    top: 0;
-    z-index: 1000;
+    flex-direction: column;
+    overflow: visible;
   }
 
   .sidebar-header {
-    flex-direction: row;
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
     align-items: center;
-    margin-bottom: 6px;
-    padding: 0;
-    gap: 8px;
-  }
-
-  .sidebar-logo {
-    width: 28px;
-  }
-
-  .sidebar h2 {
-    font-size: 0.8rem;
-    letter-spacing: 1px;
   }
 
   .admin-nav {
     flex-direction: row;
     overflow-x: auto;
-    gap: 4px;
-    margin-bottom: 0;
-    -webkit-overflow-scrolling: touch;
+    gap: 8px;
+    padding-bottom: 5px;
     scrollbar-width: none;
   }
 
-  .admin-nav::-webkit-scrollbar {
-    display: none;
-  }
+  .admin-nav::-webkit-scrollbar { display: none; }
 
   .nav-group {
     flex-direction: row;
-    gap: 4px;
-    flex-shrink: 0;
+    gap: 5px;
   }
 
   .admin-nav button {
     white-space: nowrap;
-    padding: 8px 12px;
+    width: auto;
     font-size: 0.7rem;
-    border-radius: 8px;
-    min-width: max-content;
+    padding: 8px 12px;
   }
 
-  .admin-nav button:hover {
-    transform: none;
-  }
-
-  .nav-badge {
-    font-size: 0.6rem;
-    padding: 2px 6px;
-  }
-
-  /* Hide non-essential sidebar items on mobile */
-  .stat-box,
-  .sidebar > div:last-child {
+  /* Hide Desktop Icons/Labels on small Tablet */
+  .nav-label, .stat-box, .btn-logout-sidebar, .sidebar-header h2 {
     display: none;
   }
 
-  /* CONTENT AREA */
-  .content {
-    padding: 12px;
-    overflow-y: auto;
-    overflow-x: hidden;
+  .sidebar-header .sidebar-logo {
+    width: 32px;
   }
 
-  #tabLog, #tabKaryawan, #tabCuti, #tabKasbon, #tabAkun, #tabTracking {
-    overflow: visible;
+  .content {
+    padding: 15px;
+    height: calc(100vh - 80px); /* Account for top nav */
   }
 
   .header-content {
     flex-direction: column;
     align-items: flex-start;
-    gap: 10px;
-    margin-bottom: 15px;
+    gap: 12px;
   }
 
-  .header-content h2 {
-    font-size: 1.1rem;
-  }
-
-  .header-content h2::before {
-    width: 8px;
-    height: 8px;
-  }
-
-  .header-content > div:last-child {
-    width: 100%;
-    flex-wrap: wrap;
-  }
-
-  .header-content input[type="text"],
-  .header-content select,
-  .header-content input[type="date"] {
-    width: 100% !important;
-    font-size: 0.85rem;
-  }
-
-  /* TABLES: horizontal scroll */
   .table-scroll {
     border-radius: 12px;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
   }
 
-  table {
-    min-width: 600px;
-  }
-
-  th {
-    font-size: 0.65rem;
-    padding: 10px 12px;
-  }
-
-  td {
-    font-size: 0.8rem;
-    padding: 10px 12px;
-  }
-
-  .img-prev {
-    width: 36px;
-    height: 36px;
-    border-radius: 8px;
-  }
-
-  /* MODAL on mobile */
-  .modal-overlay {
-    padding: 10px;
-    align-items: flex-end;
-  }
-
-  .modal-content {
-    max-width: 100%;
-    border-radius: 24px 24px 0 0;
-    max-height: 90vh;
-  }
-
-  .modal-header {
-    padding: 20px;
-  }
-
-  .modal-header h3 {
-    font-size: 1.2rem;
-  }
-
-  .modal-body {
-    padding: 20px;
-    max-height: 55vh;
-  }
-
-  .grid-fields {
-    grid-template-columns: 1fr;
-    gap: 0;
-  }
-
-  .modal-footer {
-    grid-template-columns: 1fr;
-    padding: 16px 20px 24px;
-    gap: 10px;
-  }
-
-  /* TRACKING TAB on mobile */
-  #adminMap {
-    height: 300px !important;
-  }
-
-  #trackDriverSelect,
-  #trackDate {
-    width: 100% !important;
-    margin-bottom: 5px;
-  }
-
-  .header-content div[style*="flex"] {
-    width: 100%;
-    flex-direction: column;
-    align-items: stretch !important;
-  }
-
-  /* FILTER on mobile */
-  #filterDept {
-    width: 100%;
-    font-size: 0.85rem;
-  }
-
-  /* Portal Page Responsive */
-  .dashboard-content {
-    padding: 20px 4% !important;
-  }
-
-  .welcome-section h1 {
-    font-size: 1.5rem !important;
-  }
-
+  /* Portal Responsive */
   .stats-grid {
-    grid-template-columns: 1fr !important;
-    gap: 16px !important;
-  }
-
-  .portal-card {
-    padding: 20px !important;
-    border-radius: 16px !important;
-  }
-
-  #driverCard {
-    grid-column: span 1 !important;
-  }
-
-  .dashboard-nav {
-    padding: 10px 4% !important;
-  }
-
-  .user-pill .name {
-    font-size: 0.75rem;
-  }
-
-  .nav-logo h2 {
-    font-size: 1rem !important;
-  }
-
-  /* Action buttons stacking */
-  .action-btns {
-    flex-direction: column;
-    gap: 8px !important;
-  }
-
-  .btn-card {
-    width: 100% !important;
-    text-align: center;
-  }
-
-  /* Login pages */
-  .login-container,
-  .login-card {
-    max-width: 100% !important;
-    padding: 24px !important;
-    border-radius: 20px !important;
-  }
-
-  #liveClock {
-    font-size: 2.5rem !important;
-  }
-
-  .terminal-card {
-    max-width: 100%;
-    border-radius: 20px;
-  }
-
-  .btn-group {
     grid-template-columns: 1fr;
-    gap: 10px;
-  }
-
-  /* MOU Modal, Signature */
-  .mou-modal-content {
-    width: 95% !important;
-    max-height: 85vh !important;
-  }
-
-  #sigCanvas {
-    width: 100% !important;
-    height: 150px !important;
   }
 }
 
-/* --- Small Phones (max 480px) --- */
+/* --- 4. Smartphone Portrait (max 480px) --- */
 @media (max-width: 480px) {
   .sidebar {
     padding: 8px;
@@ -1250,20 +1046,16 @@ tr:hover td {
     font-size: 0.65rem;
   }
 
-  .sidebar h2 {
-    font-size: 0.7rem;
-  }
-
   .content {
     padding: 10px;
   }
 
   .header-content h2 {
-    font-size: 1rem;
+    font-size: 1.1rem;
   }
 
   table {
-    min-width: 500px;
+    min-width: 500px; /* Force internal scroll */
   }
 
   td, th {
@@ -1271,47 +1063,12 @@ tr:hover td {
     font-size: 0.75rem;
   }
 
-  .img-prev {
-    width: 28px;
-    height: 28px;
-  }
-
-  .btn-m, .btn-p {
-    padding: 12px;
-    font-size: 0.85rem;
-  }
-
-  .modal-header {
-    padding: 16px;
-  }
-
-  .modal-body {
-    padding: 16px;
-  }
-
-  .modal-body input,
-  .modal-body select {
-    padding: 10px 12px;
-    font-size: 0.85rem;
+  .modal-content {
+    border-radius: 24px 24px 0 0;
+    max-height: 85vh;
   }
 
   #adminMap {
-    height: 280px !important;
-  }
-
-  .welcome-section h1 {
-    font-size: 1.3rem !important;
-  }
-
-  .portal-card h2 {
-    font-size: 1.3rem !important;
-  }
-
-  .portal-card .label {
-    font-size: 0.7rem !important;
-  }
-
-  #mapDriver {
-    height: 150px !important;
+    height: 250px !important;
   }
 }
