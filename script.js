@@ -15,6 +15,8 @@ let KARYAWAN = [];
 let logs = [];
 let cutiData = [];
 let kasbonData = [];
+let adminMap = null;
+let routeLayers = [];
 let isOfficeGlobal = false;
 let clockClicks = 0;
 let lastClickTime = 0;
@@ -326,34 +328,139 @@ async function prosesAbsen(tipe) {
 }
 
 // --- LOGIKA ADMIN ---
+let adminMap; // State untuk menyimpan instance peta admin
+
+async function loadDriverRute(driverName, date) {
+  const { data, error } = await supabaseClient
+    .from('driver_tracking')
+    .select('*')
+    .eq('driver_name', driverName)
+    .eq('date', date)
+    .order('timestamp', { ascending: true });
+
+  if (error) {
+    console.error('Error loading driver route:', error);
+    return [];
+  }
+  return data;
+}
+
+function drawRouteOnMap(routeData) {
+  if (!adminMap) {
+    console.error("Map not initialized.");
+    return;
+  }
+
+  // Clear previous routes/markers
+  adminMap.eachLayer(layer => {
+    if (layer instanceof L.Polyline || layer instanceof L.Marker) {
+      adminMap.removeLayer(layer);
+    }
+  });
+
+  if (routeData.length === 0) {
+    alert("No tracking data found for this driver on the selected date.");
+    return;
+  }
+
+  const latlngs = routeData.map(point => [point.latitude, point.longitude]);
+
+  // Draw polyline
+  const polyline = L.polyline(latlngs, { color: 'blue' }).addTo(adminMap);
+  adminMap.fitBounds(polyline.getBounds());
+
+  // Add start and end markers
+  const startPoint = routeData[0];
+  const endPoint = routeData[routeData.length - 1];
+
+  L.marker([startPoint.latitude, startPoint.longitude])
+    .addTo(adminMap)
+    .bindPopup(`<b>Start:</b> ${new Date(startPoint.timestamp).toLocaleTimeString()}`);
+
+  L.marker([endPoint.latitude, endPoint.longitude])
+    .addTo(adminMap)
+    .bindPopup(`<b>End:</b> ${new Date(endPoint.timestamp).toLocaleTimeString()}`);
+}
+
+function initAdminMap() {
+  if (!adminMap) {
+    adminMap = L.map('mapAdmin').setView([-6.2088, 106.8456], 13); // Default to Jakarta
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(adminMap);
+  }
+  adminMap.invalidateSize(); // Important for maps in hidden tabs
+}
+
+function initTrackSelect() {
+  const driverSelect = document.getElementById('trackDriverSelect');
+  const dateInput = document.getElementById('trackDateInput');
+  const loadButton = document.getElementById('loadTrackButton');
+
+  // Populate driver select
+  driverSelect.innerHTML = '<option value="">Pilih Driver</option>';
+  const drivers = KARYAWAN.filter(k => k.jabatan === 'Driver'); // Assuming 'Driver' is the job title
+  drivers.forEach(driver => {
+    const option = document.createElement('option');
+    option.value = driver.nama;
+    option.innerText = driver.nama;
+    driverSelect.appendChild(option);
+  });
+
+  // Set default date to today
+  dateInput.valueAsDate = new Date();
+
+  loadButton.onclick = async () => {
+    const selectedDriver = driverSelect.value;
+    const selectedDate = dateInput.value; // YYYY-MM-DD format
+
+    if (!selectedDriver || !selectedDate) {
+      alert("Please select a driver and a date.");
+      return;
+    }
+
+    const route = await loadDriverRute(selectedDriver, selectedDate);
+    drawRouteOnMap(route);
+  };
+}
+
 function switchTab(tab) {
-  // 1. Sembunyikan semua konten tab
+  // 1. Sembunyikan semua konten
+  document.getElementById("btnTabLog").classList.remove("nav-active");
+  document.getElementById("btnTabKaryawan").classList.remove("nav-active");
+  document.getElementById("btnTabCuti").classList.remove("nav-active");
+  document.getElementById("btnTabKasbon").classList.remove("nav-active");
+  document.getElementById("btnTabAkun").classList.remove("nav-active");
+  document.getElementById("btnTabTracking").classList.remove("nav-active");
+
   document.getElementById("tabLog").style.display = "none";
   document.getElementById("tabKaryawan").style.display = "none";
   document.getElementById("tabCuti").style.display = "none";
   document.getElementById("tabKasbon").style.display = "none";
   document.getElementById("tabAkun").style.display = "none";
+  document.getElementById("tabTracking").style.display = "none";
 
   // 2. Logika untuk memunculkan tab dan mengisi data
   if (tab === "log") {
-    document.getElementById("tabLog").style.display = "flex";
+    document.getElementById("tabLog").style.display = "block";
+    document.getElementById("btnTabLog").classList.add("nav-active");
     renderTabel();
   } else if (tab === "karyawan") {
-    document.getElementById("tabKaryawan").style.display = "flex";
+    document.getElementById("tabKaryawan").style.display = "block";
+    document.getElementById("btnTabKaryawan").classList.add("nav-active");
     renderKaryawanTable();
   } else if (tab === "cuti") {
-    document.getElementById("tabCuti").style.display = "flex";
+    document.getElementById("tabCuti").style.display = "block";
+    document.getElementById("btnTabCuti").classList.add("nav-active");
     renderCutiTable();
   } else if (tab === "kasbon") {
-    document.getElementById("tabKasbon").style.display = "flex";
+    document.getElementById("tabKasbon").style.display = "block";
+    document.getElementById("btnTabKasbon").classList.add("nav-active");
     renderKasbonTable();
   } else if (tab === "akun") {
-    document.getElementById("tabAkun").style.display = "flex";
+    document.getElementById("tabAkun").style.display = "block";
+    document.getElementById("btnTabAkun").classList.add("nav-active");
     renderAkunTable();
-  }
-
-  // 3. Update warna tombol aktif
-  document.getElementById("btnTabLog").classList.toggle("nav-active", tab === "log");
   document.getElementById("btnTabKaryawan").classList.toggle("nav-active", tab === "karyawan");
   document.getElementById("btnTabCuti").classList.toggle("nav-active", tab === "cuti");
   document.getElementById("btnTabKasbon").classList.toggle("nav-active", tab === "kasbon");

@@ -11,6 +11,8 @@ const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
 let currentUser = null;
 let currentLogs = [];
 let currentKasbon = [];
+let mapDriver = null;
+let markerDriver = null;
 let sigCanvas = null;
 let sigContext = null;
 let isDrawing = false;
@@ -70,13 +72,6 @@ async function loginKaryawan() {
     }
 }
 
-function logoutKaryawan() {
-    if (confirm("Yakin ingin keluar?")) {
-        sessionStorage.removeItem("empNIK");
-        window.location.reload();
-    }
-}
-
 // 3. DASHBOARD DATA SYNC
 async function loadDashboard(nik) {
     try {
@@ -102,7 +97,7 @@ async function loadDashboard(nik) {
         const initials = user.nama.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
         document.getElementById("userInitial").innerText = initials;
 
-        // C. Fetch Logs (Last 30 Days)
+        // C. Fetch Logs (Last 100 entries for current month)
         const { data: logs, error: errLogs } = await supabaseClient
             .from("logs")
             .select("*")
@@ -123,7 +118,16 @@ async function loadDashboard(nik) {
         if (errKasbon) throw errKasbon;
         currentKasbon = kasbon || [];
 
-        // E. Render Components
+        // E. Driver Section Check
+        if (user.jabatan === "DRIVER") {
+            const driverCard = document.getElementById("driverCard");
+            if (driverCard) {
+                driverCard.style.display = "block";
+                initMapDriver();
+            }
+        }
+
+        // F. Render Components
         renderHistory(currentLogs);
         renderEstimasiGaji(user, currentLogs, currentKasbon);
         renderKasbonStatus(currentKasbon);
@@ -131,8 +135,6 @@ async function loadDashboard(nik) {
 
     } catch (e) {
         console.error("Dashboard Error:", e);
-        // Jangan logout otomatis agar tidak terjadi refresh paksa saat koneksi buruk
-        // alert("Gagal memuat data dashboard terbaru. Cek koneksi Anda."); 
     } finally {
         showLoading(false);
     }

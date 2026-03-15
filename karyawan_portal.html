@@ -4,14 +4,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Portal Karyawan KOBOI</title>
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
-    <!-- Main Style -->
-    <link rel="stylesheet" href="style.css">
+    <title>Karyawan Portal - KOBOI 1</title>
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <!-- Supabase -->
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
@@ -739,7 +740,7 @@
         <nav class="dashboard-nav">
             <div class="nav-logo">
                 <img src="images/koboi.png" alt="Logo">
-                <h2>KOBOI EMPLOYEE PORTAL</h2>
+                <h2>KOBOI 1</h2>
             </div>
             <div style="display: flex; align-items: center; gap: 20px;">
                 <div class="user-pill">
@@ -818,6 +819,20 @@
                             <div class="action-btns">
                                 <button id="btnBukaMOU" class="btn-card primary" onclick="bukaModalMOU()">Lihat
                                     Kontrak</button>
+                            </div>
+                        </div>
+
+                        <!-- DRIVER LOGISTICS CARD -->
+                        <div id="driverCard" class="portal-card" style="display: none; grid-column: span 1 / span 2;">
+                            <div>
+                                <span class="label">Peta Logistik Driver</span>
+                                <div id="mapDriver" style="height: 180px; border-radius: 12px; margin: 10px 0; border: 1px solid #e2e8f0; z-index: 1;"></div>
+                                <div style="display: flex; gap: 8px;">
+                                    <input type="text" id="lokasiTujuan" placeholder="Nama Lokasi/Tujuan..." 
+                                           style="flex: 1; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 0.85rem;">
+                                    <button class="btn-card primary" onclick="checkInLokasi()" style="width: auto; padding: 0 15px;">Check-in</button>
+                                </div>
+                                <p id="lastCheckIn" style="color: var(--portal-subtext); font-size: 0.75rem; margin-top: 5px;">Siap bertugas hari ini.</p>
                             </div>
                         </div>
                     </div>
