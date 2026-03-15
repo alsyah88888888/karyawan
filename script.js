@@ -429,27 +429,27 @@ function switchTab(tab) {
 
   // 2. Logika untuk memunculkan tab dan mengisi data
   if (tab === "log") {
-    document.getElementById("tabLog").style.display = "block";
+    document.getElementById("tabLog").style.display = "flex";
     document.getElementById("btnTabLog").classList.add("nav-active");
     renderTabel();
   } else if (tab === "karyawan") {
-    document.getElementById("tabKaryawan").style.display = "block";
+    document.getElementById("tabKaryawan").style.display = "flex";
     document.getElementById("btnTabKaryawan").classList.add("nav-active");
     renderKaryawanTable();
   } else if (tab === "cuti") {
-    document.getElementById("tabCuti").style.display = "block";
+    document.getElementById("tabCuti").style.display = "flex";
     document.getElementById("btnTabCuti").classList.add("nav-active");
     renderCutiTable();
   } else if (tab === "kasbon") {
-    document.getElementById("tabKasbon").style.display = "block";
+    document.getElementById("tabKasbon").style.display = "flex";
     document.getElementById("btnTabKasbon").classList.add("nav-active");
     renderKasbonTable();
   } else if (tab === "akun") {
-    document.getElementById("tabAkun").style.display = "block";
+    document.getElementById("tabAkun").style.display = "flex";
     document.getElementById("btnTabAkun").classList.add("nav-active");
     renderAkunTable();
   } else if (tab === "tracking") {
-    document.getElementById("tabTracking").style.display = "block";
+    document.getElementById("tabTracking").style.display = "flex";
     document.getElementById("btnTabTracking").classList.add("nav-active");
     initAdminMap();
     initTrackSelect();
