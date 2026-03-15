@@ -448,7 +448,15 @@ tr:hover td {
   margin-bottom: auto;
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 2px; /* Small distance between buttons in same group */
+  width: 100%;
+}
+
+.nav-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 15px; /* Clear gap between groups */
 }
 
 .nav-label {
@@ -519,7 +527,9 @@ tr:hover td {
 .admin-nav button.nav-active {
   background: white;
   color: var(--primary);
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-left: 4px solid var(--primary);
+  border-radius: 8px;
 }
 
 .nav-badge {
