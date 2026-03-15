@@ -170,11 +170,22 @@ function hitungDetailGaji(gapok, logsData, kasbonData, nikKaryawan) {
     }
   });
 
-  const totalOvertimeRp = Math.floor(totalJamLembur) * 10000;
+  let totalOvertimeRp = Math.floor(totalJamLembur) * 10000;
 
   // 3. INSENTIF (LK & REGULER)
   const incentiveLK = parseFloat(info?.insentif_lk) || 0;
-  const incentiveReguler = (info?.insentif_reguler === "Ya" || info?.insentif_reguler === "YA") ? 200000 : 0;
+  let incentiveReguler = (info?.insentif_reguler === "Ya" || info?.insentif_reguler === "YA") ? 200000 : 0;
+
+  // PERLAKUAN KHUSUS: Pengecualian Overtime & Incentive Reguler untuk nama tertentu
+  const namaKaryawan = info?.nama?.toUpperCase() || "";
+  const daftarPengecualian = ["TATANG", "IMAM MAHDI AMANULLAH GHAZI", "WAWAN KURNIAWAN"];
+  if (daftarPengecualian.includes(namaKaryawan)) {
+    totalOvertimeRp = 0;
+    incentiveReguler = 0;
+    // Jam lembur (angka) bisa tetap dihitung untuk record, tapi rupiahnya dinolkan.
+    // Jika jam lembur angka juga ingin dinolkan di slip, uncomment line bawah:
+    // totalJamLembur = 0; 
+  }
 
   // 4. POTONGAN
   const totalKasbon = kasbonData
