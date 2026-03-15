@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="style.css" />
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#6366f1">
-  
+
   <!-- Apple PWA Support -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -74,7 +74,8 @@
           <button onclick="switchTab('akun')" id="btnTabAkun">
             Daftar Akun
           </button>
-          <button onclick="logoutAdmin()" class="btn-logout-sidebar" style="margin-top:10px; background:rgba(239,68,68,0.15); color:#ef4444 !important; border-radius:10px;">
+          <button onclick="logoutAdmin()" class="btn-logout-sidebar"
+            style="margin-top:10px; background:rgba(239,68,68,0.15); color:#ef4444 !important; border-radius:10px;">
             Keluar Panel
           </button>
         </div>
@@ -86,15 +87,18 @@
       </div>
 
       <div style="display: flex; flex-direction: column; gap: 5px;">
-        <button onclick="syncData()" class="btn-download" style="background:var(--accent); color:white; width:100%; padding:8px; border-radius:8px; font-size:0.75rem; font-weight:700; border:none; cursor:pointer;">
+        <button onclick="syncData()" class="btn-download"
+          style="background:var(--accent); color:white; width:100%; padding:8px; border-radius:8px; font-size:0.75rem; font-weight:700; border:none; cursor:pointer;">
           Refresh Data
         </button>
 
-        <button onclick="exportData()" class="btn-download" style="background:#475569; color:white; width:100%; padding:8px; border-radius:8px; font-size:0.75rem; font-weight:700; border:none; cursor:pointer;">
+        <button onclick="exportData()" class="btn-download"
+          style="background:#475569; color:white; width:100%; padding:8px; border-radius:8px; font-size:0.75rem; font-weight:700; border:none; cursor:pointer;">
           Export Excel (.xlsx)
         </button>
 
-        <button onclick="clearData()" style="background:transparent; color:#ef4444; width:100%; padding:5px; border:none; cursor:pointer; font-size:0.7rem; font-weight:600;">
+        <button onclick="clearData()"
+          style="background:transparent; color:#ef4444; width:100%; padding:5px; border:none; cursor:pointer; font-size:0.7rem; font-weight:600;">
           Hapus Log Absensi
         </button>
       </div>
@@ -105,7 +109,8 @@
         <div class="header-content">
           <div>
             <h2>Log Presensi Real-time</h2>
-            <p style="color:var(--text-muted); font-size:0.9rem; margin-top:4px;">Pantau absensi seluruh karyawan hari ini secara real-time.</p>
+            <p style="color:var(--text-muted); font-size:0.9rem; margin-top:4px;">Pantau absensi seluruh karyawan hari
+              ini secara real-time.</p>
           </div>
           <select id="filterDept" onchange="renderTabel()">
             <option value="ALL">Semua Departemen</option>
@@ -134,10 +139,12 @@
         <div class="header-content">
           <div>
             <h2>Data Payroll & Estimasi Gaji</h2>
-            <p style="color:var(--text-muted); font-size:0.9rem; margin-top:4px;">Kelola gaji, lembur, dan cetak slip gaji karyawan.</p>
+            <p style="color:var(--text-muted); font-size:0.9rem; margin-top:4px;">Kelola gaji, lembur, dan cetak slip
+              gaji karyawan.</p>
           </div>
           <div style="display: flex; gap: 10px;">
-            <button onclick="exportKaryawan()" class="btn-m" style="background:#15803d; box-shadow:none; padding:12px 24px;">
+            <button onclick="exportKaryawan()" class="btn-m"
+              style="background:#15803d; box-shadow:none; padding:12px 24px;">
               Export Payroll
             </button>
           </div>
@@ -165,7 +172,8 @@
       <section id="tabCuti" style="display: none">
         <div class="header-content">
           <h2>Pengajuan Cuti & Izin</h2>
-          <button onclick="confirmResetCuti()" class="btn-download" style="background:#f59e0b; font-size: 0.75rem;">Reset Kuota Cuti (All)</button>
+          <button onclick="confirmResetCuti()" class="btn-download"
+            style="background:#f59e0b; font-size: 0.75rem;">Reset Kuota Cuti (All)</button>
         </div>
         <div class="table-scroll">
           <table>
@@ -188,7 +196,8 @@
       <section id="tabKasbon" style="display: none">
         <div class="header-content">
           <h2>Pengajuan Kasbon</h2>
-          <button onclick="confirmResetKasbon()" class="btn-download" style="background:#ef4444; font-size: 0.75rem;">Kosongkan Riwayat Kasbon</button>
+          <button onclick="confirmResetKasbon()" class="btn-download"
+            style="background:#ef4444; font-size: 0.75rem;">Kosongkan Riwayat Kasbon</button>
         </div>
         <div class="table-scroll">
           <table>
@@ -206,17 +215,20 @@
           </table>
         </div>
       </section>
-      
+
       <!-- TAB DAFTAR AKUN -->
       <section id="tabAkun" style="display: none">
         <div class="header-content">
           <div>
             <h2>Manajemen Akun</h2>
-            <p style="color: var(--text-muted); font-size: 0.8rem;">Kelola login, PIN, dan data utama karyawan di sini.</p>
+            <p style="color: var(--text-muted); font-size: 0.8rem;">Kelola login, PIN, dan data utama karyawan di sini.
+            </p>
           </div>
           <div style="display: flex; gap: 10px; align-items: center;">
-            <input type="text" id="searchAkun" placeholder="Cari Nama atau ID..." onkeyup="filterAkun()" style="padding: 10px 16px; border-radius: 12px; border: 1.5px solid #e2e8f0; width: 220px;" />
-            <button onclick="generateMissingIDs()" class="btn-m" style="background: #64748b; box-shadow: 0 4px 0 #475569;">
+            <input type="text" id="searchAkun" placeholder="Cari Nama atau ID..." onkeyup="filterAkun()"
+              style="padding: 10px 16px; border-radius: 12px; border: 1.5px solid #e2e8f0; width: 220px;" />
+            <button onclick="generateMissingIDs()" class="btn-m"
+              style="background: #64748b; box-shadow: 0 4px 0 #475569;">
               Lengkapi ID
             </button>
             <button onclick="showModal()" class="btn-m">
@@ -245,17 +257,20 @@
         <div class="header-content">
           <div>
             <h2>Driver Route Tracking</h2>
-            <p style="color:var(--text-muted); font-size:0.9rem; margin-top:4px;">Pilih Driver dan tanggal untuk melihat alur rute perjalanan visual.</p>
+            <p style="color:var(--text-muted); font-size:0.9rem; margin-top:4px;">Pilih Driver dan tanggal untuk melihat
+              alur rute perjalanan visual.</p>
           </div>
           <div class="track-controls">
-             <select id="trackDriverSelect" onchange="loadDriverRute()"></select>
-             <input type="date" id="trackDate" onchange="loadDriverRute()">
+            <select id="trackDriverSelect" onchange="loadDriverRute()"></select>
+            <input type="date" id="trackDate" onchange="loadDriverRute()">
           </div>
         </div>
-        
+
         <div class="table-scroll" style="padding: 20px; flex: 1; display: flex; flex-direction: column;">
-          <div id="adminMap" style="flex: 1; min-height: 400px; border-radius: 16px; border: 1px solid #e2e8f0; z-index: 1;"></div>
-          <div id="routeDetails" style="margin-top: 15px; font-size: 0.85rem; color: #475569; font-weight: 500; flex-shrink: 0;">
+          <div id="adminMap"
+            style="flex: 1; min-height: 400px; border-radius: 16px; border: 1px solid #e2e8f0; z-index: 1;"></div>
+          <div id="routeDetails"
+            style="margin-top: 12px; font-size: 0.85rem; color: #475569; font-weight: 500; flex-shrink: 0;">
             Pilih driver untuk memetakan rute perjalanan.
           </div>
         </div>
