@@ -687,6 +687,7 @@ function showEditModal(index) {
   setVal("editNikKtp", k.nik_ktp || "");
   setVal("editNpwp", k.npwp || "");
   setVal("editWa", k.nomor_wa || "");
+  setVal("editNorek", k.norek || "");
   setVal("editPtkp", k.status_ptkp || "TK/0");
 
   console.log("Loading Edit Modal for:", k);
@@ -719,6 +720,7 @@ async function updateKaryawan() {
     const nik_ktp = getVal("editNikKtp");
     const npwp = getVal("editNpwp");
     const nomor_wa = getVal("editWa");
+    const norek = getVal("editNorek");
     const status_ptkp = document.getElementById("editPtkp")?.value || "";
 
     if (!nama || !gaji) return alert("Nama dan Gaji tidak boleh kosong!");
@@ -735,6 +737,7 @@ async function updateKaryawan() {
       nik_ktp,
       npwp,
       nomor_wa,
+      norek,
       status_ptkp
     };
 
@@ -764,7 +767,11 @@ async function hapusKaryawan(idKaryawan) {
       .delete()
       .eq("nik", idKaryawan);
     if (!error) await syncData();
-    else alert("Gagal menghapus: " + error.message);function cetakSlip(index) {
+    else alert("Gagal menghapus: " + error.message);
+  }
+}
+
+function cetakSlip(index) {
   const k = KARYAWAN[index];
   const userLogs = logs.filter(l => l.nama === k.nama).slice(0, 100);
   const userKasbon = kasbonData.filter(kb => kb.nama === k.nama);
@@ -882,24 +889,6 @@ async function hapusKaryawan(idKaryawan) {
         </div>
     </div>
   `;
-/div>
-        
-        <div style="margin-top: 25px; display: flex; justify-content: space-between; font-size: 0.7rem;">
-            <div style="text-align: center; width: 120px;">
-                Penerima,<br><br><br><br>
-                ( ________________ )
-            </div>
-            <div style="text-align: center; width: 120px;">
-                Hormat Kami,<br><br><br><br>
-                <strong>HRD KOBOI</strong>
-            </div>
-        </div>
-
-        <p style="text-align:center; font-size:0.55rem; margin-top:20px; color: #64748b; font-style: italic;">
-            E-Slip sah dikeluarkan secara digital via KOBOI Employee Portal.<br>
-            Waktu Cetak: ${tgl.toLocaleString("id-ID")}
-        </p>
-    </div>`;
 
   const w = window.open("", "_blank");
   if (w) {
