@@ -163,8 +163,13 @@ function hitungDetailGaji(gapok, logsData, kasbonData, nikKaryawan) {
   let totalHkeHarianAcumulated = 0;
   let potonganTelatHarianAcumulated = 0;
 
-  // Tentukan apakah ini operasional (Driver/Helper/Operasional)
-  const isOperasional = jabatan.includes("DRIVER") || jabatan.includes("HELPER") || jabatan.includes("OPERASIONAL");
+  // Tentukan apakah ini operasional
+  const namaKaryawan = (info?.nama || "").toUpperCase().trim();
+  const daftarPengecualian = ["TATANG", "IMAM MAHDI AMANULLAH GHAZI", "WAWAN KURNIAWAN"];
+  const isPengecualian = daftarPengecualian.some(exc => namaKaryawan.includes(exc));
+
+  // Karyawan operasional adalah Driver, Helper, staf Operasional, ATAU mereka yang masuk daftar pengecualian khusus lapangan
+  const isOperasional = jabatan.includes("DRIVER") || jabatan.includes("HELPER") || jabatan.includes("OPERASIONAL") || isPengecualian;
 
   // Tarif Harian Dasar untuk perhitungan potongan telat
   // Operasional: Gapok / 6 (sudah di set di tarifHKE), atau 200k jika gapok=0
@@ -238,10 +243,7 @@ function hitungDetailGaji(gapok, logsData, kasbonData, nikKaryawan) {
   // 4. PERLAKUAN KHUSUS (PENGECUALIAN & DIVISI)
 
   // A. Pengecualian nama tertentu (Tidak dapat OT & Reguler)
-  const namaKaryawan = (info?.nama || "").toUpperCase().trim();
-  const daftarPengecualian = ["TATANG", "IMAM MAHDI AMANULLAH GHAZI", "WAWAN KURNIAWAN"];
-  // Menggunakan strict "includes" untuk berjaga-jaga jika ada spasi berlebih
-  if (daftarPengecualian.some(exc => namaKaryawan.includes(exc))) {
+  if (isPengecualian) {
     totalOvertimeRp = 0;
     incentiveReguler = 0;
   }
