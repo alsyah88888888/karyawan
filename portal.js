@@ -747,3 +747,109 @@ function initScrollReveal() {
         observer.observe(section);
     });
 }
+
+// ============================================================
+// DRIVER LOGISTICS FUNCTIONS
+// ============================================================
+
+function initMapDriver() {
+    const mapEl = document.getElementById("mapDriver");
+    if (!mapEl || mapDriver) return;
+
+    // Default location (Jakarta) until GPS kicks in
+    mapDriver = L.map("mapDriver").setView([-6.2, 106.816], 13);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "&copy; OpenStreetMap"
+    }).addTo(mapDriver);
+
+    // Try to get the driver's current position
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                const lat = pos.coords.latitude;
+                const lng = pos.coords.longitude;
+                mapDriver.setView([lat, lng], 15);
+                markerDriver = L.marker([lat, lng]).addTo(mapDriver)
+                    .bindPopup("Posisi Anda saat ini").openPopup();
+            },
+            (err) => {
+                console.warn("GPS Error:", err.message);
+                document.getElementById("lastCheckIn").innerText = "⚠️ Gagal mengakses GPS. Pastikan izin lokasi diaktifkan.";
+            },
+            { enableHighAccuracy: true, timeout: 10000 }
+        );
+    } else {
+        document.getElementById("lastCheckIn").innerText = "⚠️ Browser Anda tidak mendukung GPS.";
+    }
+
+    // Fix map render issue in hidden containers
+    setTimeout(() => mapDriver.invalidateSize(), 300);
+}
+
+async function checkInLokasi() {
+    const lokasiInput = document.getElementById("lokasiTujuan");
+    const statusEl = document.getElementById("lastCheckIn");
+    const keterangan = lokasiInput.value.trim();
+
+    if (!keterangan) {
+        alert("Silakan isi nama lokasi/tujuan terlebih dahulu.");
+        return;
+    }
+
+    if (!currentUser) {
+        alert("Sesi login tidak ditemukan. Silakan login ulang.");
+        return;
+    }
+
+    statusEl.innerText = "⏳ Mengirim data lokasi...";
+
+    try {
+        const pos = await new Promise((resolve, reject) => {
+            if (!navigator.geolocation) {
+                reject(new Error("GPS tidak tersedia di browser ini."));
+                return;
+            }
+            navigator.geolocation.getCurrentPosition(resolve, reject, {
+                enableHighAccuracy: true,
+                timeout: 15000
+            });
+        });
+
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+
+        const { error } = await supabaseClient
+            .from("delivery_logs")
+            .insert({
+                nik: currentUser.nik,
+                nama: currentUser.nama,
+                keterangan: keterangan,
+                latitude: lat,
+                longitude: lng
+            });
+
+        if (error) throw error;
+
+        // Update marker on map
+        if (markerDriver) {
+            mapDriver.removeLayer(markerDriver);
+        }
+        markerDriver = L.marker([lat, lng]).addTo(mapDriver)
+            .bindPopup(`<b>${keterangan}</b><br>${new Date().toLocaleTimeString("id-ID")}`).openPopup();
+        mapDriver.setView([lat, lng], 15);
+
+        // Clear input and show success
+        lokasiInput.value = "";
+        statusEl.innerText = `✅ Check-in "${keterangan}" berhasil pada ${new Date().toLocaleTimeString("id-ID")}`;
+
+    } catch (err) {
+        console.error("Check-in Error:", err);
+        if (err.code === 1) {
+            statusEl.innerText = "❌ Izin lokasi ditolak. Aktifkan GPS di pengaturan browser Anda.";
+        } else if (err.code === 3) {
+            statusEl.innerText = "❌ Timeout GPS. Coba pindah ke tempat terbuka dan ulangi.";
+        } else {
+            statusEl.innerText = "❌ Gagal check-in: " + err.message;
+        }
+    }
+}
