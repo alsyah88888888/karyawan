@@ -591,7 +591,8 @@ async function simpanKaryawan() {
     const jabatan = jabEl?.value.trim() || dept;
     const tahun = document.getElementById("inpTahun")?.value.trim() || "";
     const pin = pinEl ? pinEl.value.trim() : "";
-    const nomor_wa = document.getElementById("inpWa")?.value.trim();
+    const nomor_wa = document.getElementById("inpWa")?.value.trim() || "";
+    const norek = document.getElementById("inpNorek")?.value.trim() || "";
     const sisa_cuti = cutiEl ? parseInt(cutiEl.value) || 12 : 12;
     const insentif_lk = parseFloat(document.getElementById("inpInsentifLK")?.value) || 0;
     const insentif_reguler = document.getElementById("inpInsentifReg")?.value || "Tidak";
@@ -624,6 +625,7 @@ async function simpanKaryawan() {
       nik_ktp,
       npwp,
       status_ptkp,
+      norek,
       insentif_lk,
       insentif_reguler,
       pinjaman,
@@ -648,6 +650,7 @@ async function simpanKaryawan() {
     if (document.getElementById("inpTahun")) document.getElementById("inpTahun").value = "";
     if (pinEl) pinEl.value = "";
     if (document.getElementById("inpWa")) document.getElementById("inpWa").value = "";
+    if (document.getElementById("inpNorek")) document.getElementById("inpNorek").value = "";
     if (cutiEl) cutiEl.value = "12";
     if (document.getElementById("inpInsentifLK")) document.getElementById("inpInsentifLK").value = "0";
     if (document.getElementById("inpInsentifReg")) document.getElementById("inpInsentifReg").value = "Tidak";
@@ -761,11 +764,7 @@ async function hapusKaryawan(idKaryawan) {
       .delete()
       .eq("nik", idKaryawan);
     if (!error) await syncData();
-    else alert("Gagal menghapus: " + error.message);
-  }
-}
-
-function cetakSlip(index) {
+    else alert("Gagal menghapus: " + error.message);function cetakSlip(index) {
   const k = KARYAWAN[index];
   const userLogs = logs.filter(l => l.nama === k.nama).slice(0, 100);
   const userKasbon = kasbonData.filter(kb => kb.nama === k.nama);
@@ -780,66 +779,110 @@ function cetakSlip(index) {
   const printStyles = `
     <style>
       @page { size: A5; margin: 0; }
-      body { margin: 0; padding: 0; -webkit-print-color-adjust: exact; }
+      body { margin: 0; padding: 0; font-family: 'Courier New', Courier, monospace; color: #000; -webkit-print-color-adjust: exact; }
       .print-container { 
         width: 148mm; 
-        height: 210mm; 
-        padding: 10mm; 
+        padding: 8mm; 
         box-sizing: border-box; 
         background: #fff; 
-        position: relative;
-        overflow: hidden;
       }
-      * { box-sizing: border-box; }
+      .header-title { font-size: 14px; font-weight: bold; text-align: center; margin-bottom: 2px; text-transform: uppercase; }
+      .sub-header { font-size: 11px; text-align: center; margin-bottom: 10px; border-bottom: 1px solid #000; padding-bottom: 5px; }
+      .info-section { display: grid; grid-template-columns: 1fr 1fr; font-size: 11px; margin-bottom: 10px; line-height: 1.4; }
+      .item-row { display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 2px; border-bottom: 1px dotted #ccc; padding: 2px 0; }
+      .bold { font-weight: bold; }
+      .total-box { border: 1px solid #000; margin-top: 10px; padding: 5px; font-weight: bold; font-size: 13px; display: flex; justify-content: space-between; }
+      .footer { margin-top: 20px; display: flex; justify-content: space-between; font-size: 10px; }
+      .signature-box { text-align: center; width: 120px; }
     </style>
   `;
 
+  // Contoh tampilan: Bulan: Feb-26 M3 Tgl bayar: 21 Februari 2026 Lokasi: Kantor Pusat Bogor
+  const periodeStr = `${bulanIndo[tgl.getMonth()].substring(0,3)}-${tgl.getFullYear().toString().substring(2)}`;
+  
   const isiSlip = `
-    <div class="print-container" style="border: 1px solid #000; font-family: 'Arial', sans-serif; color: #000;">
-        <!-- KOP SURAT PROFESIONAL -->
-        <div style="display: flex; align-items: center; border-bottom: 3px double #000; padding-bottom: 15px; margin-bottom: 15px;">
-            <img src="images/koboi.png" style="width: 60px; margin-right: 15px;">
-            <div style="flex: 1;">
-                <h2 style="margin: 0; font-size: 1.1rem; font-weight: 900; color: #000;">PT. KOLA BORASI INDONESIA</h2>
-                <p style="margin: 2px 0; font-size: 0.6rem; line-height: 1.3;">
-                    Jl. Arjuna IV Green Kartika Residence Blok EE NO.2, CIBINONG,<br>
-                    KAB. BOGOR - JAWA BARAT, 16911<br>
-                    <strong>PHONE:</strong> 0857-7444-4805 | <strong>WEB:</strong> www.kolaborasi.id
-                </p>
+    <div class="print-container">
+        <div class="header-title">SLIP GAJI KARYAWAN BULAN ${bulanIndo[tgl.getMonth()]} ${tgl.getFullYear()}</div>
+        <div class="sub-header">PT. KOLA BORASI INDONESIA</div>
+
+        <div class="info-section">
+            <div>
+                Bulan: ${periodeStr}<br>
+                Tgl bayar: ${tgl.getDate()} ${bulanIndo[tgl.getMonth()]} ${tgl.getFullYear()}<br>
+                Lokasi: Kantor Pusat Bogor
+            </div>
+            <div style="text-align: right;">
+                Nama: <span class="bold">${k.nama.toUpperCase()}</span><br>
+                Jabatan: ${k.jabatan || "-"}<br>
+                No. Rekening: ${k.norek || "-"}
             </div>
         </div>
 
-        <p style="text-align:center; font-weight:900; font-size: 0.9rem; text-decoration: underline; margin-bottom: 15px;">
-            SLIP GAJI KARYAWAN (E-PORTAL) - ${bulanIndo[tgl.getMonth()]} ${tgl.getFullYear()}
-        </p>
+        <div style="font-weight: bold; font-size: 11px; margin-top: 5px; border-bottom: 1px solid #000;">PENERIMAAN:</div>
+        <div class="item-row">
+            <span>Gaji Pokok</span>
+            <span>Rp ${d.gapok.toLocaleString("id-ID")}</span>
+        </div>
+        <div class="item-row">
+            <span>HKE (Hari Kerja Efektif) [${d.hadir} | Rp ${d.tarifHKE.toLocaleString("id-ID")}]</span>
+            <span>Rp ${d.pendapatanHKE.toLocaleString("id-ID")}</span>
+        </div>
+        ${d.incentiveLK > 0 ? `
+        <div class="item-row">
+            <span>Incentive (LK)</span>
+            <span>Rp ${d.incentiveLK.toLocaleString("id-ID")}</span>
+        </div>` : ""}
+        ${d.incentiveReguler > 0 ? `
+        <div class="item-row">
+            <span>Incentive (Reguler)</span>
+            <span>Rp ${d.incentiveReguler.toLocaleString("id-ID")}</span>
+        </div>` : ""}
+        <div class="item-row">
+            <span>Overtime [${Math.floor(d.jamLembur)} | Rp 10.000]</span>
+            <span>Rp ${d.bonusLembur.toLocaleString("id-ID")}</span>
+        </div>
         
-        <div style="display:grid; grid-template-columns: 110px 10px 1fr; line-height: 1.6; font-size:0.75rem;">
-            <span>ID KARYAWAN</span><span>:</span><span>${k.nik || "-"}</span>
-            <span>NAMA LENGKAP</span><span>:</span><span style="font-weight:bold;">${k.nama}</span>
-            <span>STATUS PAJAK</span><span>:</span><span>${d.ptkpStatus}</span>
-            <span>DEPT / JABATAN</span><span>:</span><span>${k.dept} / ${k.jabatan || "-"}</span>
-            <span>TOTAL KEHADIRAN</span><span>:</span><span>${d.hadir} / 24 Hari</span>
+        <div class="total-box" style="background:#f0f0f0; margin-bottom: 10px;">
+            <span>TOTAL PENERIMAAN</span>
+            <span>Rp ${d.totalPenerimaan.toLocaleString("id-ID")}</span>
         </div>
 
-        <div style="border-top:1px dashed #000; margin-top:15px; padding-top:10px;">
-            <div style="display:flex; justify-content:space-between; font-size: 0.75rem;"><span>Gaji Pokok Full</span><span>Rp ${d.gapok.toLocaleString("id-ID")}</span></div>
-            <div style="display:flex; justify-content:space-between; font-size: 0.75rem;"><span>Gaji Pro-rata (Hadir)</span><span>Rp ${Math.floor(d.gajiPro).toLocaleString("id-ID")}</span></div>
-            <div style="display:flex; justify-content:space-between; color: #15803d; font-weight:bold; font-size: 0.75rem;"><span>Bonus Lembur (${d.jamLembur.toFixed(1)} Jam)</span><span>+Rp ${d.bonusLembur.toLocaleString("id-ID")}</span></div>
+        <div style="font-weight: bold; font-size: 11px; margin-top: 5px; border-bottom: 1px solid #000;">POTONGAN:</div>
+        ${d.kasbon > 0 ? `
+        <div class="item-row">
+            <span>Kasbon / Absensi</span>
+            <span>- Rp ${d.kasbon.toLocaleString("id-ID")}</span>
+        </div>` : ""}
+        ${d.pinjaman > 0 ? `
+        <div class="item-row">
+            <span>Pinjaman / Kasbon Tetap</span>
+            <span>- Rp ${d.pinjaman.toLocaleString("id-ID")}</span>
+        </div>` : ""}
+        ${d.potHKE > 0 ? `
+        <div class="item-row">
+            <span>Potongan HKE</span>
+            <span>- Rp ${d.potHKE.toLocaleString("id-ID")}</span>
+        </div>` : ""}
+        ${(d.totalPotongan === 0) ? `<div class="item-row"><span>Tidak ada potongan</span><span>-</span></div>` : ""}
+
+        <div class="total-box">
+            <span>GAJI BERSIH (THP)</span>
+            <span>Rp ${d.thp.toLocaleString("id-ID")}</span>
         </div>
 
-        <p style="margin: 15px 0 5px 0; font-weight:bold; text-decoration: underline; font-size: 0.7rem;">POTONGAN, PAJAK & KASBON</p>
-        <div style="line-height: 1.5; font-size:0.75rem;">
-            <div style="display:flex; justify-content:space-between;"><span>BPJS Kesehatan (1%)</span><span>-Rp ${Math.floor(d.bpjsKes).toLocaleString("id-ID")}</span></div>
-            <div style="display:flex; justify-content:space-between;"><span>JHT (2%)</span><span>-Rp ${Math.floor(d.jht).toLocaleString("id-ID")}</span></div>
-            <div style="display:flex; justify-content:space-between;"><span>JP (1%)</span><span>-Rp ${Math.floor(d.jp).toLocaleString("id-ID")}</span></div>
-            <div style="display:flex; justify-content:space-between;"><span>PPh 21 (Pajak)</span><span>-Rp ${Math.floor(d.pph21).toLocaleString("id-ID")}</span></div>
-            <div style="display:flex; justify-content:space-between; color: #ef4444;"><span>Potongan Telat (${d.jumlahTelat}x)</span><span>-Rp ${Math.floor(d.potonganTelat).toLocaleString("id-ID")}</span></div>
-            <div style="display:flex; justify-content:space-between; font-weight:bold; color:#1e293b; border-top:1px dashed #ccc; margin-top:5px; padding-top:5px;"><span>POTONGAN KASBON</span><span>-Rp ${d.kasbon.toLocaleString("id-ID")}</span></div>
+        <div class="footer">
+            <div class="signature-box">
+                Penerima,<br><br><br><br>
+                ( ${k.nama.split(" ")[0]} )
+            </div>
+            <div class="signature-box">
+                Hormat Kami,<br><br><br><br>
+                ( Manajemen HRD )
+            </div>
         </div>
-
-        <div style="border: 2px solid #000; margin-top:15px; padding:10px; display:flex; justify-content:space-between; font-weight:900; font-size:1rem; background:#f8fafc;">
-            <span>TAKE HOME PAY</span><span>Rp ${Math.floor(d.thp).toLocaleString("id-ID")}</span>
-        </div>
+    </div>
+  `;
+/div>
         
         <div style="margin-top: 25px; display: flex; justify-content: space-between; font-size: 0.7rem;">
             <div style="text-align: center; width: 120px;">
