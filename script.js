@@ -289,8 +289,7 @@ function hitungDetailGaji(gapok, logsData, kasbonData, nikKaryawan) {
     potHKE, // Anda bisa menambahkan adminPotonganTelat ke label ini jika mau, atau biarkan HKE yang berkurang.
     totalPenerimaan,
     totalPotongan,
-    thp: gajiBersih > 0 ? gajiBersih : 0,
-    adminPotonganTelat // Disimpan untuk info tambahan jika ingin ditampilkan
+    thp: gajiBersih > 0 ? gajiBersih : 0
   };
 }
 // --- LOGIKA USER & ABSENSI ---
