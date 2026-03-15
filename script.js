@@ -125,7 +125,7 @@ window.onload = async () => {
 // --- LOGIKA PAYROLL ---
 function hitungDetailGaji(gapok, logsData, kasbonData, nikKaryawan) {
   const info = KARYAWAN.find(k => k.nik === nikKaryawan);
-  const jabatan = (info?.jabatan || "").toUpperCase();
+  const jabatan = (info?.jabatan || "").toUpperCase().trim();
   const gapokValue = parseFloat(gapok) || 0;
 
   // 1. PENENTUAN TARIF HKE (Business Rules Feb 2026)
@@ -162,8 +162,8 @@ function hitungDetailGaji(gapok, logsData, kasbonData, nikKaryawan) {
   let totalHkeHarianAcumulated = 0;
   let potonganTelatHarianAcumulated = 0;
 
-  // Tentukan apakah ini operasional (Driver/Helper)
-  const isOperasional = jabatan === "DRIVER" || jabatan === "HELPER";
+  // Tentukan apakah ini operasional (Driver/Helper/Operasional)
+  const isOperasional = jabatan.includes("DRIVER") || jabatan.includes("HELPER") || jabatan.includes("OPERASIONAL");
 
   // Tarif Harian Dasar untuk perhitungan potongan telat
   // Operasional: Menggunakan tarifHKE yang sudah ditentukan (50k/200k)
@@ -236,9 +236,10 @@ function hitungDetailGaji(gapok, logsData, kasbonData, nikKaryawan) {
   // 4. PERLAKUAN KHUSUS (PENGECUALIAN & DIVISI)
   
   // A. Pengecualian nama tertentu (Tidak dapat OT & Reguler)
-  const namaKaryawan = info?.nama?.toUpperCase() || "";
+  const namaKaryawan = (info?.nama || "").toUpperCase().trim();
   const daftarPengecualian = ["TATANG", "IMAM MAHDI AMANULLAH GHAZI", "WAWAN KURNIAWAN"];
-  if (daftarPengecualian.includes(namaKaryawan)) {
+  // Menggunakan strict "includes" untuk berjaga-jaga jika ada spasi berlebih
+  if (daftarPengecualian.some(exc => namaKaryawan.includes(exc))) {
     totalOvertimeRp = 0;
     incentiveReguler = 0;
   }
@@ -1432,9 +1433,8 @@ Dept : ${k.dept}
 ------------------------------------------
 *RINCIAN POTONGAN (-)*
 - Kasbon      : Rp ${d.kasbon.toLocaleString('id-ID')}
-- PPh21 (Pajak) : Rp ${Math.floor(d.pph21).toLocaleString('id-ID')}
-- BPJS & JHT  : Rp ${(Math.floor(d.bpjsKes + d.jht + d.jp)).toLocaleString('id-ID')}
-- Pot. Telat  : Rp ${Math.floor(d.potonganTelat).toLocaleString('id-ID')}
+- Pinjaman    : Rp ${d.pinjaman.toLocaleString('id-ID')}
+- Pot. HKE    : Rp ${d.potHKE.toLocaleString('id-ID')}
 ------------------------------------------
 *TOTAL TERIMA (THP) : Rp ${Math.floor(d.thp).toLocaleString('id-ID')}*
 ==========================================
