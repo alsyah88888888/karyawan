@@ -124,14 +124,22 @@ window.onload = async () => {
 
 // --- LOGIKA PAYROLL ---
 function hitungDetailGaji(gapok, logsData, kasbonData, nikKaryawan) {
-  const g = parseFloat(gapok) || 0;
-  const standarHari = 24;
-  const gajiHarian = g / standarHari;
-
   const info = KARYAWAN.find(k => k.nik === nikKaryawan);
-  const ptkpStatus = info?.status_ptkp || "TK/0";
+  const jabatan = (info?.jabatan || "").toUpperCase();
+  const gapokValue = parseFloat(gapok) || 0;
 
-  // Group logs by Date for Overtime (Only Current Month)
+  // 1. PENENTUAN TARIF HKE (Business Rules Feb 2026)
+  let tarifHKE = 0;
+  if (jabatan === "DRIVER") {
+    tarifHKE = 50000;
+  } else if (jabatan === "HELPER") {
+    tarifHKE = gapokValue > 0 ? 50000 : 200000;
+  } else {
+    // Default fallback for other roles (e.g., ADMIN, SALES)
+    tarifHKE = gapokValue > 0 ? 50000 : 0;
+  }
+
+  // 2. JAM LEMBUR (OVERTIME)
   const now = new Date();
   const currentMonth = now.getMonth();
   const currentYear = now.getFullYear();
@@ -146,12 +154,6 @@ function hitungDetailGaji(gapok, logsData, kasbonData, nikKaryawan) {
     }
   });
 
-  const currentMonthLogs = logsData.filter(l => {
-    const logDate = new Date(l.waktu);
-    return logDate.getMonth() === currentMonth && logDate.getFullYear() === currentYear;
-  });
-
-  let totalLemburRp = 0;
   let totalJamLembur = 0;
   const uniqueDates = Object.keys(logsByDate);
   const hariHadir = uniqueDates.filter(d =>
@@ -166,54 +168,51 @@ function hitungDetailGaji(gapok, logsData, kasbonData, nikKaryawan) {
     if (firstIn && lastOut) {
       const lastOutDate = new Date(lastOut.waktu);
       const cutoff = new Date(lastOutDate);
-      cutoff.setHours(18, 0, 0, 0); // Cutoff 18:00
+      cutoff.setHours(18, 0, 0, 0); // Standar Cutoff 18:00
 
       if (lastOutDate > cutoff) {
         const overtime = (lastOutDate - cutoff) / (1000 * 3600);
         totalJamLembur += overtime;
-        totalLemburRp += overtime * 10000;
       }
     }
   });
 
-  const jumlahTelat = currentMonthLogs.filter(
-    (l) => (l.status === "MASUK" || l.status === "BERANGKAT") && (l.is_late === true || l.isLate === true),
-  ).length;
+  const totalOvertimeRp = Math.floor(totalJamLembur) * 10000;
 
+  // 3. INSENTIF (LK & REGULER)
+  const incentiveLK = parseFloat(info?.insentif_lk) || 0;
+  const incentiveReguler = (info?.insentif_reguler === "Ya" || info?.insentif_reguler === "YA") ? 200000 : 0;
+
+  // 4. POTONGAN
   const totalKasbon = kasbonData
     ? kasbonData.filter(k => k.status === 'APPROVED').reduce((sum, k) => sum + parseFloat(k.nominal), 0)
     : 0;
+  const pinjaman = parseFloat(info?.pinjaman) || 0;
+  const potHKE = parseFloat(info?.pot_hke) || 0;
 
-  const gajiPro = (hariHadir / standarHari) * g;
-  const potonganTelat = jumlahTelat * (gajiHarian * 0.02);
-
-  const bpjsKes = gajiPro * 0.01;
-  const jht = gajiPro * 0.02;
-  const jp = gajiPro * 0.01;
-
-  const ptkpMap = {
-    "TK/0": 54000000, "TK/1": 58500000, "TK/2": 63000000, "TK/3": 67500000,
-    "K/0": 58500000, "K/1": 63000000, "K/2": 67500000, "K/3": 72000000
-  };
-  const ptkpTahunan = ptkpMap[ptkpStatus] || 54000000;
-  const ptkpBulanan = ptkpTahunan / 12;
-
-  const brutoNeto = gajiPro - (bpjsKes + jht + jp);
-  const pkpBulanan = brutoNeto - ptkpBulanan;
-
-  let pph21 = 0;
-  if (pkpBulanan > 0) {
-    pph21 = pkpBulanan * 0.05;
-  }
-
-  const totalPotongan = bpjsKes + jht + jp + pph21 + potonganTelat + totalKasbon;
-  const thp = (gajiPro + totalLemburRp) - totalPotongan;
+  // 5. RUMUS UTAMA
+  const pendapatanHKE = hariHadir * tarifHKE;
+  const totalPenerimaan = gapokValue + pendapatanHKE + incentiveLK + incentiveReguler + totalOvertimeRp;
+  const totalPotongan = totalKasbon + pinjaman + potHKE;
+  const gajiBersih = totalPenerimaan - totalPotongan;
 
   return {
-    gapok: g, gajiPro, hariHadir, hadir: hariHadir, jumlahTelat, potonganTelat,
-    bpjsKes, jht, jp, pph21, kasbon: totalKasbon, bonusLembur: totalLemburRp,
-    jamLembur: totalJamLembur, totalPotongan,
-    thp: thp > 0 ? thp : 0, ptkpStatus, ptkpBulanan
+    nama: info?.nama || "Unknown",
+    jabatan: jabatan,
+    hadir: hariHadir,
+    gapok: gapokValue,
+    pendapatanHKE,
+    tarifHKE,
+    incentiveLK,
+    incentiveReguler,
+    bonusLembur: totalOvertimeRp,
+    jamLembur: totalJamLembur,
+    kasbon: totalKasbon,
+    pinjaman,
+    potHKE,
+    totalPenerimaan,
+    totalPotongan,
+    thp: gajiBersih > 0 ? gajiBersih : 0
   };
 }
 // --- LOGIKA USER & ABSENSI ---
@@ -536,19 +535,23 @@ function renderKaryawanTable() {
         <td>
           <div style="font-weight:600; line-height:1.1;">${k.dept}</div>
           <div style="font-size:0.65rem; color:var(--text-muted);">${k.jabatan || "-"}</div>
+          <div style="font-size:0.65rem; color:var(--accent); font-weight:700;">HKE: Rp ${d.tarifHKE.toLocaleString('id-ID')} / hari</div>
         </td>
         <td style="text-align:center;">
-          <div style="font-weight:600;">${d.hadir}</div>
-          <div style="font-size:0.65rem; color:var(--text-muted);">Hari</div>
+          <div style="font-weight:600;">${d.hadir} Hari</div>
+          <div style="font-size:0.65rem; color:#15803d; font-weight:600;">OT: ${Math.floor(d.jamLembur)}j</div>
         </td>
         <td>
-          <div style="font-weight:600; line-height:1.1;">Rp ${(k.gaji || 0).toLocaleString('id-ID')}</div>
-          <div style="font-size:0.65rem; color:var(--text-muted);">Mulai: ${k.tahun_bergabung || "-"}</div>
+          <div style="font-weight:600; line-height:1.1;">Gapok: Rp ${(k.gaji || 0).toLocaleString('id-ID')}</div>
+          <div style="font-size:0.65rem; color:var(--text-muted);">LK: Rp ${(k.insentif_lk || 0).toLocaleString('id-ID')}</div>
+          <div style="font-size:0.65rem; color:var(--text-muted);">Reg: Rp ${d.incentiveReguler.toLocaleString('id-ID')}</div>
+          <div style="font-size:0.65rem; color:#15803d; font-weight:600;">Lembur: Rp ${d.bonusLembur.toLocaleString("id-ID")}</div>
         </td>
         <td style="color:var(--accent); font-weight:800;">
           Rp ${Math.floor(d.thp).toLocaleString("id-ID")}
-          <div style="font-size:0.65rem; color:var(--text-muted); font-weight:normal;">PTKP: ${k.status_ptkp || "-"}</div>
-          <div style="font-size:0.65rem; color:#15803d; font-weight:600;">Lembur: ${d.jamLembur.toFixed(1)}j (Rp ${d.bonusLembur.toLocaleString("id-ID")})</div>
+          <div style="font-size:0.65rem; color:var(--danger); font-weight:normal;">Kasbon: Rp ${d.kasbon.toLocaleString('id-ID')}</div>
+          <div style="font-size:0.65rem; color:var(--danger); font-weight:normal;">Pinjaman: Rp ${(k.pinjaman || 0).toLocaleString('id-ID')}</div>
+          <div style="font-size:0.65rem; color:var(--danger); font-weight:normal;">Pot HKE: Rp ${(k.pot_hke || 0).toLocaleString('id-ID')}</div>
         </td>
         <td style="font-size: 0.65rem; color:var(--text-muted); line-height:1.1; max-width:120px;">
           KTP: ${k.nik_ktp || "-"}<br>NPWP: ${k.npwp || "-"}
@@ -588,8 +591,12 @@ async function simpanKaryawan() {
     const jabatan = jabEl?.value.trim() || dept;
     const tahun = document.getElementById("inpTahun")?.value.trim() || "";
     const pin = pinEl ? pinEl.value.trim() : "";
-    const nomor_wa = document.getElementById("inpWa")?.value.trim() || "";
+    const nomor_wa = document.getElementById("inpWa")?.value.trim();
     const sisa_cuti = cutiEl ? parseInt(cutiEl.value) || 12 : 12;
+    const insentif_lk = parseFloat(document.getElementById("inpInsentifLK")?.value) || 0;
+    const insentif_reguler = document.getElementById("inpInsentifReg")?.value || "Tidak";
+    const pinjaman = parseFloat(document.getElementById("inpPinjaman")?.value) || 0;
+    const pot_hke = parseFloat(document.getElementById("inpPotHke")?.value) || 0;
 
     const nik_ktp = document.getElementById("inpNikKtp")?.value.trim() || "";
     const npwp = document.getElementById("inpNpwp")?.value.trim() || "";
@@ -616,7 +623,11 @@ async function simpanKaryawan() {
       sisa_cuti,
       nik_ktp,
       npwp,
-      status_ptkp
+      status_ptkp,
+      insentif_lk,
+      insentif_reguler,
+      pinjaman,
+      pot_hke
     };
 
     console.log("Menyimpan karyawan baru:", newKar);
@@ -638,6 +649,10 @@ async function simpanKaryawan() {
     if (pinEl) pinEl.value = "";
     if (document.getElementById("inpWa")) document.getElementById("inpWa").value = "";
     if (cutiEl) cutiEl.value = "12";
+    if (document.getElementById("inpInsentifLK")) document.getElementById("inpInsentifLK").value = "0";
+    if (document.getElementById("inpInsentifReg")) document.getElementById("inpInsentifReg").value = "Tidak";
+    if (document.getElementById("inpPinjaman")) document.getElementById("inpPinjaman").value = "0";
+    if (document.getElementById("inpPotHke")) document.getElementById("inpPotHke").value = "0";
     if (document.getElementById("inpNikKtp")) document.getElementById("inpNikKtp").value = "";
     if (document.getElementById("inpNpwp")) document.getElementById("inpNpwp").value = "";
     if (document.getElementById("inpPtkp")) document.getElementById("inpPtkp").value = "TK/0";
