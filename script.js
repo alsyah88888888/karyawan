@@ -129,8 +129,9 @@ function hitungDetailGaji(gapok, logsData, kasbonData, nikKaryawan) {
   const gapokValue = parseFloat(gapok) || 0;
 
   // 1. PENENTUAN TARIF HKE (Business Rules Feb 2026)
-  // Aturan baru: Gapok > 0 -> 50k, Gapok = 0 -> 200k
-  const tarifHKE = gapokValue > 0 ? 50000 : 200000;
+  // Aturan baru: Gapok digunakan sebagai basis. Operasional = Mingguan (Gapok/6). Admin = Bulanan (Gapok/26).
+  // Jika tidak ada Gapok, default HKE = 200.000 (Operasional)
+  let tarifHKE = gapokValue > 0 ? Math.round(gapokValue / 6) : 200000;
 
   // 2. JAM LEMBUR (OVERTIME)
   const now = new Date();
@@ -166,9 +167,10 @@ function hitungDetailGaji(gapok, logsData, kasbonData, nikKaryawan) {
   const isOperasional = jabatan.includes("DRIVER") || jabatan.includes("HELPER") || jabatan.includes("OPERASIONAL");
 
   // Tarif Harian Dasar untuk perhitungan potongan telat
-  // Operasional: Menggunakan tarifHKE yang sudah ditentukan (50k/200k)
+  // Operasional: Gapok / 6 (sudah di set di tarifHKE), atau 200k jika gapok=0
   // Non-Ops (Admin): Gapok / 26
   let tarifHariDasar = isOperasional ? tarifHKE : (gapokValue > 0 ? Math.round(gapokValue / 26) : 0);
+  let adminHkeRate = gapokValue > 0 ? Math.round(gapokValue / 26) : 0; // Disimpan untuk label Admin
 
   const uniqueDates = Object.keys(logsByDate);
   const hariHadir = uniqueDates.filter(d =>
@@ -259,14 +261,13 @@ function hitungDetailGaji(gapok, logsData, kasbonData, nikKaryawan) {
   const pinjaman = parseFloat(info?.pinjaman) || 0;
   const potHKE = parseFloat(info?.pot_hke) || 0;
 
-  // 6. RUMUS UTAMA FINANSIAL
-  // Untuk Non-Operasional (Admin): Gaji Pokok tidak ditambahkan lagi karena sudah dikonversi & diakumulasi ke totalHkeHarianAcumulated
-  const dasarGaji = isOperasional ? gapokValue : 0; 
+  // 6. RUMUS UTAMA FINANSIAL - GAJI POKOK HANYA UNTUK TAMPILAN, TIDAK DITAMBAHKAN!
+  // Semua Total Penerimaan murni berasal dari Akumulasi HKE Harian (yang sudah memperhitungkan absen & telat) + Tunjangan
   
   // Pendapatan HKE utama menggunakan hasil akumulasi yang sudah dikurangi penalti telat
   let pendapatanHKE = totalHkeHarianAcumulated;
 
-  const totalPenerimaan = dasarGaji + pendapatanHKE + incentiveLK + incentiveReguler + totalOvertimeRp;
+  const totalPenerimaan = pendapatanHKE + incentiveLK + incentiveReguler + totalOvertimeRp;
   const totalPotongan = totalKasbon + pinjaman + potHKE;
   const gajiBersih = totalPenerimaan - totalPotongan;
 
@@ -274,7 +275,7 @@ function hitungDetailGaji(gapok, logsData, kasbonData, nikKaryawan) {
     nama: info?.nama || "Unknown",
     jabatan: jabatan,
     hadir: hariHadir,
-    gapok: isOperasional ? gapokValue : 0, // Admin gapoknya 0 di struk, diubah ke HKE
+    gapok: gapokValue, // Gapok murni dikembalikan untuk label di struk (tidak masuk Total)
     pendapatanHKE,
     tarifHKE: isOperasional ? tarifHKE : adminHkeRate,
     incentiveLK,
@@ -896,17 +897,12 @@ function cetakSlip(index) {
             <div style="text-align: right;">
                 Nama: <span class="bold">${k.nama.toUpperCase()}</span><br>
                 Jabatan: ${k.jabatan || "-"}<br>
+                ${(d.gapok > 0) ? `Gaji Pokok: Rp ${d.gapok.toLocaleString("id-ID")}<br>` : ""}
                 No. Rekening: ${k.norek || "-"}
             </div>
         </div>
 
         <div style="font-weight: bold; font-size: 11px; margin-top: 5px; border-bottom: 1px solid #000;">PENERIMAAN:</div>
-        ${(k.jabatan === "DRIVER" || k.jabatan === "HELPER") ? `
-        <div class="item-row">
-            <span>Gaji Pokok</span>
-            <span>Rp ${d.gapok.toLocaleString("id-ID")}</span>
-        </div>
-        ` : ""}
         <div class="item-row">
             <span>HKE (Hari Kerja Efektif)</span>
             <span>${d.hadir} | Rp ${d.tarifHKE.toLocaleString("id-ID")} | Rp ${d.pendapatanHKE.toLocaleString("id-ID")}</span>
@@ -1425,12 +1421,14 @@ function kirimWaSlip(index) {
 Nama : *${k.nama}*
 NIK  : ${k.nik || "-"}
 Dept : ${k.dept}
+${(k.gaji > 0) ? `Gapok: Rp ${k.gaji.toLocaleString('id-ID')}` : ""}
 ------------------------------------------
 *RINCIAN PENGHASILAN (+)*
-- Gaji Pokok  : Rp ${k.gaji.toLocaleString('id-ID')}
+- HKE (${d.hadir} Hari) : Rp ${d.pendapatanHKE.toLocaleString('id-ID')}
 - Lembur (${d.jamLembur} Jam) : Rp ${d.bonusLembur.toLocaleString('id-ID')}
-- Tunjangan   : Rp 0
-------------------------------------------
+${d.incentiveLK > 0 ? `- Inc LK      : Rp ${d.incentiveLK.toLocaleString('id-ID')}
+` : ""}${d.incentiveReguler > 0 ? `- Inc Reguler : Rp ${d.incentiveReguler.toLocaleString('id-ID')}
+` : ""}------------------------------------------
 *RINCIAN POTONGAN (-)*
 - Kasbon      : Rp ${d.kasbon.toLocaleString('id-ID')}
 - Pinjaman    : Rp ${d.pinjaman.toLocaleString('id-ID')}
