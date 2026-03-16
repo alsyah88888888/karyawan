@@ -1,4 +1,4 @@
-const CACHE_NAME = 'koboi-cache-v2';
+const CACHE_NAME = 'koboi-cache-v4';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -7,7 +7,8 @@ const urlsToCache = [
   '/style.css',
   '/script.js',
   '/portal.js',
-  '/images/koboi.png'
+  '/images/koboi.png',
+  '/manifest.json'
 ];
 
 self.addEventListener('install', event => {
