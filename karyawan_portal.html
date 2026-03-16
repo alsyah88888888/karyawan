@@ -523,9 +523,11 @@
         }
 
         /* RESPONSIVE */
-        body {
+        html, body {
             overflow-y: auto !important;
+            overflow-x: hidden !important;
             height: auto !important;
+            width: 100% !important;
         }
 
         /* MOU Modal & Signature */
@@ -660,12 +662,19 @@
             .table-container {
                 overflow-x: auto;
                 -webkit-overflow-scrolling: touch;
+                width: 100%;
+                max-width: 100vw;
             }
 
             /* Hide less important columns on mobile */
             th:nth-child(3),
             td:nth-child(3) {
                 display: none;
+            }
+            
+            .login-container {
+                padding: 25px 20px;
+                width: 90%;
             }
         }
 
