@@ -993,13 +993,20 @@ function exportKaryawan() {
     return alert("Library Excel belum siap. Mohon tunggu sebentar atau refresh halaman.");
   }
 
-  // Ambil hanya kolom yang diminta: ID, Nama, Departemen, Jabatan, Gaji
+  // Ambil data lengkap untuk backup database Karyawan
   const dataExport = KARYAWAN.map(k => ({
     "Nomor ID Karyawan": k.nik || "-",
-    "Nama": k.nama,
+    "Nama Lengkap": k.nama,
+    "PIN (Password)": k.pin || "-",
     "Departemen": k.dept,
     "Jabatan": k.jabatan || "-",
-    "Gaji": k.gaji || 0
+    "Gaji Pokok": k.gaji || 0,
+    "Insentif LK": k.insentif_lk || 0,
+    "Sisa Cuti": k.sisa_cuti || 0,
+    "Nomor Rekening": k.norek || "-",
+    "Nomor WA": k.nomor_wa || "-",
+    "NIK KTP": k.nik_ktp || "-",
+    "NPWP": k.npwp || "-"
   }));
 
   // Buat workbook dan worksheet
