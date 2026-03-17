@@ -20,6 +20,7 @@ let routeLayers = [];
 let isOfficeGlobal = false;
 let clockClicks = 0;
 let lastClickTime = 0;
+let isMOUVisible = false; // Main toggle state
 
 // --- FUNGSI CLOUD SYNC ---
 async function syncData() {
@@ -52,6 +53,13 @@ async function syncData() {
     const { data: dataKasbon, error: errKasbon } = await supabaseClient.from("kasbon").select("*").order("id", { ascending: false });
     if (errKasbon) throw errKasbon;
     kasbonData = dataKasbon || [];
+
+    // Ambil Settings (HRIS Settings)
+    const { data: dataSet, error: errSet } = await supabaseClient.from("hris_settings").select("*");
+    if (!errSet) {
+      const mouSet = dataSet.find(s => s.key === "mou_visible");
+      isMOUVisible = mouSet ? mouSet.value === "true" : false;
+    }
 
     // WAJIB: Panggil fungsi render setelah data masuk
     refreshAllUI();
@@ -547,6 +555,36 @@ function updateBadges() {
     badgeKasbon.innerText = pendingKasbon;
     badgeKasbon.style.display = pendingKasbon > 0 ? "inline-block" : "none";
   }
+
+  // Update MOU Toggle Button UI
+  const btnMOU = document.getElementById("btnToggleMOU");
+  if (btnMOU) {
+    if (isMOUVisible) {
+      btnMOU.innerText = "MOU: TERLIHAT";
+      btnMOU.style.background = "var(--primary)";
+    } else {
+      btnMOU.innerText = "MOU: SEMBUNYI";
+      btnMOU.style.background = "#64748b";
+    }
+  }
+}
+
+async function toggleMOUVisibility() {
+  const newVal = !isMOUVisible;
+  try {
+    const { error } = await supabaseClient
+      .from("hris_settings")
+      .update({ value: newVal.toString(), updated_at: new Date().toISOString() })
+      .eq("key", "mou_visible");
+
+    if (error) throw error;
+    isMOUVisible = newVal;
+    updateBadges();
+    renderKaryawanTable(); // Refresh table to show/hide MOU button
+    alert(isMOUVisible ? "Menu MOU sekarang TERLIHAT di Portal Karyawan." : "Menu MOU sekarang DISEMBUNYIKAN dari Portal Karyawan.");
+  } catch (e) {
+    alert("Gagal mengubah visibilitas MOU: " + e.message);
+  }
 }
 
 function renderTabel() {
@@ -637,7 +675,7 @@ function renderKaryawanTable() {
           <div style="display:flex; gap:3px;">
             <button onclick="cetakSlip(${index})" class="status-tag status-masuk" style="border:none; cursor:pointer; font-size:0.6rem; padding:3px 6px;">PDF</button>
             <button onclick="kirimWaSlip(${index})" class="status-tag" style="background:#dcfce7; color:#15803d; border:none; cursor:pointer; font-size:0.6rem; padding:3px 6px;">WA</button>
-            <button onclick="adminCetakMOU(${index})" class="status-tag status-pulang" style="border:none; cursor:pointer; font-size:0.6rem; padding:3px 6px;">MOU</button>
+            <button onclick="adminCetakMOU(${index})" class="status-tag status-pulang" style="border:none; cursor:pointer; font-size:0.6rem; padding:3px 6px; display: ${isMOUVisible ? 'inline-block' : 'none'};">MOU</button>
           </div>
         </td>
       </tr>`;
@@ -863,104 +901,137 @@ function cetakSlip(index) {
   const printStyles = `
     <style>
       @page { size: A5; margin: 0; }
-      body { margin: 0; padding: 0; font-family: 'Courier New', Courier, monospace; color: #000; -webkit-print-color-adjust: exact; }
+      body { margin: 0; padding: 0; font-family: 'Outfit', sans-serif; color: #1e293b; background: #fff; -webkit-print-color-adjust: exact; }
       .print-container { 
         width: 148mm; 
-        padding: 8mm; 
+        height: 210mm;
+        padding: 10mm; 
         box-sizing: border-box; 
-        background: #fff; 
+        border: 1px solid #e2e8f0;
       }
-      .header-title { font-size: 14px; font-weight: bold; text-align: center; margin-bottom: 2px; text-transform: uppercase; }
-      .sub-header { font-size: 11px; text-align: center; margin-bottom: 10px; border-bottom: 1px solid #000; padding-bottom: 5px; }
-      .info-section { display: grid; grid-template-columns: 1fr 1fr; font-size: 11px; margin-bottom: 10px; line-height: 1.4; }
-      .item-row { display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 2px; border-bottom: 1px dotted #ccc; padding: 2px 0; }
-      .bold { font-weight: bold; }
-      .total-box { border: 1px solid #000; margin-top: 10px; padding: 5px; font-weight: bold; font-size: 13px; display: flex; justify-content: space-between; }
-      .footer { margin-top: 20px; display: flex; justify-content: space-between; font-size: 10px; }
-      .signature-box { text-align: center; width: 120px; }
+      .header { display: flex; align-items: center; border-bottom: 2px solid #6366f1; padding-bottom: 12px; margin-bottom: 20px; }
+      .header img { width: 50px; margin-right: 15px; }
+      .company-info h1 { font-size: 1.1rem; margin: 0; color: #0f172a; font-weight: 800; }
+      .company-info p { font-size: 0.65rem; margin: 2px 0; color: #64748b; }
+      
+      .title { text-align: center; font-size: 0.9rem; font-weight: 800; text-decoration: underline; margin-bottom: 20px; text-transform: uppercase; }
+      
+      .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; font-size: 0.75rem; margin-bottom: 20px; background: #f8fafc; padding: 10px; border-radius: 8px; }
+      .meta-item { line-height: 1.6; }
+      .meta-label { color: #64748b; font-weight: 600; }
+      
+      .section-title { font-size: 0.7rem; font-weight: 800; color: #6366f1; text-transform: uppercase; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 10px; }
+      
+      .item-row { display: flex; justify-content: space-between; font-size: 0.75rem; padding: 5px 0; border-bottom: 1px dashed #f1f5f9; }
+      .item-row.total { font-weight: 800; border-top: 2px solid #1e293b; border-bottom: none; margin-top: 10px; font-size: 0.85rem; padding-top: 10px; }
+      .item-row.subtotal { color: #6366f1; font-weight: 700; margin-top: 5px; }
+      
+      .footer { margin-top: 40px; display: flex; justify-content: space-between; text-align: center; font-size: 0.75rem; }
+      .sig-box { width: 150px; }
+      .sig-space { height: 60px; }
+      
+      .watermark { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-45deg); font-size: 4rem; color: rgba(0,0,0,0.03); font-weight: 900; pointer-events: none; z-index: -1; }
     </style>
   `;
 
-  // Contoh tampilan: Bulan: Feb-26 M3 Tgl bayar: 21 Februari 2026 Lokasi: Kantor Pusat Bogor
-  const periodeStr = `${bulanIndo[tgl.getMonth()].substring(0, 3)}-${tgl.getFullYear().toString().substring(2)}`;
+  const metaHtml = `
+    <div class="meta-grid">
+      <div class="meta-item">
+        <span class="meta-label">ID Karyawan:</span> ${k.nik || "-"}<br>
+        <span class="meta-label">Departemen:</span> ${k.dept}<br>
+        <span class="meta-label">Jabatan:</span> ${k.jabatan || "-"}<br>
+        <span class="meta-label">Hari Hadir:</span> ${d.hadir} Hari
+      </div>
+      <div class="meta-item" style="text-align: right;">
+        <span class="meta-label">Bulan:</span> ${bulanIndo[tgl.getMonth()]} ${tgl.getFullYear()}<br>
+        <span class="meta-label">Tgl Bayar:</span> ${tgl.toLocaleDateString('id-ID')}<br>
+        <span class="meta-label">Transfer:</span> ${(k.norek || "-").substring(0, 15)}
+      </div>
+    </div>
+  `;
 
   const isiSlip = `
     <div class="print-container">
-        <div class="header-title">SLIP GAJI KARYAWAN BULAN ${bulanIndo[tgl.getMonth()]} ${tgl.getFullYear()}</div>
-        <div class="sub-header">PT. KOLA BORASI INDONESIA</div>
-
-        <div class="info-section">
-            <div>
-                Bulan: ${periodeStr}<br>
-                Tgl bayar: ${tgl.getDate()} ${bulanIndo[tgl.getMonth()]} ${tgl.getFullYear()}<br>
-                Lokasi: Kantor Pusat Bogor
-            </div>
-            <div style="text-align: right;">
-                Nama: <span class="bold">${k.nama.toUpperCase()}</span><br>
-                Jabatan: ${k.jabatan || "-"}<br>
-                ${(d.gapok > 0) ? `Gaji Pokok: Rp ${d.gapok.toLocaleString("id-ID")}<br>` : ""}
-                No. Rekening: ${k.norek || "-"}
+        <div class="watermark">COPY CONFIDENTIAL</div>
+        <div class="header">
+            <img src="images/koboi.png">
+            <div class="company-info">
+                <h1>PT. KOLA BORASI INDONESIA</h1>
+                <p>Jl. Arjuna IV Green Kartika Residence, Cibinong, Bogor</p>
+                <p>Phone: 0857-7444-4805 | Web: www.kolaborasi.id</p>
             </div>
         </div>
 
-        <div style="font-weight: bold; font-size: 11px; margin-top: 5px; border-bottom: 1px solid #000;">PENERIMAAN:</div>
+        <div class="title">SLIP GAJI KARYAWAN (RESMI)</div>
+
+        <p style="font-size: 0.8rem; margin-bottom: 10px;">Diberikan kepada: <strong>${k.nama.toUpperCase()}</strong></p>
+        
+        ${metaHtml}
+
+        <div class="section-title">Penerimaan Dasar & Insentif</div>
         <div class="item-row">
-            <span>HKE (Hari Kerja Efektif)</span>
-            <span>${d.hadir} | Rp ${d.tarifHKE.toLocaleString("id-ID")} | Rp ${d.pendapatanHKE.toLocaleString("id-ID")}</span>
+            <span>HKE (Rp ${d.tarifHKE.toLocaleString()} x ${d.hadir} Hari)</span>
+            <span>Rp ${d.pendapatanHKE.toLocaleString()}</span>
         </div>
+        ${d.bonusLembur > 0 ? `
+        <div class="item-row">
+            <span>Lembur (${Math.floor(d.jamLembur)} Jam x Rp 10.000)</span>
+            <span>Rp ${d.bonusLembur.toLocaleString()}</span>
+        </div>` : ""}
         ${d.incentiveLK > 0 ? `
         <div class="item-row">
-            <span>Incentive (LK)</span>
-            <span>Rp 200.000 | Rp ${d.incentiveLK.toLocaleString("id-ID")}</span>
+            <span>Insentif LK</span>
+            <span>Rp ${d.incentiveLK.toLocaleString()}</span>
         </div>` : ""}
         ${d.incentiveReguler > 0 ? `
         <div class="item-row">
-            <span>Incentive (Reguler)</span>
-            <span>Rp 200.000 | Rp ${d.incentiveReguler.toLocaleString("id-ID")}</span>
+            <span>Insentif Reguler</span>
+            <span>Rp ${d.incentiveReguler.toLocaleString()}</span>
         </div>` : ""}
-        ${d.bonusLembur > 0 ? `
-        <div class="item-row">
-            <span>Overtime</span>
-            <span>${Math.floor(d.jamLembur)} | Rp 10.000 | Rp ${d.bonusLembur.toLocaleString("id-ID")}</span>
-        </div>` : ""}
-        
-        <div class="total-box" style="background:#f0f0f0; margin-bottom: 10px;">
-            <span>TOTAL PENERIMAAN</span>
-            <span>Rp ${d.totalPenerimaan.toLocaleString("id-ID")}</span>
+        <div class="item-row subtotal">
+            <span>SUBTOTAL PENERIMAAN</span>
+            <span>Rp ${d.totalPenerimaan.toLocaleString()}</span>
         </div>
 
-        <div style="font-weight: bold; font-size: 11px; margin-top: 5px; border-bottom: 1px solid #000;">POTONGAN:</div>
+        <div class="section-title" style="margin-top: 15px;">Potongan & Kasbon</div>
         ${d.kasbon > 0 ? `
         <div class="item-row">
-            <span>Kasbon / Absensi</span>
-            <span>- Rp ${d.kasbon.toLocaleString("id-ID")}</span>
+            <span>Potongan Kasbon (Log)</span>
+            <span style="color: #ef4444;">- Rp ${d.kasbon.toLocaleString()}</span>
         </div>` : ""}
         ${d.pinjaman > 0 ? `
         <div class="item-row">
-            <span>Pinjaman / Kasbon Tetap</span>
-            <span>- Rp ${d.pinjaman.toLocaleString("id-ID")}</span>
+            <span>Potongan Pinjaman/Kasbon Tetap</span>
+            <span style="color: #ef4444;">- Rp ${d.pinjaman.toLocaleString()}</span>
         </div>` : ""}
         ${d.potHKE > 0 ? `
         <div class="item-row">
-            <span>Potongan HKE</span>
-            <span>- Rp ${d.potHKE.toLocaleString("id-ID")}</span>
+            <span>Potongan HKE Khusus</span>
+            <span style="color: #ef4444;">- Rp ${d.potHKE.toLocaleString()}</span>
         </div>` : ""}
-        ${(d.totalPotongan === 0) ? `<div class="item-row"><span>Tidak ada potongan</span><span>-</span></div>` : ""}
-
-        <div class="total-box">
-            <span>GAJI BERSIH (THP)</span>
-            <span>Rp ${d.thp.toLocaleString("id-ID")}</span>
+        ${d.totalPotongan === 0 ? `<div class="item-row" style="color: #94a3b8; font-style: italic;"><span>Tidak ada potongan</span><span>Rp 0</span></div>` : ""}
+        
+        <div class="item-row total">
+            <span>PENGHAZILAN BERSIH (THP)</span>
+            <span>Rp ${Math.floor(d.thp).toLocaleString()}</span>
         </div>
 
         <div class="footer">
-            <div class="signature-box">
-                Penerima,<br><br><br><br>
-                ( ${k.nama.split(" ")[0]} )
+            <div class="sig-box">
+                Penerima,<br>
+                <div class="sig-space"></div>
+                <strong>( ${k.nama.split(" ")[0]} )</strong>
             </div>
-            <div class="signature-box">
-                Hormat Kami,<br><br><br><br>
-                ( Manajemen HRD )
+            <div class="sig-box">
+                Hormat Kami,<br>
+                <div class="sig-space"></div>
+                <strong>Manajemen HRD</strong>
             </div>
+        </div>
+        
+        <div style="text-align: center; margin-top: 30px; font-size: 0.55rem; color: #94a3b8; line-height: 1.4;">
+            Pesan ini diterbitkan secara otomatis oleh KOBOI HRIS.<br>
+            Waktu Cetak: ${tgl.toLocaleString('id-ID')}
         </div>
     </div>
   `;

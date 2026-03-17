@@ -140,6 +140,7 @@ async function loadDashboard(nik) {
         renderEstimasiGaji(user, currentLogs, currentKasbon);
         renderKasbonStatus(currentKasbon);
         renderMOUStatus(user);
+        checkMOUVisibility();
 
     } catch (e) {
         console.error("Dashboard Error:", e);
@@ -376,6 +377,27 @@ async function submitKasbon() {
     }
 }
 
+async function checkMOUVisibility() {
+    try {
+        const { data, error } = await supabaseClient
+            .from("hris_settings")
+            .select("value")
+            .eq("key", "mou_visible")
+            .single();
+
+        const mouCard = document.getElementById("mouCard");
+        if (mouCard) {
+            if (!error && data && data.value === "true") {
+                mouCard.style.display = "block";
+            } else {
+                mouCard.style.display = "none";
+            }
+        }
+    } catch (e) {
+        console.error("MOU Visibility Error:", e);
+    }
+}
+
 function downloadSlipPribadi() {
     if (!currentUser) return;
     const k = currentUser;
@@ -388,76 +410,88 @@ function downloadSlipPribadi() {
     const printStyles = `
         <style>
             @page { size: A5; margin: 0; }
-            body { margin: 0; padding: 0; -webkit-print-color-adjust: exact; }
+            body { margin: 0; padding: 0; font-family: 'Outfit', sans-serif; color: #1e293b; background: #fff; -webkit-print-color-adjust: exact; }
             .print-container { 
                 width: 148mm; 
-                height: 210mm; 
+                height: 210mm;
                 padding: 10mm; 
                 box-sizing: border-box; 
-                background: #fff; 
+                border: 1px solid #e2e8f0;
                 position: relative;
                 overflow: hidden;
             }
-            * { box-sizing: border-box; }
+            .header { display: flex; align-items: center; border-bottom: 2px solid #6366f1; padding-bottom: 12px; margin-bottom: 20px; }
+            .header img { width: 50px; margin-right: 15px; }
+            .company-info h1 { font-size: 1.1rem; margin: 0; color: #0f172a; font-weight: 800; }
+            .company-info p { font-size: 0.65rem; margin: 2px 0; color: #64748b; }
+            
+            .title { text-align: center; font-size: 0.9rem; font-weight: 800; text-decoration: underline; margin-bottom: 20px; text-transform: uppercase; }
+            
+            .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; font-size: 0.75rem; margin-bottom: 20px; background: #f8fafc; padding: 10px; border-radius: 8px; }
+            .meta-item { line-height: 1.6; }
+            .meta-label { color: #64748b; font-weight: 600; }
+            
+            .section-title { font-size: 0.7rem; font-weight: 800; color: #6366f1; text-transform: uppercase; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 10px; }
+            
+            .item-row { display: flex; justify-content: space-between; font-size: 0.75rem; padding: 5px 0; border-bottom: 1px dashed #f1f5f9; }
+            .item-row.total { font-weight: 800; border-top: 2px solid #1e293b; border-bottom: none; margin-top: 10px; font-size: 0.85rem; padding-top: 10px; }
+            
+            .footer { margin-top: 40px; display: flex; justify-content: space-between; text-align: center; font-size: 0.75rem; }
+            .sig-box { width: 150px; }
+            .sig-space { height: 60px; }
+            .watermark { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-45deg); font-size: 4rem; color: rgba(0,0,0,0.03); font-weight: 900; pointer-events: none; z-index: -1; }
         </style>
     `;
 
+    const metaHtml = `
+      <div class="meta-grid">
+        <div class="meta-item">
+          <span class="meta-label">ID Karyawan:</span> ${k.nik || "-"}<br>
+          <span class="meta-label">Departemen:</span> ${k.dept}<br>
+          <span class="meta-label">Jabatan:</span> ${k.jabatan || "-"}<br>
+          <span class="meta-label">Hari Hadir:</span> ${d.hadir} Hari
+        </div>
+        <div class="meta-item" style="text-align: right;">
+          <span class="meta-label">Bulan:</span> ${bulanIndo[tgl.getMonth()]} ${tgl.getFullYear()}<br>
+          <span class="meta-label">Tgl Bayar:</span> ${tgl.toLocaleDateString('id-ID')}<br>
+          <span class="meta-label">Status:</span> PORTAL E-SLIP
+        </div>
+      </div>
+    `;
+
     const isiSlip = `
-        <div class="print-container" style="border: 1px solid #000; font-family: 'Arial', sans-serif; color: #000;">
-            <!-- KOP SURAT PROFESIONAL -->
-            <div style="display: flex; align-items: center; border-bottom: 3px double #000; padding-bottom: 15px; margin-bottom: 15px;">
-                <img src="images/koboi.png" style="width: 60px; margin-right: 15px;">
-                <div style="flex: 1;">
-                    <h2 style="margin: 0; font-size: 1.1rem; font-weight: 900; color: #000;">PT. KOLA BORASI INDONESIA</h2>
-                    <p style="margin: 2px 0; font-size: 0.6rem; line-height: 1.3;">
-                        Jl. Arjuna IV Green Kartika Residence Blok EE NO.2, CIBINONG,<br>
-                        KAB. BOGOR - JAWA BARAT, 16911<br>
-                        <strong>PHONE:</strong> 0857-7444-4805 | <strong>WEB:</strong> www.kolaborasi.id
-                    </p>
+        <div class="print-container">
+            <div class="watermark">COPY CONFIDENTIAL</div>
+            <div class="header">
+                <img src="images/koboi.png">
+                <div class="company-info">
+                    <h1>PT. KOLA BORASI INDONESIA</h1>
+                    <p>Jl. Arjuna IV Green Kartika Residence, Cibinong, Bogor</p>
+                    <p>Phone: 0857-7444-4805 | Web: www.kolaborasi.id</p>
                 </div>
             </div>
 
-            <p style="text-align:center; font-weight:900; font-size: 0.9rem; text-decoration: underline; margin-bottom: 15px;">
-                SLIP GAJI KARYAWAN (E-PORTAL) - ${bulanIndo[tgl.getMonth()]} ${tgl.getFullYear()}
-            </p>
-            
-            <div style="display:grid; grid-template-columns: 110px 10px 1fr; line-height: 1.6; font-size:0.75rem;">
-                <span>ID KARYAWAN</span><span>:</span><span>${k.nik || "-"}</span>
-                <span>NAMA LENGKAP</span><span>:</span><span style="font-weight:bold;">${k.nama}</span>
-                <span>STATUS PAJAK</span><span>:</span><span>${d.ptkpStatus}</span>
-                <span>DEPT / JABATAN</span><span>:</span><span>${k.dept} / ${k.jabatan || "-"}</span>
-                <span>TOTAL KEHADIRAN</span><span>:</span><span>${d.hadir} / 24 Hari</span>
-            </div>
+            <div class="title">SLIP GAJI KARYAWAN (PORTAL)</div>
+            <p style="font-size: 0.8rem; margin-bottom: 10px;">Diberikan kepada: <strong>${k.nama.toUpperCase()}</strong></p>
+            ${metaHtml}
+
+            <div class="section-title">Rincian Penerimaan</div>
+            <div class="item-row"><span>Gaji Pro-rata (Kehadiran)</span><span>Rp ${Math.floor(d.gajiPro).toLocaleString("id-ID")}</span></div>
+            <div class="item-row"><span>Bonus Lembur (${d.jamLembur.toFixed(1)} Jam)</span><span>+Rp ${d.bonusLembur.toLocaleString("id-ID")}</span></div>
     
-            <div style="border-top:1px dashed #000; margin-top:15px; padding-top:10px;">
-                <div style="display:flex; justify-content:space-between; font-size: 0.75rem;"><span>Gaji Pokok Full</span><span>Rp ${d.gapok.toLocaleString("id-ID")}</span></div>
-                <div style="display:flex; justify-content:space-between; font-size: 0.75rem;"><span>Gaji Pro-rata (Hadir)</span><span>Rp ${Math.floor(d.gajiPro).toLocaleString("id-ID")}</span></div>
-                <div style="display:flex; justify-content:space-between; color: #15803d; font-weight:bold; font-size: 0.75rem;"><span>Bonus Lembur (${d.jamLembur.toFixed(1)} Jam)</span><span>+Rp ${d.bonusLembur.toLocaleString("id-ID")}</span></div>
-            </div>
+            <div class="section-title" style="margin-top: 15px;">Potongan & Pajak</div>
+            <div class="item-row"><span>BPJS & Jaminan Sosial</span><span>-Rp ${Math.floor(d.bpjsKes + d.jht + d.jp).toLocaleString("id-ID")}</span></div>
+            <div class="item-row"><span>PPh 21 (Pajak)</span><span>-Rp ${Math.floor(d.pph21).toLocaleString("id-ID")}</span></div>
+            <div class="item-row"><span>Potongan Kasbon Aktif</span><span>-Rp ${d.kasbon.toLocaleString("id-ID")}</span></div>
+            <div class="item-row" style="color: #ef4444;"><span>Potongan Telat</span><span>-Rp ${Math.floor(d.potonganTelat).toLocaleString("id-ID")}</span></div>
     
-            <p style="margin: 15px 0 5px 0; font-weight:bold; text-decoration: underline; font-size: 0.7rem;">POTONGAN, PAJAK & KASBON</p>
-            <div style="line-height: 1.5; font-size:0.75rem;">
-                <div style="display:flex; justify-content:space-between;"><span>BPJS Kesehatan (1%)</span><span>-Rp ${Math.floor(d.bpjsKes).toLocaleString("id-ID")}</span></div>
-                <div style="display:flex; justify-content:space-between;"><span>JHT (2%)</span><span>-Rp ${Math.floor(d.jht).toLocaleString("id-ID")}</span></div>
-                <div style="display:flex; justify-content:space-between;"><span>JP (1%)</span><span>-Rp ${Math.floor(d.jp).toLocaleString("id-ID")}</span></div>
-                <div style="display:flex; justify-content:space-between;"><span>PPh 21 (Pajak)</span><span>-Rp ${Math.floor(d.pph21).toLocaleString("id-ID")}</span></div>
-                <div style="display:flex; justify-content:space-between; color: #ef4444;"><span>Potongan Telat (${d.jumlahTelat}x)</span><span>-Rp ${Math.floor(d.potonganTelat).toLocaleString("id-ID")}</span></div>
-                <div style="display:flex; justify-content:space-between; font-weight:bold; color:#1e293b; border-top:1px dashed #ccc; margin-top:5px; padding-top:5px;"><span>POTONGAN KASBON</span><span>-Rp ${d.kasbon.toLocaleString("id-ID")}</span></div>
-            </div>
-    
-            <div style="border: 2px solid #000; margin-top:15px; padding:10px; display:flex; justify-content:space-between; font-weight:900; font-size:1rem; background:#f8fafc;">
+            <div class="item-row total" style="background:#f8fafc; padding: 10px; border: 1px solid #1e293b;">
                 <span>TAKE HOME PAY</span><span>Rp ${Math.floor(d.thp).toLocaleString("id-ID")}</span>
             </div>
             
-            <div style="margin-top: 25px; display: flex; justify-content: space-between; font-size: 0.7rem;">
-                <div style="text-align: center; width: 120px;">
-                    Penerima,<br><br><br><br>
-                    ( ________________ )
-                </div>
-                <div style="text-align: center; width: 120px;">
-                    Hormat Kami,<br><br><br><br>
-                    <strong>HRD KOBOI</strong>
-                </div>
+            <div class="footer">
+                <div class="sig-box">Penerima,<br><div class="sig-space"></div>( ________________ )</div>
+                <div class="sig-box">Hormat Kami,<br><div class="sig-space"></div><strong>HRD KOBOI</strong></div>
             </div>
     
             <p style="text-align:center; font-size:0.55rem; margin-top:20px; color: #64748b; font-style: italic;">
@@ -471,6 +505,38 @@ function downloadSlipPribadi() {
         w.document.write(`<html><head><title>Slip - ${k.nama}</title>${printStyles}</head><body>${isiSlip}<script>window.onload=function(){window.print();window.close();}<\/script></body></html>`);
         w.document.close();
     }
+}
+
+function kirimSlipWA() {
+    if (!currentUser) return;
+    const k = currentUser;
+    const d = hitungDetailGaji(k.gaji, currentLogs, currentKasbon);
+    const tgl = new Date();
+    const bulanIndo = [
+        "JANUARI", "FEBRUARI", "MARET", "APRIL", "MEI", "JUNI",
+        "JULI", "AGUSTUS", "SEPTEMBER", "OKTOBER", "NOVEMBER", "DESEMBER"
+    ];
+    
+    const msg = `*SLIP GAJI KOBOI (${bulanIndo[tgl.getMonth()]} ${tgl.getFullYear()})*%0A%0A` +
+                `Nama: ${k.nama.toUpperCase()}%0A` +
+                `ID: ${k.nik || "-"}%0A` +
+                `Dept: ${k.dept}%0A` +
+                `Hadir: ${d.hadir} Hari%0A%0A` +
+                `*PENERIMAAN:*%0A` +
+                `- Gaji Pro: Rp ${Math.floor(d.gajiPro).toLocaleString("id-ID")}%0A` +
+                `- Lembur: Rp ${d.bonusLembur.toLocaleString("id-ID")}%0A%0A` +
+                `*POTONGAN:*%0A` +
+                `- Kasbon: Rp ${d.kasbon.toLocaleString("id-ID")}%0A` +
+                `- Lain-lain: Rp ${Math.floor(d.totalPotongan - d.kasbon).toLocaleString("id-ID")}%0A%0A` +
+                `*THP: Rp ${Math.floor(d.thp).toLocaleString("id-ID")}*%0A%0A` +
+                `_Rincian lengkap silakan download PDF._`;
+
+    // Trigger PDF generation first
+    downloadSlipPribadi();
+    
+    // Then open WhatsApp
+    const phone = k.telp || "085774444805"; // Default to admin or empty
+    window.open(`https://wa.me/${phone}?text=${msg}`, "_blank");
 }
 // 7. MOU & DIGITAL SIGNATURE
 function renderMOUStatus(user) {
