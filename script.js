@@ -176,7 +176,7 @@ function hitungDetailGaji(gapok, logsData, kasbonData, employeeObj) {
     }
 
     if (shiftDate.getMonth() === currentMonth && shiftDate.getFullYear() === currentYear) {
-      const d = shiftDate.toLocaleDateString("id-ID");
+      const d = shiftDate.toISOString().split("T")[0]; // Format YYYY-MM-DD lebih stabil
       if (!logsByDate[d]) logsByDate[d] = [];
       logsByDate[d].push(l);
     }
@@ -645,10 +645,16 @@ function renderKaryawanTable() {
   if (!body) return;
   body.innerHTML = "";
 
+  const pMonth = document.getElementById("payrollMonth")?.value;
+  const pYear = document.getElementById("payrollYear")?.value;
+
   KARYAWAN.forEach((k, index) => {
     try {
-      const userLogs = logs.filter(l => l.nama === k.nama).slice(0, 100);
-      const userKasbon = kasbonData.filter(kb => kb.nama === k.nama);
+      // Perbaikan: Filter nama lebih kuat (ignore case & spasi)
+      const targetNama = (k.nama || "").toUpperCase().trim();
+      const userLogs = logs.filter(l => (l.nama || "").toUpperCase().trim() === targetNama);
+      const userKasbon = kasbonData.filter(kb => (kb.nama || "").toUpperCase().trim() === targetNama);
+      
       const d = hitungDetailGaji(k.gaji || 0, userLogs, userKasbon, k);
       body.innerHTML += `
         <tr style="font-size: 0.85rem;">
