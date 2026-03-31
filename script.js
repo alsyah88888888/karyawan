@@ -163,8 +163,23 @@ function hitungDetailGaji(gapok, logsData, kasbonData, employeeObj) {
   const pYear = document.getElementById("payrollYear")?.value;
   
   const now = new Date();
-  const currentMonth = pMonth !== undefined ? parseInt(pMonth) : now.getMonth();
-  const currentYear = pYear !== undefined ? parseInt(pYear) : now.getFullYear();
+  let currentMonth, currentYear;
+  
+  if (pMonth !== undefined && pYear !== undefined) {
+    currentMonth = parseInt(pMonth);
+    currentYear = parseInt(pYear);
+  } else {
+    // Fallback cerdas jika dropdown tidak termuat (HTML ter-cache):
+    // Gunakan bulan dari log absen terakhir yang ada (pasti ada isinya).
+    if (logsData.length > 0) {
+      const lastLog = new Date(logsData[0].waktu);
+      currentMonth = lastLog.getMonth();
+      currentYear = lastLog.getFullYear();
+    } else {
+      currentMonth = now.getMonth();
+      currentYear = now.getFullYear();
+    }
+  }
 
   const logsByDate = {};
   logsData.forEach(l => {
@@ -178,9 +193,14 @@ function hitungDetailGaji(gapok, logsData, kasbonData, employeeObj) {
     }
 
     if (shiftDate.getMonth() === currentMonth && shiftDate.getFullYear() === currentYear) {
-      const d = shiftDate.toISOString().split("T")[0]; // Format YYYY-MM-DD lebih stabil
-      if (!logsByDate[d]) logsByDate[d] = [];
-      logsByDate[d].push(l);
+      // Gunakan waktu lokal agar tidak terpotong zona waktu UTC (yang memisahkan absen masuk dan pulang)
+      const yy = shiftDate.getFullYear();
+      const mm = String(shiftDate.getMonth() + 1).padStart(2, '0');
+      const dd = String(shiftDate.getDate()).padStart(2, '0');
+      const dLocal = `${yy}-${mm}-${dd}`;
+      
+      if (!logsByDate[dLocal]) logsByDate[dLocal] = [];
+      logsByDate[dLocal].push(l);
     }
   });
 
