@@ -617,6 +617,7 @@ function renderTabel() {
                 <td><span class="status-tag ${sClass}">${l.status}</span>${telatBadge}</td>
                 <td>
                     <img src="${l.foto}" class="img-prev" onclick="zoomFoto('${l.foto}')" style="cursor:pointer;">
+                    <button onclick="editWaktuLog('${l.id}', '${l.nama}', '${l.status}', '${l.waktu}')" style="display:block; margin-top:5px; color:#f59e0b; border:none; background:none; cursor:pointer; font-size:0.7rem; font-weight:bold;">[EDIT WAKTU]</button>
                     <button onclick="hapusSatuLog('${l.waktu}')" style="display:block; margin-top:5px; color:var(--danger); border:none; background:none; cursor:pointer; font-size:0.7rem; font-weight:bold;">[HAPUS LOG]</button>
                 </td>
             </tr>`;
@@ -1187,6 +1188,45 @@ async function clearData() {
 }
 
 // 2. Hapus Satu Baris Log (Opsional, jika Anda ingin menambah tombol hapus di tiap baris)
+async function editWaktuLog(idLog, nama, statusAsli, waktuAsli) {
+  // Format waktu untuk gampang diedit di prompt, e.g. "2026-03-31 08:00"
+  let dateObj = new Date(waktuAsli);
+  let yyyy = dateObj.getFullYear();
+  let mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+  let dd = String(dateObj.getDate()).padStart(2, '0');
+  let hh = String(dateObj.getHours()).padStart(2, '0');
+  let mins = String(dateObj.getMinutes()).padStart(2, '0');
+  
+  let defaultVal = `${yyyy}-${mm}-${dd} ${hh}:${mins}`;
+  
+  let input = prompt(`Edit absensi ${nama} (${statusAsli}):\nFormat (Tahun-Bulan-Tanggal Jam:Menit)`, defaultVal);
+  if (!input) return; // User membatalkan
+  
+  // parse new date
+  let parts = input.split(/[- :]/);
+  if (parts.length >= 5) {
+     let newDate = new Date(parts[0], parts[1]-1, parts[2], parts[3], parts[4], 0);
+     if (!isNaN(newDate.getTime())) {
+         const newWaktu = newDate.toISOString();
+         
+         const { error } = await supabaseClient.from("logs")
+                               .update({ waktu: newWaktu })
+                               .eq("id", idLog);
+         
+         if (!error) {
+           alert("Waktu absensi berhasil diubah!");
+           await syncData(); // Segarkan data dan tabel
+         } else {
+           alert("Gagal mengubah waktu: " + error.message);
+         }
+     } else {
+         alert("Format tanggal/waktu tidak valid!");
+     }
+  } else {
+     alert("Format tidak sesuai. Gunakan YYYY-MM-DD HH:MM");
+  }
+}
+
 async function hapusSatuLog(waktu) {
   if (confirm("Hapus data absensi ini dari Cloud?")) {
     const { error } = await supabaseClient.from("logs").delete().eq("waktu", waktu);
