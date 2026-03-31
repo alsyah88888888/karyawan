@@ -40,9 +40,11 @@ async function syncData() {
     const { data: dataLog, error: errLog } = await supabaseClient
       .from("logs")
       .select("*")
-      .order("id", { ascending: false });
+      .order("id", { ascending: false })
+      .limit(10000); // Tingkatkan limit agar data bulan lalu tidak terpotong
     if (errLog) throw errLog;
     logs = dataLog || [];
+    console.log(`Berhasil memuat ${logs.length} data log.`);
 
     // Ambil Data Cuti
     const { data: dataCuti, error: errCuti } = await supabaseClient.from("cuti_izin").select("*").order("id", { ascending: false });
