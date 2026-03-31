@@ -142,8 +142,8 @@ function hitungDetailGaji(gapok, logsData, kasbonData, nikKaryawan) {
   const isPengecualian = daftarPengecualian.some(exc => exc.includes(namaKaryawan) || namaKaryawan.includes(exc));
   const isOperasional = jabatan.includes("DRIVER") || jabatan.includes("HELPER") || jabatan.includes("OPERASIONAL") || isPengecualian;
 
-  // 2. PENENTUAN TARIF HKE (Revised Rule: Operasional /6, Admin /26)
-  let divisor = isOperasional ? 6 : 26;
+  // 2. PENENTUAN TARIF HKE (Revised Rule: Operasional /24, Admin /26)
+  let divisor = isOperasional ? 24 : 26;
   let tarifHKE = gapokValue > 0 ? Math.round(gapokValue / divisor) : (isOperasional ? 200000 : 0);
 
   // 3. JAM LEMBUR (OVERTIME)
@@ -663,10 +663,13 @@ function renderKaryawanTable() {
             <div style="font-size:0.65rem; color:var(--danger); font-weight:normal;">Pinjaman: Rp ${(k.pinjaman || 0).toLocaleString('id-ID')}</div>
             <div style="font-size:0.65rem; color:var(--danger); font-weight:normal;">Pot HKE: Rp ${(k.pot_hke || 0).toLocaleString('id-ID')}</div>
           </td>
-          <td style="font-size: 0.65rem; color:var(--text-muted); line-height:1.1; max-width:120px;">
-            KTP: ${k.nik_ktp || "-"}<br>NPWP: ${k.npwp || "-"}
+          <td style="font-size: 0.65rem; color:var(--text-muted); line-height:1.2; min-width:140px;">
+            <div>KTP: ${k.nik_ktp || "-"}</div>
+            <div>NPWP: ${k.npwp || "-"}</div>
+            <div style="margin-top:4px; color:var(--accent); font-weight:700;">BANK: ${k.norek || "-"}</div>
           </td>
           <td>
+            <div style="font-size: 0.65rem; color:var(--text-muted); margin-bottom:5px;">WA: ${k.nomor_wa || "-"}</div>
             <div style="display:flex; gap:3px;">
               <button onclick="cetakSlip(${index})" class="status-tag status-masuk" style="border:none; cursor:pointer; font-size:0.6rem; padding:3px 6px;">PDF</button>
               <button onclick="kirimWaSlip(${index})" class="status-tag" style="background:#dcfce7; color:#15803d; border:none; cursor:pointer; font-size:0.6rem; padding:3px 6px;">WA</button>
