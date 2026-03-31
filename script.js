@@ -131,8 +131,8 @@ window.onload = async () => {
 };
 
 // --- LOGIKA PAYROLL ---
-function hitungDetailGaji(gapok, logsData, kasbonData, nikKaryawan) {
-  const info = KARYAWAN.find(k => k.nik === nikKaryawan);
+function hitungDetailGaji(gapok, logsData, kasbonData, employeeObj) {
+  const info = employeeObj;
   const jabatan = (info?.jabatan || "").toUpperCase().trim();
   const gapokValue = parseFloat(gapok) || 0;
 
@@ -635,7 +635,7 @@ function renderKaryawanTable() {
     try {
       const userLogs = logs.filter(l => l.nama === k.nama).slice(0, 100);
       const userKasbon = kasbonData.filter(kb => kb.nama === k.nama);
-      const d = hitungDetailGaji(k.gaji || 0, userLogs, userKasbon, k.nik);
+      const d = hitungDetailGaji(k.gaji || 0, userLogs, userKasbon, k);
       body.innerHTML += `
         <tr style="font-size: 0.85rem;">
           <td>
