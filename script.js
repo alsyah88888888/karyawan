@@ -804,6 +804,10 @@ function showEditModal(index) {
   setVal("editWa", k.nomor_wa || "");
   setVal("editNorek", k.norek || "");
   setVal("editPtkp", k.status_ptkp || "TK/0");
+  setVal("editInsentifLK", k.insentif_lk || 0);
+  setVal("editInsentifReg", k.insentif_reguler || "Tidak");
+  setVal("editPinjaman", k.pinjaman || 0);
+  setVal("editPotHke", k.pot_hke || 0);
 
   console.log("Loading Edit Modal for:", k);
   const modal = document.getElementById("modalEdit");
@@ -836,7 +840,13 @@ async function updateKaryawan() {
     const npwp = getVal("editNpwp");
     const nomor_wa = getVal("editWa");
     const norek = getVal("editNorek");
-    const status_ptkp = document.getElementById("editPtkp")?.value || "";
+    const status_ptkp = document.getElementById("editPtkp")?.value || "TK/0";
+    
+    // Tambahkan field baru yang belum ada di update
+    const insentif_lk = parseFloat(getVal("editInsentifLK")) || 0;
+    const insentif_reguler = document.getElementById("editInsentifReg")?.value || "Tidak";
+    const pinjaman = parseFloat(getVal("editPinjaman")) || 0;
+    const pot_hke = parseFloat(getVal("editPotHke")) || 0;
 
     if (!nama || !gaji) return alert("Nama dan Gaji tidak boleh kosong!");
 
@@ -853,7 +863,11 @@ async function updateKaryawan() {
       npwp,
       nomor_wa,
       norek,
-      status_ptkp
+      status_ptkp,
+      insentif_lk,
+      insentif_reguler,
+      pinjaman,
+      pot_hke
     };
 
     const { error } = await supabaseClient
