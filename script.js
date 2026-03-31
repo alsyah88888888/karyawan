@@ -632,47 +632,51 @@ function renderKaryawanTable() {
   body.innerHTML = "";
 
   KARYAWAN.forEach((k, index) => {
-    const userLogs = logs.filter(l => l.nama === k.nama).slice(0, 100);
-    const userKasbon = kasbonData.filter(kb => kb.nama === k.nama);
-    const d = hitungDetailGaji(k.gaji || 0, userLogs, userKasbon, k.nik);
-    body.innerHTML += `
-      <tr style="font-size: 0.85rem;">
-        <td>
-          <div style="font-weight:800; line-height:1.1;">${k.nama}</div>
-          <div style="font-size:0.65rem; color:var(--text-muted);">NIK: ${k.nik || "-"} | TTD: ${k.mou_signed ? '✅' : '⏳'}</div>
-        </td>
-        <td>
-          <div style="font-weight:600; line-height:1.1;">${k.dept}</div>
-          <div style="font-size:0.65rem; color:var(--text-muted);">${k.jabatan || "-"}</div>
-          <div style="font-size:0.65rem; color:var(--accent); font-weight:700;">HKE: Rp ${d.tarifHKE.toLocaleString('id-ID')} / hari</div>
-        </td>
-        <td style="text-align:center;">
-          <div style="font-weight:600;">${d.hadir} Hari</div>
-          <div style="font-size:0.65rem; color:#15803d; font-weight:600;">OT: ${Math.floor(d.jamLembur)}j</div>
-        </td>
-        <td>
-          <div style="font-weight:600; line-height:1.1;">Gapok: Rp ${(k.gaji || 0).toLocaleString('id-ID')}</div>
-          <div style="font-size:0.65rem; color:var(--text-muted);">LK: Rp ${(k.insentif_lk || 0).toLocaleString('id-ID')}</div>
-          <div style="font-size:0.65rem; color:var(--text-muted);">Reg: Rp ${d.incentiveReguler.toLocaleString('id-ID')}</div>
-          <div style="font-size:0.65rem; color:#15803d; font-weight:600;">Lembur: Rp ${d.bonusLembur.toLocaleString("id-ID")}</div>
-        </td>
-        <td style="color:var(--accent); font-weight:800;">
-          Rp ${Math.floor(d.thp).toLocaleString("id-ID")}
-          <div style="font-size:0.65rem; color:var(--danger); font-weight:normal;">Kasbon: Rp ${d.kasbon.toLocaleString('id-ID')}</div>
-          <div style="font-size:0.65rem; color:var(--danger); font-weight:normal;">Pinjaman: Rp ${(k.pinjaman || 0).toLocaleString('id-ID')}</div>
-          <div style="font-size:0.65rem; color:var(--danger); font-weight:normal;">Pot HKE: Rp ${(k.pot_hke || 0).toLocaleString('id-ID')}</div>
-        </td>
-        <td style="font-size: 0.65rem; color:var(--text-muted); line-height:1.1; max-width:120px;">
-          KTP: ${k.nik_ktp || "-"}<br>NPWP: ${k.npwp || "-"}
-        </td>
-        <td>
-          <div style="display:flex; gap:3px;">
-            <button onclick="cetakSlip(${index})" class="status-tag status-masuk" style="border:none; cursor:pointer; font-size:0.6rem; padding:3px 6px;">PDF</button>
-            <button onclick="kirimWaSlip(${index})" class="status-tag" style="background:#dcfce7; color:#15803d; border:none; cursor:pointer; font-size:0.6rem; padding:3px 6px;">WA</button>
-            <button onclick="adminCetakMOU(${index})" class="status-tag status-pulang" style="border:none; cursor:pointer; font-size:0.6rem; padding:3px 6px; display: ${isMOUVisible ? 'inline-block' : 'none'};">MOU</button>
-          </div>
-        </td>
-      </tr>`;
+    try {
+      const userLogs = logs.filter(l => l.nama === k.nama).slice(0, 100);
+      const userKasbon = kasbonData.filter(kb => kb.nama === k.nama);
+      const d = hitungDetailGaji(k.gaji || 0, userLogs, userKasbon, k.nik);
+      body.innerHTML += `
+        <tr style="font-size: 0.85rem;">
+          <td>
+            <div style="font-weight:800; line-height:1.1;">${k.nama}</div>
+            <div style="font-size:0.65rem; color:var(--text-muted);">NIK: ${k.nik || "-"} | TTD: ${k.mou_signed ? '✅' : '⏳'}</div>
+          </td>
+          <td>
+            <div style="font-weight:600; line-height:1.1;">${k.dept}</div>
+            <div style="font-size:0.65rem; color:var(--text-muted);">${k.jabatan || "-"}</div>
+            <div style="font-size:0.65rem; color:var(--accent); font-weight:700;">HKE: Rp ${d.tarifHKE.toLocaleString('id-ID')} / hari</div>
+          </td>
+          <td style="text-align:center;">
+            <div style="font-weight:600;">${d.hadir} Hari</div>
+            <div style="font-size:0.65rem; color:#15803d; font-weight:600;">OT: ${Math.floor(d.jamLembur)}j</div>
+          </td>
+          <td>
+            <div style="font-weight:600; line-height:1.1;">Gapok: Rp ${(k.gaji || 0).toLocaleString('id-ID')}</div>
+            <div style="font-size:0.65rem; color:var(--text-muted);">LK: Rp ${(k.insentif_lk || 0).toLocaleString('id-ID')}</div>
+            <div style="font-size:0.65rem; color:var(--text-muted);">Reg: Rp ${d.incentiveReguler.toLocaleString('id-ID')}</div>
+            <div style="font-size:0.65rem; color:#15803d; font-weight:600;">Lembur: Rp ${d.bonusLembur.toLocaleString("id-ID")}</div>
+          </td>
+          <td style="color:var(--accent); font-weight:800;">
+            Rp ${Math.floor(d.thp).toLocaleString("id-ID")}
+            <div style="font-size:0.65rem; color:var(--danger); font-weight:normal;">Kasbon: Rp ${d.kasbon.toLocaleString('id-ID')}</div>
+            <div style="font-size:0.65rem; color:var(--danger); font-weight:normal;">Pinjaman: Rp ${(k.pinjaman || 0).toLocaleString('id-ID')}</div>
+            <div style="font-size:0.65rem; color:var(--danger); font-weight:normal;">Pot HKE: Rp ${(k.pot_hke || 0).toLocaleString('id-ID')}</div>
+          </td>
+          <td style="font-size: 0.65rem; color:var(--text-muted); line-height:1.1; max-width:120px;">
+            KTP: ${k.nik_ktp || "-"}<br>NPWP: ${k.npwp || "-"}
+          </td>
+          <td>
+            <div style="display:flex; gap:3px;">
+              <button onclick="cetakSlip(${index})" class="status-tag status-masuk" style="border:none; cursor:pointer; font-size:0.6rem; padding:3px 6px;">PDF</button>
+              <button onclick="kirimWaSlip(${index})" class="status-tag" style="background:#dcfce7; color:#15803d; border:none; cursor:pointer; font-size:0.6rem; padding:3px 6px;">WA</button>
+              <button onclick="adminCetakMOU(${index})" class="status-tag status-pulang" style="border:none; cursor:pointer; font-size:0.6rem; padding:3px 6px; display: ${isMOUVisible ? 'inline-block' : 'none'};">MOU</button>
+            </div>
+          </td>
+        </tr>`;
+    } catch (e) {
+      console.error("Error rendering row for:", k.nama, e);
+    }
   });
 }
 
