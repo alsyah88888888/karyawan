@@ -136,12 +136,17 @@ function hitungDetailGaji(gapok, logsData, kasbonData, nikKaryawan) {
   const jabatan = (info?.jabatan || "").toUpperCase().trim();
   const gapokValue = parseFloat(gapok) || 0;
 
-  // 1. PENENTUAN TARIF HKE (Business Rules Feb 2026)
-  // Aturan baru: Gapok digunakan sebagai basis. Operasional = Mingguan (Gapok/7). Admin = Bulanan (Gapok/26).
-  // Jika tidak ada Gapok, default HKE = 200.000 (Operasional)
-  let tarifHKE = gapokValue > 0 ? Math.round(gapokValue / 7) : 200000;
+  // 1. DETERMINE ROLE (Operasional vs Admin/Office)
+  const namaKaryawan = (info?.nama || "").toUpperCase().trim();
+  const daftarPengecualian = ["TATANG", "IMAM MAHDI", "WAWAN KURNIAWAN", "WAWAN"];
+  const isPengecualian = daftarPengecualian.some(exc => exc.includes(namaKaryawan) || namaKaryawan.includes(exc));
+  const isOperasional = jabatan.includes("DRIVER") || jabatan.includes("HELPER") || jabatan.includes("OPERASIONAL") || isPengecualian;
 
-  // 2. JAM LEMBUR (OVERTIME)
+  // 2. PENENTUAN TARIF HKE (Revised Rule: Operasional /7, Admin /26)
+  let divisor = isOperasional ? 7 : 26;
+  let tarifHKE = gapokValue > 0 ? Math.round(gapokValue / divisor) : (isOperasional ? 200000 : 0);
+
+  // 3. JAM LEMBUR (OVERTIME)
   const now = new Date();
   const currentMonth = now.getMonth();
   const currentYear = now.getFullYear();
@@ -171,19 +176,8 @@ function hitungDetailGaji(gapok, logsData, kasbonData, nikKaryawan) {
   let totalHkeHarianAcumulated = 0;
   let potonganTelatHarianAcumulated = 0;
 
-  // Tentukan apakah ini operasional
-  const namaKaryawan = (info?.nama || "").toUpperCase().trim();
-  const daftarPengecualian = ["TATANG", "IMAM MAHDI", "WAWAN KURNIAWAN", "WAWAN"];
-  const isPengecualian = daftarPengecualian.some(exc => exc.includes(namaKaryawan) || namaKaryawan.includes(exc));
-
-  // Karyawan operasional adalah Driver, Helper, staf Operasional, ATAU mereka yang masuk daftar pengecualian khusus lapangan
-  const isOperasional = jabatan.includes("DRIVER") || jabatan.includes("HELPER") || jabatan.includes("OPERASIONAL") || isPengecualian;
-
-  // Tarif Harian Dasar untuk perhitungan potongan telat
-  // Operasional: Gapok / 7 (sudah di set di tarifHKE), atau 200k jika gapok=0
-  // Non-Ops (Admin): Gapok / 26
-  let tarifHariDasar = isOperasional ? tarifHKE : (gapokValue > 0 ? Math.round(gapokValue / 26) : 0);
-  let adminHkeRate = gapokValue > 0 ? Math.round(gapokValue / 26) : 0; // Disimpan untuk label Admin
+  // Tarif Harian Dasar untuk perhitungan potongan telat (Sudah pakai tarifHKE yang sesuai role)
+  let tarifHariDasar = tarifHKE;
 
   const uniqueDates = Object.keys(logsByDate);
   const hariHadir = uniqueDates.filter(d =>
