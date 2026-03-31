@@ -617,8 +617,8 @@ function renderTabel() {
                 <td><span class="status-tag ${sClass}">${l.status}</span>${telatBadge}</td>
                 <td>
                     <img src="${l.foto}" class="img-prev" onclick="zoomFoto('${l.foto}')" style="cursor:pointer;">
-                    <button onclick="editWaktuLog('${l.id}', '${l.nama}', '${l.status}', '${l.waktu}')" style="display:block; margin-top:5px; color:#f59e0b; border:none; background:none; cursor:pointer; font-size:0.7rem; font-weight:bold;">[EDIT WAKTU]</button>
-                    <button onclick="hapusSatuLog('${l.waktu}')" style="display:block; margin-top:5px; color:var(--danger); border:none; background:none; cursor:pointer; font-size:0.7rem; font-weight:bold;">[HAPUS LOG]</button>
+                    <button onclick="editWaktuLog('${l.id}', '${l.nama.replace(/'/g, "\\'")}', '${l.status}', '${l.waktu}')" style="display:block; margin-top:5px; color:#f59e0b; border:none; background:none; cursor:pointer; font-size:0.7rem; font-weight:bold;">[EDIT WAKTU]</button>
+                    <button onclick="hapusSatuLog('${l.id}')" style="display:block; margin-top:5px; color:var(--danger); border:none; background:none; cursor:pointer; font-size:0.7rem; font-weight:bold;">[HAPUS LOG]</button>
                 </td>
             </tr>`;
   });
@@ -1245,7 +1245,7 @@ async function simpanEditWaktuLog() {
   }
 
   if (!error) {
-    alert("Waktu barhasil diubah!");
+    alert("Waktu berhasil diubah!");
     hideEditWaktuModal();
     await syncData(); // Segarkan data dan tabel
   } else {
@@ -1253,9 +1253,9 @@ async function simpanEditWaktuLog() {
   }
 }
 
-async function hapusSatuLog(waktu) {
+async function hapusSatuLog(idLog) {
   if (confirm("Hapus data absensi ini dari Cloud?")) {
-    const { error } = await supabaseClient.from("logs").delete().eq("waktu", waktu);
+    const { error } = await supabaseClient.from("logs").delete().eq("id", idLog);
 
     if (!error) {
       alert("Log berhasil dihapus!");
