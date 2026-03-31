@@ -1503,8 +1503,7 @@ function kirimWaSlip(index) {
   let clearWa = k.nomor_wa.replace(/\D/g, '');
   if (clearWa.startsWith('0')) clearWa = '62' + clearWa.substring(1);
 
-  // TRIGGER PDF (Agar admin bisa save/cetak filenya untuk dilampirkan)
-  cetakSlip(index);
+
 
   const pesan = `
 *SLIP GAJI DIGITAL - PT. KOLA BORASI INDONESIA*
