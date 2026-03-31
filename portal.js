@@ -198,7 +198,17 @@ function renderKasbonStatus(kasbon) {
 // 4. PAYROLL FORMULA
 function hitungDetailGaji(gapok, logsData, kasbonData) {
     const g = parseFloat(gapok) || 0;
-    const standarHari = 24;
+    
+    // Sinkronisasi dengan Business Rules Admmin (script.js)
+    const jab = (currentUser?.jabatan || "").toUpperCase().trim();
+    const dept = (currentUser?.dept || "").toUpperCase().trim();
+    const nama = (currentUser?.nama || "").toUpperCase().trim();
+    
+    const daftarPengecualian = ["TATANG", "IMAM MAHDI", "WAWAN KURNIAWAN", "WAWAN"];
+    const isPengecualian = daftarPengecualian.some(exc => exc.includes(nama) || nama.includes(exc));
+    const isOperasional = jab.includes("DRIVER") || jab.includes("HELPER") || jab.includes("OPERASIONAL") || isPengecualian;
+
+    const standarHari = isOperasional ? 7 : 26;
     const gajiHarian = g / standarHari;
 
     const ptkpStatus = currentUser?.status_ptkp || "TK/0";

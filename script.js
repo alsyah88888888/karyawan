@@ -137,9 +137,9 @@ function hitungDetailGaji(gapok, logsData, kasbonData, nikKaryawan) {
   const gapokValue = parseFloat(gapok) || 0;
 
   // 1. PENENTUAN TARIF HKE (Business Rules Feb 2026)
-  // Aturan baru: Gapok digunakan sebagai basis. Operasional = Mingguan (Gapok/6). Admin = Bulanan (Gapok/26).
+  // Aturan baru: Gapok digunakan sebagai basis. Operasional = Mingguan (Gapok/7). Admin = Bulanan (Gapok/26).
   // Jika tidak ada Gapok, default HKE = 200.000 (Operasional)
-  let tarifHKE = gapokValue > 0 ? Math.round(gapokValue / 6) : 200000;
+  let tarifHKE = gapokValue > 0 ? Math.round(gapokValue / 7) : 200000;
 
   // 2. JAM LEMBUR (OVERTIME)
   const now = new Date();
@@ -180,7 +180,7 @@ function hitungDetailGaji(gapok, logsData, kasbonData, nikKaryawan) {
   const isOperasional = jabatan.includes("DRIVER") || jabatan.includes("HELPER") || jabatan.includes("OPERASIONAL") || isPengecualian;
 
   // Tarif Harian Dasar untuk perhitungan potongan telat
-  // Operasional: Gapok / 6 (sudah di set di tarifHKE), atau 200k jika gapok=0
+  // Operasional: Gapok / 7 (sudah di set di tarifHKE), atau 200k jika gapok=0
   // Non-Ops (Admin): Gapok / 26
   let tarifHariDasar = isOperasional ? tarifHKE : (gapokValue > 0 ? Math.round(gapokValue / 26) : 0);
   let adminHkeRate = gapokValue > 0 ? Math.round(gapokValue / 26) : 0; // Disimpan untuk label Admin
