@@ -281,7 +281,7 @@ function hitungDetailGaji(gapok, logsData, kasbonData, nikKaryawan) {
     hadir: hariHadir,
     gapok: gapokValue, // Gapok murni dikembalikan untuk label di struk (tidak masuk Total)
     pendapatanHKE,
-    tarifHKE: isOperasional ? tarifHKE : adminHkeRate,
+    tarifHKE: tarifHKE,
     incentiveLK,
     incentiveReguler,
     bonusLembur: totalOvertimeRp,
