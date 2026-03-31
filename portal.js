@@ -208,7 +208,7 @@ function hitungDetailGaji(gapok, logsData, kasbonData) {
     const isPengecualian = daftarPengecualian.some(exc => exc.includes(nama) || nama.includes(exc));
     const isOperasional = jab.includes("DRIVER") || jab.includes("HELPER") || jab.includes("OPERASIONAL") || isPengecualian;
 
-    const standarHari = isOperasional ? 7 : 26;
+    const standarHari = isOperasional ? 6 : 26;
     const gajiHarian = g / standarHari;
 
     const ptkpStatus = currentUser?.status_ptkp || "TK/0";

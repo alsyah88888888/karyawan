@@ -142,8 +142,8 @@ function hitungDetailGaji(gapok, logsData, kasbonData, nikKaryawan) {
   const isPengecualian = daftarPengecualian.some(exc => exc.includes(namaKaryawan) || namaKaryawan.includes(exc));
   const isOperasional = jabatan.includes("DRIVER") || jabatan.includes("HELPER") || jabatan.includes("OPERASIONAL") || isPengecualian;
 
-  // 2. PENENTUAN TARIF HKE (Revised Rule: Operasional /7, Admin /26)
-  let divisor = isOperasional ? 7 : 26;
+  // 2. PENENTUAN TARIF HKE (Revised Rule: Operasional /6, Admin /26)
+  let divisor = isOperasional ? 6 : 26;
   let tarifHKE = gapokValue > 0 ? Math.round(gapokValue / divisor) : (isOperasional ? 200000 : 0);
 
   // 3. JAM LEMBUR (OVERTIME)
