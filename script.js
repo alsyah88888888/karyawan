@@ -945,9 +945,10 @@ async function hapusKaryawan(idKaryawan) {
 
 function cetakSlip(index) {
   const k = KARYAWAN[index];
-  const userLogs = logs.filter(l => l.nama === k.nama).slice(0, 100);
-  const userKasbon = kasbonData.filter(kb => kb.nama === k.nama);
-  const d = hitungDetailGaji(k.gaji, userLogs, userKasbon, k.nik);
+  const targetNama = (k.nama || "").toUpperCase().trim();
+  const userLogs = logs.filter(l => (l.nama || "").toUpperCase().trim() === targetNama).slice(0, 100);
+  const userKasbon = kasbonData.filter(kb => (kb.nama || "").toUpperCase().trim() === targetNama);
+  const d = hitungDetailGaji(k.gaji, userLogs, userKasbon, k);
 
   const tgl = new Date();
   const bulanIndo = [
@@ -1596,9 +1597,10 @@ async function confirmResetKasbon() {
 
 function kirimWaSlip(index) {
   const k = KARYAWAN[index];
-  const userLogs = logs.filter(l => l.nama === k.nama).slice(0, 100);
-  const userKasbon = kasbonData.filter(kb => kb.nama === k.nama);
-  const d = hitungDetailGaji(k.gaji || 0, userLogs, userKasbon, k.nik);
+  const targetNama = (k.nama || "").toUpperCase().trim();
+  const userLogs = logs.filter(l => (l.nama || "").toUpperCase().trim() === targetNama).slice(0, 100);
+  const userKasbon = kasbonData.filter(kb => (kb.nama || "").toUpperCase().trim() === targetNama);
+  const d = hitungDetailGaji(k.gaji || 0, userLogs, userKasbon, k);
   const bulanIndo = [
     "JANUARI", "FEBRUARI", "MARET", "APRIL", "MEI", "JUNI",
     "JULI", "AGUSTUS", "SEPTEMBER", "OKTOBER", "NOVEMBER", "DESEMBER",
