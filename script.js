@@ -1187,9 +1187,9 @@ async function clearData() {
   }
 }
 
-// 2. Hapus Satu Baris Log (Opsional, jika Anda ingin menambah tombol hapus di tiap baris)
-async function editWaktuLog(idLog, nama, statusAsli, waktuAsli) {
-  // Format waktu untuk gampang diedit di prompt, e.g. "2026-03-31 08:00"
+// 2. Edit Waktu Log via Modal (Premium UI)
+function editWaktuLog(idLog, nama, statusAsli, waktuAsli) {
+  // Format waktu untuk <input type="datetime-local">: YYYY-MM-DDThh:mm
   let dateObj = new Date(waktuAsli);
   let yyyy = dateObj.getFullYear();
   let mm = String(dateObj.getMonth() + 1).padStart(2, '0');
@@ -1197,33 +1197,59 @@ async function editWaktuLog(idLog, nama, statusAsli, waktuAsli) {
   let hh = String(dateObj.getHours()).padStart(2, '0');
   let mins = String(dateObj.getMinutes()).padStart(2, '0');
   
-  let defaultVal = `${yyyy}-${mm}-${dd} ${hh}:${mins}`;
+  let formattedForInput = `${yyyy}-${mm}-${dd}T${hh}:${mins}`;
+
+  document.getElementById("editWaktuId").value = idLog;
+  document.getElementById("editWaktuNama").value = nama;
+  document.getElementById("editWaktuStatus").value = statusAsli;
+  document.getElementById("editWaktuInput").value = formattedForInput;
+
+  document.getElementById("modalEditWaktu").classList.add("active");
+}
+
+function hideEditWaktuModal() {
+  document.getElementById("modalEditWaktu").classList.remove("active");
+}
+
+async function simpanEditWaktuLog() {
+  const idLog = document.getElementById("editWaktuId").value;
+  const newWaktuRaw = document.getElementById("editWaktuInput").value;
   
-  let input = prompt(`Edit absensi ${nama} (${statusAsli}):\nFormat (Tahun-Bulan-Tanggal Jam:Menit)`, defaultVal);
-  if (!input) return; // User membatalkan
+  if (!newWaktuRaw) {
+    alert("Waktu tidak boleh kosong!");
+    return;
+  }
+
+  // <input type="datetime-local"> mengembalikan YYYY-MM-DDThh:mm
+  const newDate = new Date(newWaktuRaw);
+  if (isNaN(newDate.getTime())) {
+    alert("Format waktu tidak valid!");
+    return;
+  }
+
+  const btn = document.querySelector("#modalEditWaktu .btn-p");
+  if (btn) {
+    btn.innerText = "Menyimpan...";
+    btn.disabled = true;
+  }
+
+  const newWaktuISO = newDate.toISOString();
   
-  // parse new date
-  let parts = input.split(/[- :]/);
-  if (parts.length >= 5) {
-     let newDate = new Date(parts[0], parts[1]-1, parts[2], parts[3], parts[4], 0);
-     if (!isNaN(newDate.getTime())) {
-         const newWaktu = newDate.toISOString();
-         
-         const { error } = await supabaseClient.from("logs")
-                               .update({ waktu: newWaktu })
-                               .eq("id", idLog);
-         
-         if (!error) {
-           alert("Waktu absensi berhasil diubah!");
-           await syncData(); // Segarkan data dan tabel
-         } else {
-           alert("Gagal mengubah waktu: " + error.message);
-         }
-     } else {
-         alert("Format tanggal/waktu tidak valid!");
-     }
+  const { error } = await supabaseClient.from("logs")
+                        .update({ waktu: newWaktuISO })
+                        .eq("id", idLog);
+  
+  if (btn) {
+    btn.innerText = "Simpan Perubahan";
+    btn.disabled = false;
+  }
+
+  if (!error) {
+    alert("Waktu barhasil diubah!");
+    hideEditWaktuModal();
+    await syncData(); // Segarkan data dan tabel
   } else {
-     alert("Format tidak sesuai. Gunakan YYYY-MM-DD HH:MM");
+    alert("Gagal mengubah waktu: " + error.message);
   }
 }
 

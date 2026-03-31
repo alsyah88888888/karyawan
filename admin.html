@@ -547,6 +547,35 @@
       </div>
     </div>
   </div>
+  <!-- MODAL EDIT WAKTU -->
+  <div id="modalEditWaktu" class="modal-overlay">
+    <div class="modal-content" style="max-width: 400px;">
+      <div class="modal-header" style="background: linear-gradient(to right, #f59e0b, #d97706)">
+        <h3>Edit Jam Absensi</h3>
+        <p>Sesuaikan waktu presensi karyawan.</p>
+        <button class="btn-close-modal" onclick="hideEditWaktuModal()">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-section">
+          <label>Nama Karyawan</label>
+          <input type="text" id="editWaktuNama" readonly style="background: #f1f5f9; color:var(--text-muted); font-weight:bold;" />
+          
+          <label>Status</label>
+          <input type="text" id="editWaktuStatus" readonly style="background: #f1f5f9; color:var(--text-muted); font-weight:bold;" />
+
+          <label>Waktu Baru</label>
+          <input type="datetime-local" id="editWaktuInput" />
+          <input type="hidden" id="editWaktuId" />
+        </div>
+      </div>
+
+      <div class="modal-footer" style="margin-top:10px;">
+        <button onclick="hideEditWaktuModal()" class="btn-exit" style="background: #f1f5f9; color: #475569;">Batal</button>
+        <button onclick="simpanEditWaktuLog()" class="btn-p" style="background: #f59e0b; border:none;">Simpan Perubahan</button>
+      </div>
+    </div>
+  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
