@@ -61,6 +61,16 @@ async function syncData() {
       isMOUVisible = mouSet ? mouSet.value === "true" : false;
     }
 
+    // Set default Periode Payroll (Jika belum ada)
+    const pMonth = document.getElementById("payrollMonth");
+    const pYear = document.getElementById("payrollYear");
+    if (pMonth && !pMonth.dataset.init) {
+      const now = new Date();
+      pMonth.value = now.getMonth();
+      pYear.value = now.getFullYear();
+      pMonth.dataset.init = "true";
+    }
+
     // WAJIB: Panggil fungsi render setelah data masuk
     refreshAllUI();
   } catch (e) {
@@ -147,9 +157,12 @@ function hitungDetailGaji(gapok, logsData, kasbonData, employeeObj) {
   let tarifHKE = gapokValue > 0 ? Math.round(gapokValue / divisor) : (isOperasional ? 200000 : 0);
 
   // 3. JAM LEMBUR (OVERTIME)
+  const pMonth = document.getElementById("payrollMonth")?.value;
+  const pYear = document.getElementById("payrollYear")?.value;
+  
   const now = new Date();
-  const currentMonth = now.getMonth();
-  const currentYear = now.getFullYear();
+  const currentMonth = pMonth !== undefined ? parseInt(pMonth) : now.getMonth();
+  const currentYear = pYear !== undefined ? parseInt(pYear) : now.getFullYear();
 
   const logsByDate = {};
   logsData.forEach(l => {
