@@ -215,12 +215,25 @@ function zoomFoto(url) {
 }
 
 function exportData() {
-  let csv = "Nama,Dept,Waktu,Status,Telat\n";
-  allLogs.forEach(l => csv += `${l.nama},${l.dept},${l.waktu},${l.status},${l.isLate}\n`);
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
-  a.download = `Rekap_Absensi.csv`;
-  a.click();
+  if (allLogs.length === 0) return alert("Belum ada data untuk di-export!");
+
+  // 1. Siapkan data untuk Excel
+  const dataExcel = allLogs.map((l) => ({
+    "NAMA KARYAWAN": l.nama,
+    "DEPARTEMEN": l.dept,
+    "WAKTU ABSENSI": new Date(l.waktu).toLocaleString("id-ID"),
+    "STATUS": l.status,
+    "TERLAMBAT": l.isLate ? "YA" : "TIDAK"
+  }));
+
+  // 2. Buat Workbook & Worksheet
+  const ws = XLSX.utils.json_to_sheet(dataExcel);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Rekap Absensi");
+
+  // 3. Simpan File
+  const fileName = `Rekap_Absensi_${new Date().toLocaleDateString("id-ID").replace(/\//g, "-")}.xlsx`;
+  XLSX.writeFile(wb, fileName);
 }
 
 async function clearData() {
