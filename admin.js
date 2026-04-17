@@ -147,12 +147,13 @@ function hitungDetailGaji(gapok, namaKaryawan) {
   const standarHari = 22;
   const gajiHarian = g / standarHari;
   
+  const targetNama = namaKaryawan.trim().toLowerCase();
   const dataLogKaryawan = allLogs
-    .filter((l) => l.nama === namaKaryawan)
+    .filter((l) => l.nama.trim().toLowerCase() === targetNama)
     .sort((a, b) => new Date(a.waktu) - new Date(b.waktu));
   
-  const hariHadir = [...new Set(dataLogKaryawan.filter((l) => l.status === "MASUK").map((l) => new Date(l.waktu).toLocaleDateString()))].length;
-  const jumlahTelat = dataLogKaryawan.filter((l) => l.status === "MASUK" && (l.isLate || l.is_late)).length;
+  const hariHadir = [...new Set(dataLogKaryawan.map((l) => new Date(l.waktu).toISOString().slice(0, 10)))].length;
+  const jumlahTelat = dataLogKaryawan.filter((l) => (l.status === "MASUK" || l.status === "masuk") && (l.isLate || l.is_late)).length;
 
   let totalLembur = 0;
   let i = 0;
@@ -285,6 +286,7 @@ function exportData() {
   const dataExcel = [];
 
   Object.keys(logGroups).forEach(nama => {
+    // Gunakan pencocokan yang sama dengan payroll agar sinkron
     const userLogs = logGroups[nama].sort((a, b) => new Date(a.waktu) - new Date(b.waktu));
     let i = 0;
     
