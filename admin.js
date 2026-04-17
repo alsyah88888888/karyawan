@@ -107,15 +107,30 @@ function renderKaryawanTable() {
     const d = hitungDetailGaji(k.gaji || 0, k.nama);
     htmlRows += `
       <tr>
-        <td><strong>${k.nama}</strong><br><small>${k.nik || "-"}</small></td>
-        <td>${k.jabatan || k.dept}<br><small>Hadir: ${d.hadir}/22</small></td>
-        <td><strong>${d.totalLembur} Jam</strong><br><small>+ Rp ${d.uangLembur.toLocaleString("id-ID")}</small></td>
-        <td><strong>Rp ${(k.gaji || 0).toLocaleString("id-ID")}</strong></td>
-        <td style="color: var(--success); font-weight: 800;">Rp ${Math.floor(d.thp).toLocaleString("id-ID")}</td>
         <td>
-          <div style="display: flex; gap: 8px;">
-            <button class="btn btn-outline" onclick="cetakSlip(${index})">SLIP</button>
-            <button class="btn btn-outline" onclick="hapusKaryawan('${k.id}')" style="color: var(--danger);">HAPUS</button>
+          <div style="font-weight: 800; color: var(--dark);">${k.nama}</div>
+          <div style="font-size: 0.75rem; color: #64748b;">${k.nik || "-"}</div>
+        </td>
+        <td>
+          <div style="font-weight: 600;">${k.jabatan || k.dept}</div>
+          <div style="font-size: 0.75rem; color: #64748b;">Hadir: ${d.hadir}/22</div>
+        </td>
+        <td>
+          <div style="font-weight: 700;">${d.totalLembur} Jam</div>
+          <div style="font-size: 0.75rem; color: var(--success);">+ Rp ${d.uangLembur.toLocaleString("id-ID")}</div>
+        </td>
+        <td>
+          <div style="font-weight: 700;">Rp ${(k.gaji || 0).toLocaleString("id-ID")}</div>
+          <div style="font-size: 0.7rem; color: #94a3b8;">${k.rekening || "-"}</div>
+        </td>
+        <td style="color: var(--success); font-weight: 800; font-size: 1rem;">
+          Rp ${Math.floor(d.thp).toLocaleString("id-ID")}
+        </td>
+        <td>
+          <div style="display: flex; gap: 6px;">
+            <button class="btn btn-outline" onclick="cetakSlip(${index})" title="Cetak Slip Gaji">📑</button>
+            <button class="btn btn-outline" onclick="bukaModalEditKaryawan('${k.id}')" title="Edit Master Data">✏️</button>
+            <button class="btn btn-outline" onclick="hapusKaryawan('${k.id}')" style="color: var(--danger);" title="Hapus Karyawan">🗑️</button>
           </div>
         </td>
       </tr>`;
@@ -222,18 +237,78 @@ function hitungDetailGaji(gapok, namaKaryawan) {
 }
 
 // --- MODAL & ACTIONS ---
-function showModal() { document.getElementById("modalKaryawan").style.display = "flex"; }
+function showModal() {
+    document.getElementById("modalTitle").innerText = "Tambah Karyawan (Master Data)";
+    document.getElementById("editKaryawanId").value = "";
+    document.getElementById("btnSimpanKaryawan").innerText = "Simpan Master Data";
+    
+    // Reset Form
+    const fields = ["inpNama", "inpNikKtp", "inpWa", "inpJabatan", "inpCuti", "inpPin", "inpGaji", "inpRekening", "inpNpwp", "inpPinjaman"];
+    fields.forEach(f => document.getElementById(f).value = (f === "inpCuti" ? 12 : (f === "inpPinjaman" ? 0 : "")));
+    document.getElementById("inpDept").value = "OFFICE";
+    document.getElementById("inpPtkp").value = "TK/0";
+    
+    document.getElementById("modalKaryawan").style.display = "flex"; 
+}
+
 function hideModal() { document.getElementById("modalKaryawan").style.display = "none"; }
 
 async function simpanKaryawan() {
-  const nama = document.getElementById("inpNama").value.toUpperCase();
-  const gaji = document.getElementById("inpGaji").value;
-  const dept = document.getElementById("inpDept").value;
-  const rek = document.getElementById("inpRekening").value;
-  if (!nama || !gaji) return alert("Harap isi Nama dan Gaji!");
-  const newKar = { nama, dept, rekening: rek, gaji: parseFloat(gaji), nik: "KBI-" + Date.now().toString().slice(-6) };
-  const { error } = await supabaseClient.from("karyawan").insert([newKar]);
-  if (!error) { alert("Berhasil!"); hideModal(); syncData(); }
+  const id = document.getElementById("editKaryawanId").value;
+  const data = {
+    nama: document.getElementById("inpNama").value.toUpperCase(),
+    nik_ktp: document.getElementById("inpNikKtp").value,
+    nomor_wa: document.getElementById("inpWa").value,
+    dept: document.getElementById("inpDept").value,
+    jabatan: document.getElementById("inpJabatan").value.toUpperCase(),
+    sisa_cuti: parseInt(document.getElementById("inpCuti").value) || 0,
+    pin: document.getElementById("inpPin").value,
+    gaji: parseFloat(document.getElementById("inpGaji").value) || 0,
+    rekening: document.getElementById("inpRekening").value,
+    status_ptkp: document.getElementById("inpPtkp").value,
+    npwp: document.getElementById("inpNpwp").value,
+    pinjaman: parseFloat(document.getElementById("inpPinjaman").value) || 0
+  };
+
+  if (!data.nama || !data.gaji) return alert("Harap isi Nama dan Gaji Pokok!");
+
+  if (id) {
+    // UPDATE
+    const { error } = await supabaseClient.from("karyawan").update(data).eq("id", id);
+    if (!error) { alert("Data Berhasil Diperbarui!"); hideModal(); syncData(); }
+    else alert("Gagal Update: " + error.message);
+  } else {
+    // INSERT NEW
+    data.nik = "KBI-" + Date.now().toString().slice(-6); // Generate NIK KBI
+    const { error } = await supabaseClient.from("karyawan").insert([data]);
+    if (!error) { alert("Karyawan Baru Berhasil Ditambahkan!"); hideModal(); syncData(); }
+    else alert("Gagal Simpan: " + error.message);
+  }
+}
+
+function bukaModalEditKaryawan(id) {
+    const k = KARYAWAN.find(item => item.id == id);
+    if (!k) return;
+
+    document.getElementById("modalTitle").innerText = "Edit Master Data: " + k.nama;
+    document.getElementById("editKaryawanId").value = k.id;
+    document.getElementById("btnSimpanKaryawan").innerText = "Simpan Perubahan";
+
+    // Populate Fields
+    document.getElementById("inpNama").value = k.nama || "";
+    document.getElementById("inpNikKtp").value = k.nik_ktp || "";
+    document.getElementById("inpWa").value = k.nomor_wa || "";
+    document.getElementById("inpDept").value = k.dept || "OFFICE";
+    document.getElementById("inpJabatan").value = k.jabatan || "";
+    document.getElementById("inpCuti").value = k.sisa_cuti || 0;
+    document.getElementById("inpPin").value = k.pin || "";
+    document.getElementById("inpGaji").value = k.gaji || 0;
+    document.getElementById("inpRekening").value = k.rekening || "";
+    document.getElementById("inpPtkp").value = k.status_ptkp || "TK/0";
+    document.getElementById("inpNpwp").value = k.npwp || "";
+    document.getElementById("inpPinjaman").value = k.pinjaman || 0;
+
+    document.getElementById("modalKaryawan").style.display = "flex";
 }
 
 async function hapusKaryawan(id) {
@@ -394,6 +469,33 @@ async function hapusSatuLog(id) {
     const { error } = await supabaseClient.from("logs").delete().eq("id", id);
     if (!error) syncData();
   }
+}
+
+function exportMasterKaryawan() {
+  if (KARYAWAN.length === 0) return alert("Belum ada data karyawan!");
+
+  const dataExcel = KARYAWAN.map(k => ({
+    "NIK KBI": k.nik || "-",
+    "NAMA LENGKAP": k.nama,
+    "NIK KTP": k.nik_ktp || "-",
+    "DEPARTMENT": k.dept,
+    "JABATAN": k.jabatan || "-",
+    "WHATSAPP": k.nomor_wa || "-",
+    "GAJI POKOK": k.gaji,
+    "NO. REKENING": k.rekening || "-",
+    "STATUS PTKP": k.status_ptkp || "-",
+    "NPWP": k.npwp || "-",
+    "SISA CUTI": k.sisa_cuti || 0,
+    "SALDO PINJAMAN": k.pinjaman || 0,
+    "PIN ABSENSI": k.pin || "-"
+  }));
+
+  const ws = XLSX.utils.json_to_sheet(dataExcel);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Master Data Karyawan");
+
+  const fileName = `Master_Data_Karyawan_${new Date().toLocaleDateString("id-ID").replace(/\//g, "-")}.xlsx`;
+  XLSX.writeFile(wb, fileName);
 }
 
 window.onload = syncData;
