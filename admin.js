@@ -124,12 +124,20 @@ function renderKaryawanTable() {
 }
 
 // --- PAYROLL & OVERTIME LOGIC ---
+// --- UTILS: TIMEZONE-SAFE ---
+function getWIBThreshold(dateObj, targetHour) {
+  const y = dateObj.getFullYear();
+  const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+  const d = String(dateObj.getDate()).padStart(2, '0');
+  // Menghasilkan objek Date yang dipaksa ke jam target di zona WIB (+07:00)
+  return new Date(`${y}-${m}-${d}T${String(targetHour).padStart(2, '0')}:00:00+07:00`);
+}
+
 function hitungDetailGaji(gapok, namaKaryawan) {
   const g = parseFloat(gapok) || 0;
   const standarHari = 22;
   const gajiHarian = g / standarHari;
   
-  // Ambil log karyawan & urutkan kronologis
   const dataLogKaryawan = allLogs
     .filter((l) => l.nama === namaKaryawan)
     .sort((a, b) => new Date(a.waktu) - new Date(b.waktu));
@@ -139,12 +147,20 @@ function hitungDetailGaji(gapok, namaKaryawan) {
 
   let totalLembur = 0;
   let i = 0;
+  
   while (i < dataLogKaryawan.length) {
     const l = dataLogKaryawan[i];
-    
     if (l.status === 'MASUK') {
-      const shiftStart = new Date(l.waktu);
-      // Cari PULANG terakhir sebelum ada MASUK baru
+      const actualMasuk = new Date(l.waktu);
+      const thresholdMasuk = getWIBThreshold(actualMasuk, STANDAR_MASUK);
+      
+      // 1. LEMBUR PAGI (Masuk < 09:00 WIB)
+      if (actualMasuk < thresholdMasuk) {
+        let jamPagi = (thresholdMasuk - actualMasuk) / (1000 * 60 * 60);
+        if (jamPagi > 0) totalLembur += jamPagi;
+      }
+      
+      // 2. CARI PULANG TERAKHIR UNTUK SHIFT INI
       let shiftEnd = null;
       let j = i + 1;
       while (j < dataLogKaryawan.length && dataLogKaryawan[j].status === 'PULANG') {
@@ -152,30 +168,20 @@ function hitungDetailGaji(gapok, namaKaryawan) {
         j++;
       }
       
-      // Hitung LEMBUR PAGI (Hanya dari MASUK pertama)
-      if (shiftStart.getHours() < STANDAR_MASUK) {
-        const batasMasuk = new Date(shiftStart);
-        batasMasuk.setHours(STANDAR_MASUK, 0, 0, 0);
-        let jamPagi = (batasMasuk - shiftStart) / (1000 * 60 * 60);
-        if (jamPagi > 0) totalLembur += jamPagi;
-      }
-      
-      // Hitung LEMBUR SORE (Dari PULANG terakhir jika ada)
       if (shiftEnd) {
-        const batasSore = new Date(shiftStart);
-        batasSore.setHours(STANDAR_PULANG, 0, 0, 0);
-        let jamSore = (shiftEnd - batasSore) / (1000 * 60 * 60);
+        const thresholdPulang = getWIBThreshold(actualMasuk, STANDAR_PULANG);
+        let jamSore = (shiftEnd - thresholdPulang) / (1000 * 60 * 60);
         if (jamSore > 0) totalLembur += jamSore;
-        i = j; // Loncat ke log setelah PULANG terakhir
+        i = j;
       } else {
-        i++; // Tidak ada PULANG, lanjut ke log berikutnya
+        i++;
       }
     } else {
-      i++; // Bukan MASUK (log yatim), abaikan
+      i++;
     }
   }
 
-  const uangLembur = Math.round(totalLembur * 10) / 10 * TARIF_LEMBUR; // Pembulatan per 0.1 jam agar lebih adil
+  const uangLembur = (Math.round(totalLembur * 10) / 10) * TARIF_LEMBUR;
   const gajiPro = (hariHadir / standarHari) * g;
   const potonganTelat = jumlahTelat * (gajiHarian * 0.02);
   
@@ -192,7 +198,7 @@ function hitungDetailGaji(gapok, namaKaryawan) {
     gajiPro, 
     hadir: hariHadir, 
     jumlahTelat, 
-    totalLembur: totalLembur.toFixed(1), // Satu desimal untuk akurasi
+    totalLembur: totalLembur.toFixed(1), 
     uangLembur, 
     totalPotongan, 
     thp: thp > 0 ? thp : 0 
@@ -279,20 +285,12 @@ function exportData() {
       let jamLembur = 0;
 
       if (l.status === 'MASUK') {
-        const shiftStart = waktu;
-        // Cari PULANG terakhir
-        let lastP = null;
-        let j = i + 1;
-        while (j < userLogs.length && userLogs[j].status === 'PULANG') {
-          lastP = new Date(userLogs[j].waktu);
-          j++;
-        }
-
+        const actualMasuk = waktu;
+        const thresholdMasuk = getWIBThreshold(actualMasuk, STANDAR_MASUK);
+        
         // Tentukan lembur pagi untuk baris ini
-        if (shiftStart.getHours() < STANDAR_MASUK) {
-          const batasMasuk = new Date(shiftStart);
-          batasMasuk.setHours(STANDAR_MASUK, 0, 0, 0);
-          jamLembur = (batasMasuk - shiftStart) / (1000 * 60 * 60);
+        if (actualMasuk < thresholdMasuk) {
+          jamLembur = (thresholdMasuk - actualMasuk) / (1000 * 60 * 60);
         }
 
         dataExcel.push({
@@ -312,9 +310,8 @@ function exportData() {
           
           // Hanya hitung lembur sore pada PULANG TERAKHIR
           if (k === j - 1) {
-            const batasSore = new Date(shiftStart);
-            batasSore.setHours(STANDAR_PULANG, 0, 0, 0);
-            const diffSore = (wp - batasSore) / (1000 * 60 * 60);
+            const thresholdPulang = getWIBThreshold(actualMasuk, STANDAR_PULANG);
+            const diffSore = (wp - thresholdPulang) / (1000 * 60 * 60);
             if (diffSore > 0) jamSore = diffSore;
           }
 
