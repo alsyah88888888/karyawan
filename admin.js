@@ -305,7 +305,6 @@ function exportData() {
   const fileName = `Laporan_Presensi_${new Date().toLocaleDateString("id-ID").replace(/\//g, "-")}.xlsx`;
   XLSX.writeFile(wb, fileName);
 }
-}
 
 async function clearData() {
   if (confirm("Hapus SEMUA log?")) {
