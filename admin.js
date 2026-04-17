@@ -8,8 +8,10 @@ const SB_URL = "https://ulmwpmzcaiuyubgehptt.supabase.co";
 const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVsbXdwbXpjYWl1eXViZ2VocHR0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE4MzI2MjUsImV4cCI6MjA4NzQwODYyNX0._Y2MkIiRDM52CVMsZEp-lSRBQ93ZYGkwkFbmxfZ5tFo";
 const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
 
-const STANDAR_PULANG = 17; // Jam 5 sore
+const STANDAR_MASUK = 9; // Jam 9 Pagi
+const STANDAR_PULANG = 18; // Jam 6 Sore
 const TARIF_LEMBUR = 20000; // Rp 20.000 per jam
+const TOLERANSI_MASUK_MENIT = 15; // Sampai 09:15 tetap tidak telat
 
 let KARYAWAN = [];
 let logs = []; 
@@ -126,27 +128,45 @@ function hitungDetailGaji(gapok, namaKaryawan) {
   const g = parseFloat(gapok) || 0;
   const standarHari = 22;
   const gajiHarian = g / standarHari;
-  const dataLogKaryawan = allLogs.filter((l) => l.nama === namaKaryawan);
+  
+  // Ambil log karyawan & urutkan kronologis
+  const dataLogKaryawan = allLogs
+    .filter((l) => l.nama === namaKaryawan)
+    .sort((a, b) => new Date(a.waktu) - new Date(b.waktu));
   
   const hariHadir = [...new Set(dataLogKaryawan.filter((l) => l.status === "MASUK").map((l) => new Date(l.waktu).toLocaleDateString()))].length;
   const jumlahTelat = dataLogKaryawan.filter((l) => l.status === "MASUK" && (l.isLate || l.is_late)).length;
 
-  // HITUNG LEMBUR
   let totalLembur = 0;
-  const logsPulang = dataLogKaryawan.filter(l => l.status === 'PULANG');
-  logsPulang.forEach(l => {
+  let lastMasuk = null;
+
+  dataLogKaryawan.forEach(l => {
     const waktu = new Date(l.waktu);
-    if (waktu.getHours() >= STANDAR_PULANG) {
-      // Jika jam pulang lebih dari jam 5 sore
-      let jamLembur = waktu.getHours() - STANDAR_PULANG;
-      // Berikan toleransi menit (misal pulang jam 17:45 = 0.75 jam)
-      if (waktu.getMinutes() > 30) jamLembur += 1; 
-      // Kita sederhanakan: jika pulang jam 18:00 keatas baru dihitung
-      if (jamLembur > 0) totalLembur += jamLembur;
+    
+    if (l.status === 'MASUK') {
+      lastMasuk = waktu;
+      // LEMBUR PAGI: Masuk sebelum jam 09:00
+      if (waktu.getHours() < STANDAR_MASUK) {
+        const batasMasuk = new Date(waktu);
+        batasMasuk.setHours(STANDAR_MASUK, 0, 0, 0);
+        let jamPagi = (batasMasuk - waktu) / (1000 * 60 * 60);
+        if (jamPagi > 0) totalLembur += jamPagi;
+      }
+    } 
+    else if (l.status === 'PULANG' && lastMasuk) {
+      // Pasangan ditemukan. Hitung LEMBUR SORE/MALAM
+      // Batas sore adalah jam 18:00 PADA HARI MASUK
+      const batasSore = new Date(lastMasuk);
+      batasSore.setHours(STANDAR_PULANG, 0, 0, 0);
+      
+      let jamSore = (waktu - batasSore) / (1000 * 60 * 60);
+      if (jamSore > 0) totalLembur += jamSore;
+      
+      lastMasuk = null; // Reset pairing
     }
   });
 
-  const uangLembur = totalLembur * TARIF_LEMBUR;
+  const uangLembur = Math.floor(totalLembur) * TARIF_LEMBUR;
   const gajiPro = (hariHadir / standarHari) * g;
   const potonganTelat = jumlahTelat * (gajiHarian * 0.02);
   
@@ -158,7 +178,16 @@ function hitungDetailGaji(gapok, namaKaryawan) {
   const totalPotongan = bpjsKes + jht + jp + pph21 + potonganTelat;
   const thp = gajiPro + uangLembur - totalPotongan;
 
-  return { gapok: g, gajiPro, hadir: hariHadir, jumlahTelat, totalLembur, uangLembur, totalPotongan, thp: thp > 0 ? thp : 0 };
+  return { 
+    gapok: g, 
+    gajiPro, 
+    hadir: hariHadir, 
+    jumlahTelat, 
+    totalLembur: totalLembur.toFixed(1), // Satu desimal untuk akurasi
+    uangLembur, 
+    totalPotongan, 
+    thp: thp > 0 ? thp : 0 
+  };
 }
 
 // --- MODAL & ACTIONS ---
@@ -201,7 +230,12 @@ async function simpanPerubahanAbsen() {
   const waktuBaru = document.getElementById("editWaktu").value;
   let telat = false;
   const tglBaru = new Date(waktuBaru);
-  if (status === "MASUK" && (tglBaru.getHours() > 9 || (tglBaru.getHours() === 9 && tglBaru.getMinutes() > 0))) telat = true;
+  // Gunakan toleransi 09:15 untuk manual edit
+  if (status === "MASUK") {
+    const hh = tglBaru.getHours();
+    const mm = tglBaru.getMinutes();
+    if (hh > STANDAR_MASUK || (hh === STANDAR_MASUK && mm > TOLERANSI_MASUK_MENIT)) telat = true;
+  }
   const { error } = await supabaseClient.from("logs").update({ status, waktu: tglBaru.toISOString(), isLate: telat }).eq("id", id);
   if (!error) { alert("Berhasil!"); hideEditModal(); syncData(); }
 }
@@ -217,23 +251,60 @@ function zoomFoto(url) {
 function exportData() {
   if (allLogs.length === 0) return alert("Belum ada data untuk di-export!");
 
-  // 1. Siapkan data untuk Excel
-  const dataExcel = allLogs.map((l) => ({
-    "NAMA KARYAWAN": l.nama,
-    "DEPARTEMEN": l.dept,
-    "WAKTU ABSENSI": new Date(l.waktu).toLocaleString("id-ID"),
-    "STATUS": l.status,
-    "TERLAMBAT": l.isLate ? "YA" : "TIDAK"
-  }));
+  // Siapkan data per Nama untuk proses pairing di export
+  const logGroups = {};
+  allLogs.forEach(l => {
+    if (!logGroups[l.nama]) logGroups[l.nama] = [];
+    logGroups[l.nama].push(l);
+  });
+
+  const dataExcel = [];
+
+  Object.keys(logGroups).forEach(nama => {
+    const userLogs = logGroups[nama].sort((a, b) => new Date(a.waktu) - new Date(b.waktu));
+    let lastMasuk = null;
+
+    userLogs.forEach(l => {
+      const waktu = new Date(l.waktu);
+      let jamLembur = 0;
+
+      if (l.status === 'MASUK') {
+        lastMasuk = waktu;
+        // Lembur Pagi
+        if (waktu.getHours() < STANDAR_MASUK) {
+          const batasMasuk = new Date(waktu);
+          batasMasuk.setHours(STANDAR_MASUK, 0, 0, 0);
+          const diffPagi = (batasMasuk - waktu) / (1000 * 60 * 60);
+          if (diffPagi > 0) jamLembur = diffPagi;
+        }
+      } else if (l.status === 'PULANG' && lastMasuk) {
+        // Lembur Sore/Malam (lintas hari)
+        const batasSore = new Date(lastMasuk);
+        batasSore.setHours(STANDAR_PULANG, 0, 0, 0);
+        const diffSore = (waktu - batasSore) / (1000 * 60 * 60);
+        if (diffSore > 0) jamLembur = diffSore;
+        lastMasuk = null;
+      }
+
+      dataExcel.push({
+        "NAMA KARYAWAN": l.nama,
+        "DEPARTEMEN": l.dept,
+        "WAKTU ABSENSI": waktu.toLocaleString("id-ID"),
+        "STATUS": l.status,
+        "TERLAMBAT": l.isLate ? "YA" : "TIDAK",
+        "JAM LEMBUR": jamLembur > 0 ? jamLembur.toFixed(1) : 0
+      });
+    });
+  });
 
   // 2. Buat Workbook & Worksheet
   const ws = XLSX.utils.json_to_sheet(dataExcel);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Rekap Absensi");
 
-  // 3. Simpan File
-  const fileName = `Rekap_Absensi_${new Date().toLocaleDateString("id-ID").replace(/\//g, "-")}.xlsx`;
+  const fileName = `Laporan_Presensi_${new Date().toLocaleDateString("id-ID").replace(/\//g, "-")}.xlsx`;
   XLSX.writeFile(wb, fileName);
+}
 }
 
 async function clearData() {

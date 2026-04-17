@@ -128,7 +128,8 @@ async function prosesAbsen(tipe) {
     if (tipe === "MASUK") {
       const jam = sekarang.getHours();
       const menit = sekarang.getMinutes();
-      if (jam > 9 || (jam === 9 && menit > 0)) telat = true;
+      // Toleransi sampai 09:15 (09:16 baru telat)
+      if (jam > 9 || (jam === 9 && menit > 15)) telat = true;
     }
 
     // 4. Data Info
