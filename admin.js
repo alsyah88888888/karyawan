@@ -282,82 +282,87 @@ function zoomFoto(url) {
 function exportData() {
   if (allLogs.length === 0) return alert("Belum ada data untuk di-export!");
 
-  // Siapkan data per Nama untuk proses pairing di export
-  const logGroups = {};
-  allLogs.forEach(l => {
-    if (!logGroups[l.nama]) logGroups[l.nama] = [];
-    logGroups[l.nama].push(l);
+  // --- SHEET 1: REKAP GAJI & LEMBUR (Summary per Employee) ---
+  const dataSummary = KARYAWAN.map(k => {
+    const d = hitungDetailGaji(k.gaji || 0, k.nama);
+    return {
+      "NAMA KARYAWAN": k.nama,
+      "NIK": k.nik || "-",
+      "JABATAN/DEPT": k.jabatan || k.dept,
+      "HARI HADIR": d.hadir,
+      "TOTAL JAM LEMBUR": parseFloat(d.totalLembur),
+      "UANG LEMBUR (RP)": d.uangLembur,
+      "GAJI POKOK (RP)": k.gaji || 0,
+      "POTONGAN (RP)": Math.floor(d.totalPotongan),
+      "TOTAL GAJI BERSIH / THP (RP)": Math.floor(d.thp)
+    };
   });
 
-  const dataExcel = [];
+  // --- SHEET 2: DETAIL LOG ABSENSI (Chronological pairing) ---
+  const logGroups = {};
+  allLogs.forEach(l => {
+    const norm = l.nama.trim().toLowerCase();
+    if (!logGroups[norm]) logGroups[norm] = [];
+    logGroups[norm].push(l);
+  });
 
-  Object.keys(logGroups).forEach(nama => {
-    // Gunakan pencocokan yang sama dengan payroll agar sinkron
-    const userLogs = logGroups[nama].sort((a, b) => new Date(a.waktu) - new Date(b.waktu));
+  const dataLogs = [];
+  Object.keys(logGroups).forEach(normKey => {
+    const userLogs = logGroups[normKey].sort((a, b) => new Date(a.waktu) - new Date(b.waktu));
     let i = 0;
-    
     while (i < userLogs.length) {
       const l = userLogs[i];
       const waktu = new Date(l.waktu);
       let jamLembur = 0;
-
       const statusUpper = l.status.toUpperCase();
 
       if (statusUpper === 'MASUK' || statusUpper === 'BERANGKAT') {
         const actualMasuk = waktu;
         const thresholdMasuk = getWIBThreshold(actualMasuk, STANDAR_MASUK);
         
-        // Cari j (Index PULANG terakhir) untuk shift ini
+        // Cari index PULANG terakhir untuk shift ini
         let j = i + 1;
         while (j < userLogs.length && userLogs[j].status.toUpperCase() === 'PULANG') {
           j++;
         }
         
-        // Tentukan lembur pagi untuk baris ini
         if (actualMasuk < thresholdMasuk) {
           jamLembur = (thresholdMasuk - actualMasuk) / (1000 * 60 * 60);
         }
 
-        dataExcel.push({
-          "NAMA KARYAWAN": l.nama,
-          "DEPARTEMEN": l.dept,
-          "WAKTU ABSENSI": waktu.toLocaleString("id-ID"),
+        dataLogs.push({
+          "NAMA": l.nama,
+          "WAKTU": waktu.toLocaleString("id-ID"),
           "STATUS": l.status,
-          "TERLAMBAT": l.isLate ? "YA" : "TIDAK",
+          "TELAT": l.isLate || l.is_late ? "YA" : "TIDAK",
           "JAM LEMBUR": jamLembur > 0 ? jamLembur.toFixed(2) : 0
         });
 
-        // Loop untuk memproses PULANG-nya
+        // Proses PULANG-nya
         for (let k = i + 1; k < j; k++) {
           const lp = userLogs[k];
           const wp = new Date(lp.waktu);
           let jamSore = 0;
-          
-          // Hanya hitung lembur sore pada PULANG TERAKHIR
           if (k === j - 1) {
             const thresholdPulang = getWIBThreshold(actualMasuk, STANDAR_PULANG);
             const diffSore = (wp - thresholdPulang) / (1000 * 60 * 60);
             if (diffSore > 0) jamSore = diffSore;
           }
-
-          dataExcel.push({
-            "NAMA KARYAWAN": lp.nama,
-            "DEPARTEMEN": lp.dept,
-            "WAKTU ABSENSI": wp.toLocaleString("id-ID"),
+          dataLogs.push({
+            "NAMA": lp.nama,
+            "WAKTU": wp.toLocaleString("id-ID"),
             "STATUS": lp.status,
-            "TERLAMBAT": lp.isLate ? "YA" : "TIDAK",
+            "TELAT": "-",
             "JAM LEMBUR": jamSore > 0 ? jamSore.toFixed(2) : 0
           });
         }
         i = j;
       } else {
-        // Log yatim (PULANG tanpa MASUK di depannya)
-        dataExcel.push({
-          "NAMA KARYAWAN": l.nama,
-          "DEPARTEMEN": l.dept,
-          "WAKTU ABSENSI": waktu.toLocaleString("id-ID"),
+        dataLogs.push({
+          "NAMA": l.nama,
+          "WAKTU": waktu.toLocaleString("id-ID"),
           "STATUS": l.status,
-          "TERLAMBAT": l.isLate ? "YA" : "TIDAK",
+          "TELAT": "-",
           "JAM LEMBUR": 0
         });
         i++;
@@ -365,12 +370,15 @@ function exportData() {
     }
   });
 
-  // 2. Buat Workbook & Worksheet
-  const ws = XLSX.utils.json_to_sheet(dataExcel);
+  // --- CREATE WORKBOOK ---
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Rekap Absensi");
+  const wsSummary = XLSX.utils.json_to_sheet(dataSummary);
+  const wsLogs = XLSX.utils.json_to_sheet(dataLogs);
 
-  const fileName = `Laporan_Presensi_${new Date().toLocaleDateString("id-ID").replace(/\//g, "-")}.xlsx`;
+  XLSX.utils.book_append_sheet(wb, wsSummary, "Rekap Gaji & Lembur");
+  XLSX.utils.book_append_sheet(wb, wsLogs, "Detail Log Absensi");
+
+  const fileName = `Payroll_Report_${new Date().toLocaleDateString("id-ID").replace(/\//g, "-")}.xlsx`;
   XLSX.writeFile(wb, fileName);
 }
 
