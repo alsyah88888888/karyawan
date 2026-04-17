@@ -138,35 +138,44 @@ function hitungDetailGaji(gapok, namaKaryawan) {
   const jumlahTelat = dataLogKaryawan.filter((l) => l.status === "MASUK" && (l.isLate || l.is_late)).length;
 
   let totalLembur = 0;
-  let lastMasuk = null;
-
-  dataLogKaryawan.forEach(l => {
-    const waktu = new Date(l.waktu);
+  let i = 0;
+  while (i < dataLogKaryawan.length) {
+    const l = dataLogKaryawan[i];
     
     if (l.status === 'MASUK') {
-      lastMasuk = waktu;
-      // LEMBUR PAGI: Masuk sebelum jam 09:00
-      if (waktu.getHours() < STANDAR_MASUK) {
-        const batasMasuk = new Date(waktu);
+      const shiftStart = new Date(l.waktu);
+      // Cari PULANG terakhir sebelum ada MASUK baru
+      let shiftEnd = null;
+      let j = i + 1;
+      while (j < dataLogKaryawan.length && dataLogKaryawan[j].status === 'PULANG') {
+        shiftEnd = new Date(dataLogKaryawan[j].waktu);
+        j++;
+      }
+      
+      // Hitung LEMBUR PAGI (Hanya dari MASUK pertama)
+      if (shiftStart.getHours() < STANDAR_MASUK) {
+        const batasMasuk = new Date(shiftStart);
         batasMasuk.setHours(STANDAR_MASUK, 0, 0, 0);
-        let jamPagi = (batasMasuk - waktu) / (1000 * 60 * 60);
+        let jamPagi = (batasMasuk - shiftStart) / (1000 * 60 * 60);
         if (jamPagi > 0) totalLembur += jamPagi;
       }
-    } 
-    else if (l.status === 'PULANG' && lastMasuk) {
-      // Pasangan ditemukan. Hitung LEMBUR SORE/MALAM
-      // Batas sore adalah jam 18:00 PADA HARI MASUK
-      const batasSore = new Date(lastMasuk);
-      batasSore.setHours(STANDAR_PULANG, 0, 0, 0);
       
-      let jamSore = (waktu - batasSore) / (1000 * 60 * 60);
-      if (jamSore > 0) totalLembur += jamSore;
-      
-      lastMasuk = null; // Reset pairing
+      // Hitung LEMBUR SORE (Dari PULANG terakhir jika ada)
+      if (shiftEnd) {
+        const batasSore = new Date(shiftStart);
+        batasSore.setHours(STANDAR_PULANG, 0, 0, 0);
+        let jamSore = (shiftEnd - batasSore) / (1000 * 60 * 60);
+        if (jamSore > 0) totalLembur += jamSore;
+        i = j; // Loncat ke log setelah PULANG terakhir
+      } else {
+        i++; // Tidak ada PULANG, lanjut ke log berikutnya
+      }
+    } else {
+      i++; // Bukan MASUK (log yatim), abaikan
     }
-  });
+  }
 
-  const uangLembur = Math.floor(totalLembur) * TARIF_LEMBUR;
+  const uangLembur = Math.round(totalLembur * 10) / 10 * TARIF_LEMBUR; // Pembulatan per 0.1 jam agar lebih adil
   const gajiPro = (hariHadir / standarHari) * g;
   const potonganTelat = jumlahTelat * (gajiHarian * 0.02);
   
@@ -262,39 +271,76 @@ function exportData() {
 
   Object.keys(logGroups).forEach(nama => {
     const userLogs = logGroups[nama].sort((a, b) => new Date(a.waktu) - new Date(b.waktu));
-    let lastMasuk = null;
-
-    userLogs.forEach(l => {
+    let i = 0;
+    
+    while (i < userLogs.length) {
+      const l = userLogs[i];
       const waktu = new Date(l.waktu);
       let jamLembur = 0;
 
       if (l.status === 'MASUK') {
-        lastMasuk = waktu;
-        // Lembur Pagi
-        if (waktu.getHours() < STANDAR_MASUK) {
-          const batasMasuk = new Date(waktu);
-          batasMasuk.setHours(STANDAR_MASUK, 0, 0, 0);
-          const diffPagi = (batasMasuk - waktu) / (1000 * 60 * 60);
-          if (diffPagi > 0) jamLembur = diffPagi;
+        const shiftStart = waktu;
+        // Cari PULANG terakhir
+        let lastP = null;
+        let j = i + 1;
+        while (j < userLogs.length && userLogs[j].status === 'PULANG') {
+          lastP = new Date(userLogs[j].waktu);
+          j++;
         }
-      } else if (l.status === 'PULANG' && lastMasuk) {
-        // Lembur Sore/Malam (lintas hari)
-        const batasSore = new Date(lastMasuk);
-        batasSore.setHours(STANDAR_PULANG, 0, 0, 0);
-        const diffSore = (waktu - batasSore) / (1000 * 60 * 60);
-        if (diffSore > 0) jamLembur = diffSore;
-        lastMasuk = null;
-      }
 
-      dataExcel.push({
-        "NAMA KARYAWAN": l.nama,
-        "DEPARTEMEN": l.dept,
-        "WAKTU ABSENSI": waktu.toLocaleString("id-ID"),
-        "STATUS": l.status,
-        "TERLAMBAT": l.isLate ? "YA" : "TIDAK",
-        "JAM LEMBUR": jamLembur > 0 ? jamLembur.toFixed(1) : 0
-      });
-    });
+        // Tentukan lembur pagi untuk baris ini
+        if (shiftStart.getHours() < STANDAR_MASUK) {
+          const batasMasuk = new Date(shiftStart);
+          batasMasuk.setHours(STANDAR_MASUK, 0, 0, 0);
+          jamLembur = (batasMasuk - shiftStart) / (1000 * 60 * 60);
+        }
+
+        dataExcel.push({
+          "NAMA KARYAWAN": l.nama,
+          "DEPARTEMEN": l.dept,
+          "WAKTU ABSENSI": waktu.toLocaleString("id-ID"),
+          "STATUS": l.status,
+          "TERLAMBAT": l.isLate ? "YA" : "TIDAK",
+          "JAM LEMBUR": jamLembur > 0 ? jamLembur.toFixed(1) : 0
+        });
+
+        // Loop untuk memproses PULANG-nya
+        for (let k = i + 1; k < j; k++) {
+          const lp = userLogs[k];
+          const wp = new Date(lp.waktu);
+          let jamSore = 0;
+          
+          // Hanya hitung lembur sore pada PULANG TERAKHIR
+          if (k === j - 1) {
+            const batasSore = new Date(shiftStart);
+            batasSore.setHours(STANDAR_PULANG, 0, 0, 0);
+            const diffSore = (wp - batasSore) / (1000 * 60 * 60);
+            if (diffSore > 0) jamSore = diffSore;
+          }
+
+          dataExcel.push({
+            "NAMA KARYAWAN": lp.nama,
+            "DEPARTEMEN": lp.dept,
+            "WAKTU ABSENSI": wp.toLocaleString("id-ID"),
+            "STATUS": lp.status,
+            "TERLAMBAT": lp.isLate ? "YA" : "TIDAK",
+            "JAM LEMBUR": jamSore > 0 ? jamSore.toFixed(1) : 0
+          });
+        }
+        i = j;
+      } else {
+        // Log yatim (PULANG tanpa MASUK di depannya)
+        dataExcel.push({
+          "NAMA KARYAWAN": l.nama,
+          "DEPARTEMEN": l.dept,
+          "WAKTU ABSENSI": waktu.toLocaleString("id-ID"),
+          "STATUS": l.status,
+          "TERLAMBAT": l.isLate ? "YA" : "TIDAK",
+          "JAM LEMBUR": 0
+        });
+        i++;
+      }
+    }
   });
 
   // 2. Buat Workbook & Worksheet
