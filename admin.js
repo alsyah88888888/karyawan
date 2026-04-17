@@ -288,6 +288,12 @@ function exportData() {
         const actualMasuk = waktu;
         const thresholdMasuk = getWIBThreshold(actualMasuk, STANDAR_MASUK);
         
+        // Cari j (Index PULANG terakhir) untuk shift ini
+        let j = i + 1;
+        while (j < userLogs.length && userLogs[j].status === 'PULANG') {
+          j++;
+        }
+        
         // Tentukan lembur pagi untuk baris ini
         if (actualMasuk < thresholdMasuk) {
           jamLembur = (thresholdMasuk - actualMasuk) / (1000 * 60 * 60);
