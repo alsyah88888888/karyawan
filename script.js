@@ -10,7 +10,7 @@ const SB_KEY =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVsbXdwbXpjYWl1eXViZ2VocHR0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE4MzI2MjUsImV4cCI6MjA4NzQwODYyNX0._Y2MkIiRDM52CVMsZEp-lSRBQ93ZYGkwkFbmxfZ5tFo";
 const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
 
-const OFFICE_IP = "103.108.130.39";
+const OFFICE_IP = "124.158.189.235";
 let KARYAWAN = [];
 let logs = []; // Untuk tampilan (terbatas dengan foto)
 let allLogs = []; // Untuk hitung gaji (semua tanpa foto)
@@ -264,6 +264,7 @@ function renderTabel() {
                 <td><span class="status-tag ${sClass}">${l.status}</span>${telatBadge}</td>
                 <td>
                     <img src="${l.foto}" class="img-prev" onclick="zoomFoto('${l.foto}')" style="cursor:pointer;">
+                    <button onclick="bukaModalEdit(${l.id})" style="display:block; margin-top:5px; color:#f59e0b; border:none; background:none; cursor:pointer; font-size:0.7rem; font-weight:bold;">[EDIT JAM]</button>
                     <button onclick="hapusSatuLog(${l.id})" style="display:block; margin-top:5px; color:#ef4444; border:none; background:none; cursor:pointer; font-size:0.7rem; font-weight:bold;">[HAPUS LOG]</button>
                 </td>
             </tr>`;
@@ -272,7 +273,7 @@ function renderTabel() {
   body.innerHTML = htmlRows;
 
   if (document.getElementById("countAbsen")) {
-    const totalHariIni = allLogs.filter(l => 
+    const totalHariIni = allLogs.filter(l =>
       new Date(l.waktu).toLocaleDateString() === new Date().toLocaleDateString()
     ).length;
     document.getElementById("countAbsen").innerText = totalHariIni;
@@ -290,6 +291,7 @@ function renderKaryawanTable() {
       <tr>
         <td><strong>${k.nama}</strong><br><small>${k.nik || "-"}</small></td>
         <td>${k.jabatan || k.dept}<br><small>Hadir: ${d.hadir}/22</small></td>
+        <td style="font-family:monospace; font-size:0.8rem;">${k.rekening || "-"}</td>
         <td>Rp ${(k.gaji || 0).toLocaleString("id-ID")}</td>
         <td style="color:#15803d; font-weight:bold;">Rp ${Math.floor(d.thp).toLocaleString("id-ID")}</td>
         <td>
@@ -391,6 +393,7 @@ async function simpanKaryawan() {
     jabatan:
       document.getElementById("inpJabatan")?.value ||
       document.getElementById("inpDept").value,
+    rekening: document.getElementById("inpRekening").value,
     gaji: parseFloat(gaji),
   };
 
@@ -540,5 +543,65 @@ async function hapusSatuLog(id) {
     } else {
       alert("Gagal menghapus: " + error.message);
     }
+  }
+}
+
+// --- FITUR EDIT JAM ABSENSI (MODAL LOGIC) ---
+function bukaModalEdit(id) {
+  const log = logs.find((l) => l.id === id);
+  if (!log) return alert("Data log tidak ditemukan!");
+
+  document.getElementById("editLogId").value = log.id;
+  document.getElementById("editNama").value = log.nama;
+  document.getElementById("editStatus").value = log.status;
+
+  // Format ISO waktu ke format input datetime-local (YYYY-MM-DDThh:mm)
+  const date = new Date(log.waktu);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+
+  document.getElementById("editWaktu").value = `${year}-${month}-${day}T${hours}:${minutes}`;
+
+  document.getElementById("modalEditAbsen").style.display = "flex";
+}
+
+function hideEditModal() {
+  document.getElementById("modalEditAbsen").style.display = "none";
+}
+
+async function simpanPerubahanAbsen() {
+  const id = document.getElementById("editLogId").value;
+  const status = document.getElementById("editStatus").value;
+  const waktuBaru = document.getElementById("editWaktu").value;
+
+  if (!waktuBaru) return alert("Waktu baru harus diisi!");
+
+  // Hitung ulang telat jika perlu (berdasarkan waktu baru)
+  let telat = false;
+  const tglBaru = new Date(waktuBaru);
+  if (status === "MASUK") {
+    const jam = tglBaru.getHours();
+    const menit = tglBaru.getMinutes();
+    if (jam > 9 || (jam === 9 && menit > 0)) telat = true;
+  }
+
+  const { error } = await supabaseClient
+    .from("logs")
+    .update({
+      status: status,
+      waktu: tglBaru.toISOString(),
+      isLate: telat,
+    })
+    .eq("id", id);
+
+  if (!error) {
+    alert("Data absensi berhasil diperbarui!");
+    hideEditModal();
+    await syncData();
+  } else {
+    alert("Gagal memperbarui: " + error.message);
   }
 }
