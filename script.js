@@ -12,32 +12,42 @@ const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
 
 const OFFICE_IP = "103.108.130.39";
 let KARYAWAN = [];
-let logs = [];
+let logs = []; // Untuk tampilan (terbatas dengan foto)
+let allLogs = []; // Untuk hitung gaji (semua tanpa foto)
 
 // --- FUNGSI CLOUD SYNC ---
 async function syncData() {
   try {
     console.log("Mengambil data dari Cloud...");
 
-    // Ambil Data Karyawan
+    // 1. Ambil Data Karyawan
     const { data: dataKar, error: errKar } = await supabaseClient
       .from("karyawan")
       .select("*")
       .order("nama", { ascending: true });
 
     if (errKar) throw errKar;
-    KARYAWAN = dataKar || []; // Mengisi variabel kapital
+    KARYAWAN = dataKar || [];
 
-    // Ambil Data Logs
+    // 2. Ambil SEMUA data log (Hanya kolom teks untuk kecepatan hitung gaji)
+    const { data: dataAllLog, error: errAllLog } = await supabaseClient
+      .from("logs")
+      .select("id, nama, dept, waktu, status, isLate")
+      .order("id", { ascending: false });
+
+    if (errAllLog) throw errAllLog;
+    allLogs = dataAllLog || [];
+
+    // 3. Ambil 200 data log terbaru (Termasuk foto untuk tabel admin)
     const { data: dataLog, error: errLog } = await supabaseClient
       .from("logs")
       .select("*")
-      .order("id", { ascending: false });
+      .order("id", { ascending: false })
+      .limit(200);
 
     if (errLog) throw errLog;
     logs = dataLog || [];
 
-    // WAJIB: Panggil fungsi render setelah data masuk
     refreshAllUI();
   } catch (e) {
     console.error("Gagal sinkronisasi:", e.message);
@@ -76,8 +86,8 @@ function hitungDetailGaji(gapok, namaKaryawan) {
   const standarHari = 22;
   const gajiHarian = g / standarHari;
 
-  // Filter log untuk karyawan spesifik
-  const dataLogKaryawan = logs.filter((l) => l.nama === namaKaryawan);
+  // Filter log untuk karyawan spesifik (gunakan allLogs agar cepat)
+  const dataLogKaryawan = allLogs.filter((l) => l.nama === namaKaryawan);
 
   // Hitung hadir unik berdasarkan tanggal (hanya status MASUK)
   const hariHadir = [
@@ -159,7 +169,7 @@ async function prosesAbsen(tipe) {
   const sekarang = new Date();
   const tglHariIni = sekarang.toLocaleDateString("id-ID");
 
-  const sudahAbsen = logs.find(
+  const sudahAbsen = allLogs.find(
     (l) =>
       l.nama === nama &&
       new Date(l.waktu).toLocaleDateString("id-ID") === tglHariIni &&
@@ -232,7 +242,8 @@ function renderTabel() {
   const body = document.getElementById("logTableBody");
   if (!body) return;
   const filter = document.getElementById("filterDept")?.value || "ALL";
-  body.innerHTML = "";
+
+  let htmlRows = "";
   let count = 0;
 
   logs.forEach((l) => {
@@ -245,8 +256,7 @@ function renderTabel() {
       ? '<br><small style="color:red;font-weight:bold;">(TELAT)</small>'
       : "";
 
-    // PERBAIKAN: Menambahkan tombol hapus di kolom terakhir
-    body.innerHTML += `
+    htmlRows += `
             <tr>
                 <td><strong>${l.nama}</strong></td>
                 <td>${l.dept}</td>
@@ -259,18 +269,24 @@ function renderTabel() {
             </tr>`;
   });
 
-  if (document.getElementById("countAbsen"))
-    document.getElementById("countAbsen").innerText = count;
+  body.innerHTML = htmlRows;
+
+  if (document.getElementById("countAbsen")) {
+    const totalHariIni = allLogs.filter(l => 
+      new Date(l.waktu).toLocaleDateString() === new Date().toLocaleDateString()
+    ).length;
+    document.getElementById("countAbsen").innerText = totalHariIni;
+  }
 }
 
 function renderKaryawanTable() {
   const body = document.getElementById("karyawanTableBody");
   if (!body) return;
-  body.innerHTML = "";
 
+  let htmlRows = "";
   KARYAWAN.forEach((k, index) => {
     const d = hitungDetailGaji(k.gaji || 0, k.nama);
-    body.innerHTML += `
+    htmlRows += `
       <tr>
         <td><strong>${k.nama}</strong><br><small>${k.nik || "-"}</small></td>
         <td>${k.jabatan || k.dept}<br><small>Hadir: ${d.hadir}/22</small></td>
@@ -283,6 +299,7 @@ function renderKaryawanTable() {
         </td>
       </tr>`;
   });
+  body.innerHTML = htmlRows;
 }
 
 function downloadSlip(index) {
@@ -461,7 +478,7 @@ function cetakSlip(index) {
 // --- UTILITAS ---
 function exportData() {
   let csv = "Nama,Departemen,Waktu,Status,Telat\n";
-  logs.forEach(
+  allLogs.forEach(
     (l) =>
       (csv += `${l.nama},${l.dept},${new Date(l.waktu).toLocaleString("id-ID")},${l.status},${l.isLate}\n`),
   );
