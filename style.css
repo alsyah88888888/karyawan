@@ -209,6 +209,24 @@ header p {
 
 /* RESPONSIVE */
 @media (max-width: 480px) {
-  .terminal-container { padding: 15px; }
-  #liveClock { font-size: 2.8rem; }
+  .terminal-container { 
+    padding: 10px; 
+    width: 100%;
+  }
+  #liveClock { 
+    font-size: 2.2rem; /* Adjusted for very small screens */
+  }
+  .input-box {
+    padding: 20px 15px;
+  }
+  .btn-m, .btn-p {
+    padding: 14px;
+    font-size: 0.85rem;
+  }
+}
+
+@media (max-width: 350px) {
+  #liveClock { 
+    font-size: 1.8rem; 
+  }
 }

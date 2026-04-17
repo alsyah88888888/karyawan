@@ -338,16 +338,106 @@ tr:hover {
 
 .form-input:focus { border-color: var(--primary); }
 
-/* RESPONSIVE */
+/* RESPONSIVE UPGRADES */
+.mobile-top-bar {
+  display: none;
+  background: var(--dark);
+  color: white;
+  padding: 1rem;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 200;
+}
+
+.menu-toggle {
+  background: transparent;
+  border: none;
+  color: white;
+  cursor: pointer;
+}
+
+.close-sidebar {
+  display: none;
+  background: transparent;
+  border: none;
+  color: white;
+  font-size: 2rem;
+  cursor: pointer;
+}
+
+.sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
 @media (max-width: 1024px) {
-  .sidebar { width: 80px; padding: 1.5rem 0.5rem; }
+  :root { --sidebar-width: 80px; }
   .sidebar h2 span, .nav-item span, .btn-sidebar span { display: none; }
-  .main-content { margin-left: 80px; }
-  .nav-item { justify-content: center; padding: 1rem; }
+  .nav-item { justify-content: center; padding: 1.25rem; }
+  .sidebar h2 { justify-content: center; }
 }
 
 @media (max-width: 768px) {
-  .main-content { margin-left: 0; padding: 1rem; }
-  .sidebar { transform: translateX(-100%); }
-  .stat-grid { grid-template-columns: 1fr; }
+  :root { --sidebar-width: 280px; }
+  
+  .mobile-top-bar { display: flex; }
+  
+  .sidebar {
+    left: -100%;
+    transition: left 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .sidebar.active {
+    left: 0;
+    box-shadow: 20px 0 50px rgba(0, 0, 0, 0.5);
+  }
+  
+  .close-sidebar { display: block; }
+  
+  .main-content {
+    margin-left: 0;
+    padding: 1.5rem 1rem;
+  }
+  
+  .stat-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .header-actions { width: 100%; }
+  .header-actions .btn { width: 100%; justify-content: center; }
+  
+  .table-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+  }
+  
+  .table-header select, .table-header .btn {
+    width: 100%;
+  }
+
+  .modal-content {
+    max-width: 95%;
+    margin: 10px;
+  }
+}
+
+/* TABLE RESPONSIVENESS */
+.table-container {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+table {
+  min-width: 700px;
 }

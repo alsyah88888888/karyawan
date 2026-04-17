@@ -81,6 +81,15 @@ function switchTab(tab) {
 
   document.getElementById("btnTabLog").classList.toggle("active", tab === 'log');
   document.getElementById("btnTabKaryawan").classList.toggle("active", tab === 'karyawan');
+
+  // Close sidebar on mobile after selecting a tab
+  if (window.innerWidth <= 768) {
+    document.getElementById("sidebar").classList.remove("active");
+  }
+}
+
+function toggleSidebar() {
+  document.getElementById("sidebar").classList.toggle("active");
 }
 
 function renderLogTable() {
