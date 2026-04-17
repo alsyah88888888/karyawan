@@ -1,215 +1,207 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="id">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>KOBOI - Admin Dashboard</title>
-    <link rel="stylesheet" href="style.css?v=20260417b" />
-  </head>
-  <body>
-    <div class="admin-container">
-      <aside class="sidebar">
-        <h2>KOBOI ADMIN</h2>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KOBOI - Admin Premium Dashboard</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+    <div class="admin-wrapper">
+        <!-- SIDEBAR -->
+        <aside class="sidebar">
+            <h2>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                <span>KOBOI ADMIN</span>
+            </h2>
+            
+            <nav class="sidebar-nav">
+                <button onclick="switchTab('log')" id="btnTabLog" class="nav-item active">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                    <span>Log Absensi</span>
+                </button>
+                <button onclick="switchTab('karyawan')" id="btnTabKaryawan" class="nav-item">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    <span>Kelola Karyawan</span>
+                </button>
+            </nav>
 
-        <nav class="admin-nav">
-          <button onclick="switchTab('log')" id="btnTabLog" class="nav-active">
-            Log Absensi
-          </button>
-          <button onclick="switchTab('karyawan')" id="btnTabKaryawan">
-            Kelola Karyawan
-          </button>
-        </nav>
+            <div class="sidebar-footer">
+                <button class="btn-sidebar logout" onclick="window.location.href='index.html'">
+                    <span>Kembali ke Terminal</span>
+                </button>
+                <button class="btn-sidebar" style="background: rgba(239, 68, 68, 0.1); color: #ef4444;" onclick="clearData()">
+                    <span>Hapus Semua Log</span>
+                </button>
+            </div>
+        </aside>
 
-        <div class="stat-box">
-          <p>Total Absensi Hari Ini</p>
-          <h3 id="countAbsen">0</h3>
-        </div>
+        <!-- MAIN -->
+        <main class="main-content">
+            <header class="page-header">
+                <h1>Dashboard Overview</h1>
+                <div class="header-actions">
+                    <button class="btn btn-outline" onclick="exportData()">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        Export CSV
+                    </button>
+                </div>
+            </header>
 
-        <button class="btn-download" onclick="exportData()">
-          Download CSV
-        </button>
+            <!-- STAT GRID -->
+            <div class="stat-grid">
+                <div class="stat-card">
+                    <div class="stat-info">
+                        <p>Total Manpower</p>
+                        <h2 id="statTotalKaryawan">0</h2>
+                    </div>
+                    <div class="stat-icon icon-blue">👥</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-info">
+                        <p>Hadir Hari Ini</p>
+                        <h2 id="statHadirHariIni">0</h2>
+                    </div>
+                    <div class="stat-icon icon-green">✅</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-info">
+                        <p>Total Terlambat</p>
+                        <h2 id="statTelatHariIni">0</h2>
+                    </div>
+                    <div class="stat-icon icon-orange">⏰</div>
+                </div>
+            </div>
 
-        <button class="btn-danger" onclick="clearData()">
-          Hapus Semua Log
-        </button>
+            <!-- TAB: LOG ABSENSI -->
+            <section id="tabLog">
+                <div class="table-container">
+                    <div class="table-header">
+                        <h3>Log Presensi Real-time</h3>
+                        <select id="filterDept" class="form-input" style="width: auto; padding: 8px 30px 8px 12px;" onchange="renderLogTable()">
+                            <option value="ALL">Semua Departemen</option>
+                            <option value="FINANCE">Finance</option>
+                            <option value="OPERASIONAL">Operasional</option>
+                        </select>
+                    </div>
+                    <div style="overflow-x: auto;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>KARYAWAN</th>
+                                    <th>WAKTU</th>
+                                    <th>STATUS</th>
+                                    <th>FOTO</th>
+                                    <th>AKSI</th>
+                                </tr>
+                            </thead>
+                            <tbody id="logTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
 
-        <a href="index.html" class="btn-exit">Keluar</a>
-      </aside>
-
-      <main class="content">
-        <section id="tabLog">
-          <div class="header-content">
-            <h2>Log Presensi Real-time</h2>
-            <select id="filterDept" onchange="renderTabel()">
-              <option value="ALL">Semua Departemen</option>
-              <option value="FINANCE">Finance</option>
-              <option value="OPERASIONAL">Operasional</option>
-            </select>
-          </div>
-
-          <div class="table-scroll">
-            <table>
-              <thead>
-                <tr>
-                  <th>NAMA</th>
-                  <th>DEPT</th>
-                  <th>WAKTU</th>
-                  <th>STATUS</th>
-                  <th>FOTO</th>
-                </tr>
-              </thead>
-              <tbody id="logTableBody"></tbody>
-            </table>
-          </div>
-        </section>
-
-        <section id="tabKaryawan" style="display: none">
-          <div
-            class="header-content"
-            style="
-              display: flex;
-              justify-content: space-between;
-              align-items: center;
-            "
-          >
-            <h2>Daftar Karyawan & Payroll</h2>
-            <button
-              onclick="showModal()"
-              class="btn-m"
-              style="background: #10b981"
-            >
-              + Tambah Karyawan
-            </button>
-          </div>
-
-          <div class="table-scroll">
-            <table>
-              <thead>
-                <tr>
-                  <th>NAMA KARYAWAN</th>
-                  <th>DEPARTEMEN</th>
-                  <th>REKENING</th>
-                  <th>GAJI POKOK</th>
-                  <th>ESTIMASI THP</th>
-                  <th>AKSI</th>
-                </tr>
-              </thead>
-              <tbody id="karyawanTableBody"></tbody>
-            </table>
-          </div>
-        </section>
-      </main>
+            <!-- TAB: KELOLA KARYAWAN -->
+            <section id="tabKaryawan" style="display: none;">
+                <div class="table-container">
+                    <div class="table-header">
+                        <h3>Database Karyawan & Payroll</h3>
+                        <button class="btn btn-primary" onclick="showModal()">
+                            <span>+ Tambah Karyawan</span>
+                        </button>
+                    </div>
+                    <div style="overflow-x: auto;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>NAMA</th>
+                                    <th>JABATAN</th>
+                                    <th>REKENING</th>
+                                    <th>GAJI POKOK</th>
+                                    <th>THP (BULAN INI)</th>
+                                    <th>AKSI</th>
+                                </tr>
+                            </thead>
+                            <tbody id="karyawanTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </main>
     </div>
 
-    <div id="modalKaryawan" class="modal-overlay" style="display: none">
-      <div class="modal-content">
-        <h3>Tambah Karyawan Baru</h3>
-
-        <div style="margin-top: 15px">
-          <label>Nama Lengkap</label>
-          <input type="text" id="inpNama" placeholder="Contoh: BUDI UTOMO" />
+    <!-- MODAL: TAMBAH KARYAWAN -->
+    <div id="modalKaryawan" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <header class="modal-header">
+                <h3>Tambah Karyawan</h3>
+                <span style="cursor: pointer;" onclick="hideModal()">&times;</span>
+            </header>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Nama Lengkap</label>
+                    <input type="text" id="inpNama" class="form-input" placeholder="Nama Karyawan...">
+                </div>
+                <div class="form-group">
+                    <label>Departemen</label>
+                    <select id="inpDept" class="form-input">
+                        <option value="FINANCE">FINANCE</option>
+                        <option value="OPERASIONAL">OPERASIONAL</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Nomor Rekening Bank</label>
+                    <input type="text" id="inpRekening" class="form-input" placeholder="BCA - xxxxxxxx">
+                </div>
+                <div class="form-group">
+                    <label>Gaji Pokok (Rp)</label>
+                    <input type="number" id="inpGaji" class="form-input" placeholder="Contoh: 5000000">
+                </div>
+                <div style="display: flex; gap: 10px; margin-top: 2rem;">
+                    <button class="btn btn-primary" style="flex: 1;" onclick="simpanKaryawan()">Simpan Data</button>
+                    <button class="btn btn-outline" style="flex: 1;" onclick="hideModal()">Batal</button>
+                </div>
+            </div>
         </div>
-
-        <div style="margin-top: 15px">
-          <label>Departemen</label>
-          <select id="inpDept">
-            <option value="FINANCE">FINANCE</option>
-            <option value="OPERASIONAL">OPERASIONAL</option>
-          </select>
-        </div>
-
-        <div style="margin-top: 15px">
-          <label>Nomor Rekening Bank</label>
-          <input type="text" id="inpRekening" placeholder="Contoh: BCA 1234567890" />
-        </div>
-
-        <div style="margin-top: 15px">
-          <label>Gaji Pokok (Rp)</label>
-          <input type="number" id="inpGaji" placeholder="Contoh: 6500000" />
-        </div>
-
-        <div class="btn-group" style="margin-top: 25px">
-          <button onclick="simpanKaryawan()" class="btn-m">Simpan</button>
-          <button
-            onclick="hideModal()"
-            class="btn-danger"
-            style="background: #f1f5f9; color: #475569; border: none"
-          >
-            Batal
-          </button>
-        </div>
-      </div>
     </div>
 
-    <!-- MODAL EDIT JAM ABSENSI -->
-    <div id="modalEditAbsen" class="modal-overlay" style="display: none">
-      <div class="modal-content edit-modal">
-        <header class="modal-header-orange">
-          <h3>Edit Jam Absensi</h3>
-          <p>Sesuaikan waktu presensi karyawan.</p>
-          <span class="close-btn" onclick="hideEditModal()">&times;</span>
-        </header>
-
-        <div class="modal-body">
-          <input type="hidden" id="editLogId" />
-
-          <div style="margin-top: 15px">
-            <label>Nama Karyawan</label>
-            <input type="text" id="editNama" disabled style="background: #f1f5f9" />
-          </div>
-
-          <div style="margin-top: 15px">
-            <label>Status</label>
-            <select id="editStatus">
-              <option value="MASUK">MASUK</option>
-              <option value="PULANG">PULANG</option>
-            </select>
-          </div>
-
-          <div style="margin-top: 15px">
-            <label>Waktu Baru</label>
-            <input type="datetime-local" id="editWaktu" />
-          </div>
-
-          <div class="btn-group-vertical" style="margin-top: 25px">
-            <button
-              class="btn-save-orange"
-              onclick="simpanPerubahanAbsen()"
-              style="
-                width: 100%;
-                padding: 12px;
-                background: #f59e0b;
-                color: white;
-                border: none;
-                border-radius: 8px;
-                font-weight: bold;
-                cursor: pointer;
-              "
-            >
-              Simpan Perubahan
-            </button>
-            <button
-              onclick="hideEditModal()"
-              style="
-                width: 100%;
-                padding: 12px;
-                background: #f1f5f9;
-                color: #475569;
-                border: none;
-                border-radius: 8px;
-                margin-top: 10px;
-                cursor: pointer;
-              "
-            >
-              Batal
-            </button>
-          </div>
+    <!-- MODAL: EDIT ABSENSI -->
+    <div id="modalEditAbsen" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <header class="modal-header orange">
+                <h3>Koreksi Presensi</h3>
+                <span style="cursor: pointer;" onclick="hideEditModal()">&times;</span>
+            </header>
+            <div class="modal-body">
+                <input type="hidden" id="editLogId">
+                <div class="form-group">
+                    <label>Nama Karyawan</label>
+                    <input type="text" id="editNama" class="form-input" disabled style="background: #f1f5f9;">
+                </div>
+                <div class="form-group">
+                    <label>Status Absensi</label>
+                    <select id="editStatus" class="form-input">
+                        <option value="MASUK">MASUK</option>
+                        <option value="PULANG">PULANG</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Waktu Presensi</label>
+                    <input type="datetime-local" id="editWaktu" class="form-input">
+                </div>
+                <div style="display: flex; gap: 10px; margin-top: 2rem;">
+                    <button class="btn btn-primary" style="flex: 1; background: var(--warning);" onclick="simpanPerubahanAbsen()">Simpan Perubahan</button>
+                    <button class="btn btn-outline" style="flex: 1;" onclick="hideEditModal()">Batal</button>
+                </div>
+            </div>
         </div>
-      </div>
     </div>
 
+    <!-- Supabase & Logic -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-    <script src="script.js?v=20260417b"></script>
-  </body>
+    <script src="admin.js"></script>
+</body>
 </html>
