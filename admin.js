@@ -126,10 +126,19 @@ function renderKaryawanTable() {
 // --- PAYROLL & OVERTIME LOGIC ---
 // --- UTILS: TIMEZONE-SAFE ---
 function getWIBThreshold(dateObj, targetHour) {
-  const y = dateObj.getFullYear();
-  const m = String(dateObj.getMonth() + 1).padStart(2, '0');
-  const d = String(dateObj.getDate()).padStart(2, '0');
-  // Menghasilkan objek Date yang dipaksa ke jam target di zona WIB (+07:00)
+  // Paksa pengambilan tanggal di zona waktu Asia/Jakarta (WIB)
+  const formatter = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Jakarta',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  });
+  const parts = formatter.formatToParts(dateObj);
+  const d = parts.find(p => p.type === 'day').value;
+  const m = parts.find(p => p.type === 'month').value;
+  const y = parts.find(p => p.type === 'year').value;
+  
+  // Buat objek Date absolut di zona WIB (+07:00)
   return new Date(`${y}-${m}-${d}T${String(targetHour).padStart(2, '0')}:00:00+07:00`);
 }
 
@@ -198,7 +207,7 @@ function hitungDetailGaji(gapok, namaKaryawan) {
     gajiPro, 
     hadir: hariHadir, 
     jumlahTelat, 
-    totalLembur: totalLembur.toFixed(1), 
+    totalLembur: totalLembur.toFixed(2), 
     uangLembur, 
     totalPotongan, 
     thp: thp > 0 ? thp : 0 
@@ -305,7 +314,7 @@ function exportData() {
           "WAKTU ABSENSI": waktu.toLocaleString("id-ID"),
           "STATUS": l.status,
           "TERLAMBAT": l.isLate ? "YA" : "TIDAK",
-          "JAM LEMBUR": jamLembur > 0 ? jamLembur.toFixed(1) : 0
+          "JAM LEMBUR": jamLembur > 0 ? jamLembur.toFixed(2) : 0
         });
 
         // Loop untuk memproses PULANG-nya
@@ -327,7 +336,7 @@ function exportData() {
             "WAKTU ABSENSI": wp.toLocaleString("id-ID"),
             "STATUS": lp.status,
             "TERLAMBAT": lp.isLate ? "YA" : "TIDAK",
-            "JAM LEMBUR": jamSore > 0 ? jamSore.toFixed(1) : 0
+            "JAM LEMBUR": jamSore > 0 ? jamSore.toFixed(2) : 0
           });
         }
         i = j;
