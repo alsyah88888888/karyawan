@@ -153,18 +153,24 @@ function hitungDetailGaji(gapok, namaKaryawan) {
     .sort((a, b) => new Date(a.waktu) - new Date(b.waktu));
   
   const hariHadir = [...new Set(dataLogKaryawan.map((l) => new Date(l.waktu).toISOString().slice(0, 10)))].length;
-  const jumlahTelat = dataLogKaryawan.filter((l) => (l.status === "MASUK" || l.status === "masuk") && (l.isLate || l.is_late)).length;
+  const jumlahTelat = dataLogKaryawan.filter((l) => {
+    const s = l.status.toUpperCase();
+    return (s === "MASUK" || s === "BERANGKAT") && (l.isLate || l.is_late);
+  }).length;
 
   let totalLembur = 0;
   let i = 0;
   
   while (i < dataLogKaryawan.length) {
     const l = dataLogKaryawan[i];
-    if (l.status === 'MASUK') {
+    const statusUpper = l.status.toUpperCase();
+    
+    // BERANGKAT dianggap sama dengan MASUK
+    if (statusUpper === 'MASUK' || statusUpper === 'BERANGKAT') {
       const actualMasuk = new Date(l.waktu);
       const thresholdMasuk = getWIBThreshold(actualMasuk, STANDAR_MASUK);
       
-      // 1. LEMBUR PAGI (Masuk < 09:00 WIB)
+      // 1. LEMBUR PAGI (Masuk/Berangkat < 09:00 WIB)
       if (actualMasuk < thresholdMasuk) {
         let jamPagi = (thresholdMasuk - actualMasuk) / (1000 * 60 * 60);
         if (jamPagi > 0) totalLembur += jamPagi;
@@ -173,7 +179,7 @@ function hitungDetailGaji(gapok, namaKaryawan) {
       // 2. CARI PULANG TERAKHIR UNTUK SHIFT INI
       let shiftEnd = null;
       let j = i + 1;
-      while (j < dataLogKaryawan.length && dataLogKaryawan[j].status === 'PULANG') {
+      while (j < dataLogKaryawan.length && dataLogKaryawan[j].status.toUpperCase() === 'PULANG') {
         shiftEnd = new Date(dataLogKaryawan[j].waktu);
         j++;
       }
@@ -295,13 +301,15 @@ function exportData() {
       const waktu = new Date(l.waktu);
       let jamLembur = 0;
 
-      if (l.status === 'MASUK') {
+      const statusUpper = l.status.toUpperCase();
+
+      if (statusUpper === 'MASUK' || statusUpper === 'BERANGKAT') {
         const actualMasuk = waktu;
         const thresholdMasuk = getWIBThreshold(actualMasuk, STANDAR_MASUK);
         
         // Cari j (Index PULANG terakhir) untuk shift ini
         let j = i + 1;
-        while (j < userLogs.length && userLogs[j].status === 'PULANG') {
+        while (j < userLogs.length && userLogs[j].status.toUpperCase() === 'PULANG') {
           j++;
         }
         
