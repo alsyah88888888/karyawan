@@ -191,22 +191,6 @@ header p {
   filter: none;
 }
 
-/* ADMIN LINK */
-.admin-link {
-  display: block;
-  text-align: center;
-  margin-top: 30px;
-  font-size: 0.8rem;
-  color: #64748b;
-  font-weight: 600;
-  text-decoration: none;
-  cursor: pointer;
-}
-
-.admin-link:hover {
-  color: var(--primary);
-}
-
 /* RESPONSIVE */
 @media (max-width: 480px) {
   .terminal-container { 

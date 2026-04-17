@@ -160,6 +160,27 @@ async function prosesAbsen(tipe) {
 }
 
 // Admin Entry
+let loginClicks = 0;
+let lastClickTime = 0;
+
+function hiddenLogin() {
+  const currentTime = Date.now();
+  
+  // Jika klik dilakukan dalam jeda < 500ms dari klik sebelumnya
+  if (currentTime - lastClickTime < 500) {
+    loginClicks++;
+  } else {
+    loginClicks = 1; // Reset jika terlalu lambat
+  }
+  
+  lastClickTime = currentTime;
+
+  if (loginClicks >= 5) {
+    loginClicks = 0; // Reset counter
+    loginAdmin();
+  }
+}
+
 function loginAdmin() {
   const p = prompt("Password Admin:");
   if (p === "mautaubanget") window.location.href = "admin.html";
