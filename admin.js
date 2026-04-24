@@ -21,6 +21,7 @@ let allLogs = [];
 // --- CORE SYNC ---
 async function syncData() {
   loadRumus();
+  if (!document.getElementById("filterTglMulai").value) setPeriodeIni();
   try {
     const { data: dataKar } = await supabaseClient.from("karyawan").select("*").order("nama", { ascending: true });
     KARYAWAN = dataKar || [];
@@ -163,15 +164,28 @@ function hitungDetailGaji(gapok, namaKaryawan) {
   const targetNama = namaKaryawan.trim().toLowerCase();
   const k = KARYAWAN.find(item => item.nama.trim().toLowerCase() === targetNama);
   
+  const tglMulai = document.getElementById("filterTglMulai")?.value;
+  const tglSelesai = document.getElementById("filterTglSelesai")?.value;
+
   const g = parseFloat(gapok) || 0;
   const hkeRate = k ? (parseFloat(k.hke_rate) || 50000) : 50000;
   const incentive = k ? (parseFloat(k.incentive) || 0) : 0;
   const incentiveLuar = k ? (parseFloat(k.incentive_luar) || 0) : 0;
   const pinjaman = k ? (parseFloat(k.pinjaman) || 0) : 0;
 
-  const dataLogKaryawan = allLogs
+  let dataLogKaryawan = allLogs
     .filter((l) => l.nama.trim().toLowerCase() === targetNama)
     .sort((a, b) => new Date(a.waktu) - new Date(b.waktu));
+  
+  // --- FILTER TANGGAL ---
+  if (tglMulai && tglSelesai) {
+    const start = new Date(tglMulai + "T00:00:00");
+    const end = new Date(tglSelesai + "T23:59:59");
+    dataLogKaryawan = dataLogKaryawan.filter(l => {
+      const w = new Date(l.waktu);
+      return w >= start && w <= end;
+    });
+  }
   
   const hariHadir = [...new Set(dataLogKaryawan.map((l) => new Date(l.waktu).toISOString().slice(0, 10)))].length;
 
@@ -660,6 +674,16 @@ function loadRumus() {
   if (r && document.getElementById("inputRumusLembur")) {
     document.getElementById("inputRumusLembur").value = r;
   }
+}
+
+function setPeriodeIni() {
+  const now = new Date();
+  const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+  const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  
+  document.getElementById("filterTglMulai").value = firstDay.toISOString().split('T')[0];
+  document.getElementById("filterTglSelesai").value = lastDay.toISOString().split('T')[0];
+  refreshUI();
 }
 
 window.onload = syncData;

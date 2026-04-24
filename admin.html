@@ -132,6 +132,13 @@
                                     onchange="simpanRumus()">
                                 <small style="font-size: 0.7rem; color: #78350f;">Variabel tersedia: <b>totalLembur</b>, <b>TARIF_LEMBUR</b></small>
                             </div>
+                            <div style="margin-top: 10px; display: flex; align-items: center; gap: 15px; background: #f1f5f9; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1;">
+                                <span style="font-size: 0.8rem; font-weight: 700; color: #475569;">📅 PERIODE:</span>
+                                <input type="date" id="filterTglMulai" class="form-input" style="width: auto; padding: 4px 8px;" onchange="refreshUI()">
+                                <span style="font-size: 0.8rem; font-weight: 700;">s/d</span>
+                                <input type="date" id="filterTglSelesai" class="form-input" style="width: auto; padding: 4px 8px;" onchange="refreshUI()">
+                                <button class="btn btn-outline" style="padding: 4px 12px; font-size: 0.75rem;" onclick="setPeriodeIni()">Bulan Ini</button>
+                            </div>
                         </div>
                         <div style="display: flex; gap: 10px; align-items: flex-end;">
                             <button class="btn btn-outline" onclick="exportMasterKaryawan()">
