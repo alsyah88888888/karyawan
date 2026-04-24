@@ -231,7 +231,8 @@ function renderKaryawanTable() {
         <td>
           <div style="display: flex; align-items: center; gap: 12px;">
             <div style="width: 45px; height: 45px; border-radius: 50%; overflow: hidden; border: 2px solid var(--border); background: #f1f5f9;">
-              <img src="${k.nik === 'KBI-000001' ? 'image/NAME CARD KOLA BORASI INDONESIA/KBI-000001.jpg' : 'https://ui-avatars.com/api/?name=' + encodeURIComponent(k.nama) + '&background=random'}" 
+              <img src="image/NAME CARD KOLA BORASI INDONESIA/${k.nik}.jpg" 
+                   onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(k.nama)}&background=random'"
                    style="width: 100%; height: 100%; object-fit: cover;">
             </div>
             <div>
