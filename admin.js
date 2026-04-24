@@ -77,10 +77,19 @@ function switchTab(tab) {
     if (el) el.classList.toggle("active", l.includes(tab.replace('tab', '')));
   });
 
+  // Sembunyikan Header & Stats jika di Tab CEO
+  const headerActions = document.querySelector(".header-actions");
+  const statsGrid = document.querySelector(".stats-grid");
+  if (headerActions) headerActions.style.display = tab === "tabCEO" ? "none" : "flex";
+  if (statsGrid) statsGrid.style.display = tab === "tabCEO" ? "none" : "grid";
+
   const title = document.getElementById("pageTitle");
   if (title) {
     if (tab === "tabLog") title.innerText = "Log Absensi Real-time";
-    else if (tab === "tabCEO") title.innerText = "Direksi / CEO Panel";
+    else if (tab === "tabCEO") {
+        title.innerText = "Direksi / CEO Panel";
+        renderCEOTable();
+    }
     else title.innerText = "Manajemen Karyawan";
   }
   
