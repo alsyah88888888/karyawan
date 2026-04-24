@@ -17,6 +17,7 @@ const TOLERANSI_MASUK_MENIT = 15; // Sampai 09:15 tetap tidak telat
 let KARYAWAN = [];
 let logs = [];
 let allLogs = [];
+let INCENTIVE_APPROVED = true; // Status Persetujuan CEO
 
 // --- CORE SYNC ---
 async function syncData() {
@@ -62,25 +63,47 @@ function renderStats() {
 }
 
 function switchTab(tab) {
-  const tabs = ["tabLog", "tabKaryawan"];
+  const tabs = ["tabLog", "tabKaryawan", "tabCEO"];
   tabs.forEach((t) => {
     const el = document.getElementById(t);
     if (el) el.style.display = t === tab ? "block" : "none";
   });
 
   // Update Sidebar Active States
-  const linkLog = document.getElementById("linkTabLog");
-  const linkKar = document.getElementById("linkTabKaryawan");
-  if (linkLog) linkLog.classList.toggle("active", tab === "tabLog");
-  if (linkKar) linkKar.classList.toggle("active", tab === "tabKaryawan");
+  const links = ["linkTabLog", "linkTabKaryawan", "linkTabCEO"];
+  links.forEach(l => {
+    const el = document.getElementById(l);
+    if (el) el.classList.toggle("active", l.includes(tab.replace('tab', '')));
+  });
 
   const title = document.getElementById("pageTitle");
   if (title) {
     if (tab === "tabLog") title.innerText = "Log Absensi Real-time";
+    else if (tab === "tabCEO") title.innerText = "Direksi / CEO Panel";
     else title.innerText = "Manajemen Karyawan";
   }
   
   if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+async function toggleIncentiveCEO() {
+  INCENTIVE_APPROVED = !INCENTIVE_APPROVED;
+  refreshCEOPanel();
+  refreshUI(); // Hitung ulang payroll di tabel
+  alert(`Status Insentif Berhasil Diubah: ${INCENTIVE_APPROVED ? "AKTIF" : "NON-AKTIF"}`);
+}
+
+function refreshCEOPanel() {
+  const statusEl = document.getElementById("ceoIncentiveStatus");
+  if (!statusEl) return;
+  
+  if (INCENTIVE_APPROVED) {
+    statusEl.innerText = "STATUS: AKTIF (DISETUJUI CEO)";
+    statusEl.style.background = "var(--success)";
+  } else {
+    statusEl.innerText = "STATUS: NON-AKTIF (BELUM DISETUJUI)";
+    statusEl.style.background = "var(--danger)";
+  }
 }
 
 function toggleSidebar() { document.getElementById("sidebar").classList.toggle("active"); }
@@ -198,8 +221,8 @@ function hitungDetailGaji(gapok, namaKaryawan) {
 
   const g = parseFloat(gapok) || 0;
   const hkeRate = k ? (parseFloat(k.hke_rate) || 50000) : 50000;
-  const incentive = k ? (parseFloat(k.incentive) || 0) : 0;
-  const incentiveLuar = k ? (parseFloat(k.incentive_luar) || 0) : 0;
+  const incentive = (k && INCENTIVE_APPROVED) ? (parseFloat(k.incentive) || 0) : 0;
+  const incentiveLuar = (k && INCENTIVE_APPROVED) ? (parseFloat(k.incentive_luar) || 0) : 0;
   const pinjaman = k ? (parseFloat(k.pinjaman) || 0) : 0;
 
   let dataLogKaryawan = allLogs
