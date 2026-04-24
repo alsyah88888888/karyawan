@@ -20,6 +20,10 @@ let allLogs = [];
 let CEO_PHONE = "6285774444805"; // Nomor WA CEO PT. Kola Borasi Indonesia
 let INCENTIVE_APPROVED = true; // Status Persetujuan CEO
 
+// Chart Instances
+let deptChartInstance = null;
+let attendanceChartInstance = null;
+
 // --- CORE SYNC ---
 async function syncData() {
   if (!document.getElementById("filterTglMulai").value) setPeriodeIni();
@@ -51,6 +55,7 @@ function refreshUI() {
   renderLogTable();
   renderKaryawanTable();
   renderCEOTable();
+  renderVisualStats();
 }
 
 // --- DASHBOARD UI ---
@@ -58,6 +63,7 @@ function renderStats() {
   const manpowerEl = document.getElementById("statManpower");
   const hadirEl = document.getElementById("statHadir");
   const terlambatEl = document.getElementById("statTerlambat");
+  const payrollEl = document.getElementById("statPayroll");
 
   if (manpowerEl) manpowerEl.innerText = KARYAWAN.length;
 
@@ -69,6 +75,95 @@ function renderStats() {
 
   if (hadirEl) hadirEl.innerText = uniqueHadir;
   if (terlambatEl) terlambatEl.innerText = totalTelat;
+
+  // Estimasi Total Payroll Periode Ini
+  let totalPayroll = 0;
+  KARYAWAN.forEach(k => {
+    const d = hitungDetailGaji(k.gaji, k.nama);
+    totalPayroll += d.thp;
+  });
+  if (payrollEl) payrollEl.innerText = "Rp " + Math.floor(totalPayroll).toLocaleString('id-ID');
+}
+
+function renderVisualStats() {
+  // 1. Chart Distribusi Departemen
+  const deptCtx = document.getElementById('deptChart')?.getContext('2d');
+  if (deptCtx) {
+    const deptData = {};
+    KARYAWAN.forEach(k => {
+      const d = k.dept || "LAINNYA";
+      deptData[d] = (deptData[d] || 0) + 1;
+    });
+
+    if (deptChartInstance) deptChartInstance.destroy();
+    deptChartInstance = new Chart(deptCtx, {
+      type: 'doughnut',
+      data: {
+        labels: Object.keys(deptData),
+        datasets: [{
+          data: Object.values(deptData),
+          backgroundColor: ['#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#0ea5e9', '#8b5cf6', '#ec4899'],
+          borderWidth: 0
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'bottom', labels: { usePointStyle: true, font: { family: 'Outfit', size: 11 } } }
+        },
+        cutout: '70%'
+      }
+    });
+  }
+
+  // 2. Chart Tren Kehadiran (7 Hari Terakhir)
+  const attCtx = document.getElementById('attendanceChart')?.getContext('2d');
+  if (attCtx) {
+    const days = [];
+    const counts = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toLocaleDateString();
+      days.push(d.toLocaleDateString('id-ID', { weekday: 'short' }));
+      
+      const uniqueAtDay = [...new Set(allLogs.filter(l => 
+        new Date(l.waktu).toLocaleDateString() === dateStr && l.status === 'MASUK'
+      ).map(l => l.nama))].length;
+      
+      counts.push(uniqueAtDay);
+    }
+
+    if (attendanceChartInstance) attendanceChartInstance.destroy();
+    attendanceChartInstance = new Chart(attCtx, {
+      type: 'line',
+      data: {
+        labels: days,
+        datasets: [{
+          label: 'Jumlah Karyawan Masuk',
+          data: counts,
+          borderColor: '#4f46e5',
+          backgroundColor: 'rgba(79, 70, 229, 0.1)',
+          fill: true,
+          tension: 0.4,
+          pointRadius: 4,
+          pointBackgroundColor: '#4f46e5'
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: { beginAtZero: true, grid: { display: false }, ticks: { stepSize: 1, font: { family: 'Outfit' } } },
+          x: { grid: { display: false }, ticks: { font: { family: 'Outfit' } } }
+        },
+        plugins: {
+          legend: { display: false }
+        }
+      }
+    });
+  }
 }
 
 function switchTab(tab) {
@@ -88,8 +183,11 @@ function switchTab(tab) {
   // Sembunyikan Header & Stats jika di Tab CEO
   const headerActions = document.querySelector(".header-actions");
   const statsGrid = document.querySelector(".stats-grid");
+  const statsVisuals = document.getElementById("statsVisuals");
+
   if (headerActions) headerActions.style.display = tab === "tabCEO" ? "none" : "flex";
   if (statsGrid) statsGrid.style.display = tab === "tabCEO" ? "none" : "grid";
+  if (statsVisuals) statsVisuals.style.display = tab === "tabCEO" ? "none" : "grid";
 
   const title = document.getElementById("pageTitle");
   if (title) {

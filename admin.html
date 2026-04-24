@@ -10,6 +10,8 @@
     <link rel="stylesheet" href="admin.css">
     <!-- Lucide Icons for Clarity -->
     <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Chart.js for Visual Statistics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
@@ -98,6 +100,37 @@
                     <div>
                         <div class="stat-val" id="statTerlambat">0</div>
                         <div class="stat-label">Total Terlambat</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: #fef2f2; color: #ef4444;">
+                        <i data-lucide="wallet"></i>
+                    </div>
+                    <div>
+                        <div class="stat-val" id="statPayroll">Rp 0</div>
+                        <div class="stat-label">Estimasi Payroll</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VISUAL STATS (CHARTS) -->
+            <div class="stats-visuals" id="statsVisuals">
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h3>Distribusi Departemen</h3>
+                        <p>Komposisi tim per divisi</p>
+                    </div>
+                    <div class="chart-body">
+                        <canvas id="deptChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h3>Tren Kehadiran (7 Hari Terakhir)</h3>
+                        <p>Persentase kehadiran harian</p>
+                    </div>
+                    <div class="chart-body">
+                        <canvas id="attendanceChart"></canvas>
                     </div>
                 </div>
             </div>
