@@ -131,7 +131,7 @@ function renderKaryawanTable() {
         <td>
           <div style="display: flex; gap: 6px;">
             <button class="btn btn-outline" onclick="cetakSlip(${index})" title="Cetak Slip Gaji">📑</button>
-            <button class="btn btn-outline" onclick="bukaModalEditKaryawan('${k.id}')" title="Edit Master Data">✏️</button>
+            <button class="btn btn-outline" onclick="bukaModalEditKaryawan(${index})" title="Edit Master Data">✏️</button>
             <button class="btn btn-outline" onclick="hapusKaryawan('${k.id}')" style="color: var(--danger);" title="Hapus Karyawan">🗑️</button>
           </div>
         </td>
@@ -456,8 +456,8 @@ async function simpanKaryawan() {
   }
 }
 
-function bukaModalEditKaryawan(id) {
-  const k = KARYAWAN.find(item => item.id == id);
+function bukaModalEditKaryawan(index) {
+  const k = KARYAWAN[index];
   if (!k) return;
 
   document.getElementById("modalTitle").innerText = "Edit Master Data: " + k.nama;
