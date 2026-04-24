@@ -512,7 +512,7 @@ function cetakSlip(index) {
             <div class="row"><span class="label">HKE (${d.hadir} Hari)</span><span class="val">Rp ${Math.floor(d.uangHKE).toLocaleString('id-ID')}</span></div>
             <div class="row"><span class="label">Insentif Khusus</span><span class="val">Rp ${Math.floor(d.incentiveLuarMaster).toLocaleString('id-ID')}</span></div>
             <div class="row"><span class="label">Bonus CEO</span><span class="val">Rp ${Math.floor(d.incentive).toLocaleString('id-ID')}</span></div>
-            <div class="row"><span class="label">Lembur (${d.totalLembur} Jam)</span><span class="val">Rp ${Math.floor(d.uangLembur).toLocaleString('id-ID')}</span></div>
+            <div class="row"><span class="label">Uang Lembur (${d.totalLembur} Jam)</span><span class="val">Rp ${Math.floor(d.uangLembur).toLocaleString('id-ID')}</span></div>
           </div>
           <div class="salary-col">
             <h3>Potongan (Deductions)</h3>
