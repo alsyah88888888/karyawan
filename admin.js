@@ -45,11 +45,11 @@ function refreshUI() {
 
 // --- DASHBOARD UI ---
 function renderStats() {
-  const totalKarEl = document.getElementById("statTotalKaryawan");
-  const hadirHariIniEl = document.getElementById("statHadirHariIni");
-  const telatHariIniEl = document.getElementById("statTelatHariIni");
+  const manpowerEl = document.getElementById("statManpower");
+  const hadirEl = document.getElementById("statHadir");
+  const terlambatEl = document.getElementById("statTerlambat");
 
-  if (totalKarEl) totalKarEl.innerText = KARYAWAN.length;
+  if (manpowerEl) manpowerEl.innerText = KARYAWAN.length;
 
   const todayStr = new Date().toLocaleDateString();
   const logsToday = allLogs.filter(l => new Date(l.waktu).toLocaleDateString() === todayStr);
@@ -57,16 +57,30 @@ function renderStats() {
   const uniqueHadir = [...new Set(logsToday.filter(l => l.status === 'MASUK').map(l => l.nama))].length;
   const totalTelat = logsToday.filter(l => l.status === 'MASUK' && l.isLate).length;
 
-  if (hadirHariIniEl) hadirHariIniEl.innerText = uniqueHadir;
-  if (telatHariIniEl) telatHariIniEl.innerText = totalTelat;
+  if (hadirEl) hadirEl.innerText = uniqueHadir;
+  if (terlambatEl) terlambatEl.innerText = totalTelat;
 }
 
 function switchTab(tab) {
-  document.getElementById("tabLog").style.display = tab === 'log' ? 'block' : 'none';
-  document.getElementById("tabKaryawan").style.display = tab === 'karyawan' ? 'block' : 'none';
-  document.getElementById("btnTabLog").classList.toggle("active", tab === 'log');
-  document.getElementById("btnTabKaryawan").classList.toggle("active", tab === 'karyawan');
-  if (window.innerWidth <= 768) document.getElementById("sidebar").classList.remove("active");
+  const tabs = ["tabLog", "tabKaryawan"];
+  tabs.forEach((t) => {
+    const el = document.getElementById(t);
+    if (el) el.style.display = t === tab ? "block" : "none";
+  });
+
+  // Update Sidebar Active States
+  const linkLog = document.getElementById("linkTabLog");
+  const linkKar = document.getElementById("linkTabKaryawan");
+  if (linkLog) linkLog.classList.toggle("active", tab === "tabLog");
+  if (linkKar) linkKar.classList.toggle("active", tab === "tabKaryawan");
+
+  const title = document.getElementById("pageTitle");
+  if (title) {
+    if (tab === "tabLog") title.innerText = "Log Absensi Real-time";
+    else title.innerText = "Manajemen Karyawan";
+  }
+  
+  if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
 function toggleSidebar() { document.getElementById("sidebar").classList.toggle("active"); }
@@ -74,30 +88,36 @@ function toggleSidebar() { document.getElementById("sidebar").classList.toggle("
 function renderLogTable() {
   const body = document.getElementById("logTableBody");
   if (!body) return;
-  const filter = document.getElementById("filterDept")?.value || "ALL";
 
   let htmlRows = "";
   logs.forEach((l) => {
-    if (filter !== "ALL" && l.dept !== filter) return;
-    const sClass = l.status === "MASUK" ? "tag-success" : "tag-indigo";
-    const waktuTampil = new Date(l.waktu).toLocaleString("id-ID");
-    const telatBadge = l.isLate ? '<span class="tag-amber" style="font-size: 0.6rem; display: block; margin-top: 4px;">TELAT</span>' : "";
-
+    const sClass = l.status === "MASUK" ? "badge-success" : "badge-warning";
+    const tgl = new Date(l.waktu);
+    
     htmlRows += `
       <tr>
-        <td><strong>${l.nama}</strong><br><small class="text-muted">${l.dept}</small></td>
-        <td>${waktuTampil}</td>
-        <td><span class="tag ${sClass}">${l.status}</span> ${telatBadge}</td>
-        <td><img src="${l.foto}" class="img-prev" onclick="zoomFoto('${l.foto}')"></td>
+        <td>
+          <div style="font-weight: 700; color: var(--sidebar-bg);">${l.nama}</div>
+          <div style="font-size: 0.75rem; color: var(--text-muted);">${l.dept || "GENERAL"}</div>
+        </td>
+        <td><span class="badge ${sClass}">${l.status}</span></td>
+        <td>
+          <div style="font-weight: 600;">${tgl.toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})}</div>
+          <div style="font-size: 0.75rem; color: var(--text-muted);">${tgl.toLocaleDateString('id-ID')}</div>
+        </td>
+        <td>
+          ${l.isLate ? '<span style="color:var(--danger); font-size:0.75rem; font-weight:800;">⚠️ TERLAMBAT</span>' : '<span style="color:var(--success); font-size:0.75rem;">✅ TEPAT WAKTU</span>'}
+        </td>
         <td>
           <div style="display: flex; gap: 8px;">
-            <button class="btn btn-outline" onclick="bukaModalEdit(${l.id})" style="padding: 4px 8px; font-size: 0.7rem;">EDIT</button>
-            <button class="btn btn-outline" onclick="hapusSatuLog(${l.id})" style="padding: 4px 8px; font-size: 0.7rem; color: var(--danger);">HAPUS</button>
+            <button class="btn btn-outline btn-small" onclick="bukaModalEdit(${l.id})">Edit</button>
+            <button class="btn btn-danger btn-small" onclick="hapusSatuLog(${l.id})">Hapus</button>
           </div>
         </td>
       </tr>`;
   });
   body.innerHTML = htmlRows;
+  if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
 function renderKaryawanTable() {
@@ -129,15 +149,22 @@ function renderKaryawanTable() {
           Rp ${Math.floor(d.thp).toLocaleString("id-ID")}
         </td>
         <td>
-          <div style="display: flex; gap: 6px;">
-            <button class="btn btn-outline" onclick="cetakSlip(${index})" title="Cetak Slip Gaji">📑</button>
-            <button class="btn btn-outline" onclick="bukaModalEditKaryawan(${index})" title="Edit Master Data">✏️</button>
-            <button class="btn btn-outline" onclick="hapusKaryawan('${k.id}')" style="color: var(--danger);" title="Hapus Karyawan">🗑️</button>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn btn-outline btn-small" onclick="cetakSlip(${index})">
+                <i data-lucide="printer" style="width:14px;"></i> <span>Cetak</span>
+            </button>
+            <button class="btn btn-outline btn-small" onclick="bukaModalEditKaryawan(${index})">
+                <i data-lucide="edit-3" style="width:14px;"></i> <span>Edit</span>
+            </button>
+            <button class="btn btn-danger btn-small" onclick="hapusKaryawan('${k.id}')">
+                <i data-lucide="trash-2" style="width:14px;"></i> <span>Hapus</span>
+            </button>
           </div>
         </td>
       </tr>`;
   });
   body.innerHTML = htmlRows;
+  lucide.createIcons(); // Initialize icons in the table
 }
 
 // --- PAYROLL & OVERTIME LOGIC ---
