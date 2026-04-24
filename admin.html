@@ -387,27 +387,30 @@
 
             <!-- TAB: CEO ACCESS -->
             <section id="tabCEO" style="display: none;">
-                <div class="data-section" style="padding: 3rem; text-align: center; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: white;">
-                    <div style="max-width: 600px; margin: 0 auto;">
-                        <i data-lucide="shield-check" style="width: 80px; height: 80px; color: #4f46e5; margin-bottom: 1.5rem;"></i>
-                        <h2 style="font-size: 2rem; font-weight: 800; margin-bottom: 1rem;">PT. Kola Borasi Indonesia</h2>
-                        <p style="color: #94a3b8; margin-bottom: 3rem;">Otoritas penuh persetujuan biaya operasional & insentif mingguan.</p>
-                        
-                        <div style="background: rgba(255,255,255,0.05); padding: 2.5rem; border-radius: 24px; border: 1px solid rgba(255,255,255,0.1);">
-                            <h3 style="margin-bottom: 1.5rem; font-size: 1.25rem;">Persetujuan Insentif Minggu Ini</h3>
-                            
-                            <div style="display: flex; justify-content: center; align-items: center; gap: 20px;">
-                                <div id="ceoIncentiveStatus" style="font-size: 1rem; font-weight: 700; padding: 10px 20px; border-radius: 12px; background: #ef4444; color: white;">
-                                    STATUS: NON-AKTIF
-                                </div>
-                                <button class="btn btn-primary" id="btnToggleIncentive" onclick="toggleIncentiveCEO()" style="padding: 15px 30px; font-size: 1rem;">
-                                    UBAH STATUS SEKARANG
-                                </button>
-                            </div>
-                            <p style="margin-top: 1.5rem; font-size: 0.85rem; color: #64748b;">
-                                *Jika dinonaktifkan, semua insentif di slip gaji karyawan akan menjadi Rp 0.
-                            </p>
+                <div class="data-section">
+                    <div class="section-header" style="background: #0f172a; color: white; padding: 2rem;">
+                        <div>
+                            <h2 style="font-size: 1.5rem; font-weight: 800;">CEO Approval Panel</h2>
+                            <p style="color: #94a3b8; font-size: 0.9rem;">Otoritas persetujuan insentif mingguan per karyawan.</p>
                         </div>
+                        <div style="text-align: right;">
+                            <div style="font-size: 0.75rem; color: #64748b; margin-bottom: 5px;">COMPANY CONFIDENTIAL</div>
+                            <div style="font-weight: 800; color: #4f46e5;">PT. KOLA BORASI INDONESIA</div>
+                        </div>
+                    </div>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Karyawan</th>
+                                    <th>Jabatan</th>
+                                    <th>Nilai Insentif (Master)</th>
+                                    <th>Status Persetujuan CEO</th>
+                                    <th>Opsi Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ceoTableBody"></tbody>
+                        </table>
                     </div>
                 </div>
             </section>

@@ -42,6 +42,7 @@ function refreshUI() {
   renderStats();
   renderLogTable();
   renderKaryawanTable();
+  renderCEOTable();
 }
 
 // --- DASHBOARD UI ---
@@ -86,23 +87,56 @@ function switchTab(tab) {
   if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
-async function toggleIncentiveCEO() {
-  INCENTIVE_APPROVED = !INCENTIVE_APPROVED;
-  refreshCEOPanel();
-  refreshUI(); // Hitung ulang payroll di tabel
-  alert(`Status Insentif Berhasil Diubah: ${INCENTIVE_APPROVED ? "AKTIF" : "NON-AKTIF"}`);
+function renderCEOTable() {
+  const body = document.getElementById("ceoTableBody");
+  if (!body) return;
+
+  let htmlRows = "";
+  KARYAWAN.forEach((k, index) => {
+    const totalInsentif = (parseFloat(k.incentive) || 0) + (parseFloat(k.incentive_luar) || 0);
+    const isApproved = k.is_incentive_approved !== false; // Default true if not set
+    
+    htmlRows += `
+      <tr>
+        <td>
+          <div style="font-weight: 700;">${k.nama}</div>
+          <div style="font-size: 0.75rem; color: var(--text-muted);">${k.dept}</div>
+        </td>
+        <td>${k.jabatan || "-"}</td>
+        <td>Rp ${totalInsentif.toLocaleString('id-ID')}</td>
+        <td>
+          <span class="badge ${isApproved ? 'badge-success' : 'badge-warning'}">
+            ${isApproved ? 'DISETUJUI' : 'DITANGGUHKAN'}
+          </span>
+        </td>
+        <td>
+          <button class="btn ${isApproved ? 'btn-danger' : 'btn-primary'} btn-small" onclick="toggleIncentivePerKaryawan(${index})">
+            ${isApproved ? 'Batalkan Insentif' : 'Setujui Insentif'}
+          </button>
+        </td>
+      </tr>`;
+  });
+  body.innerHTML = htmlRows;
 }
 
-function refreshCEOPanel() {
-  const statusEl = document.getElementById("ceoIncentiveStatus");
-  if (!statusEl) return;
+async function toggleIncentivePerKaryawan(index) {
+  const k = KARYAWAN[index];
+  const newStatus = !(k.is_incentive_approved !== false);
   
-  if (INCENTIVE_APPROVED) {
-    statusEl.innerText = "STATUS: AKTIF (DISETUJUI CEO)";
-    statusEl.style.background = "var(--success)";
+  // Update local
+  KARYAWAN[index].is_incentive_approved = newStatus;
+  
+  // Update Supabase
+  const { error } = await supabaseClient
+    .from("karyawan")
+    .update({ is_incentive_approved: newStatus })
+    .eq("id", k.id);
+    
+  if (!error) {
+    renderCEOTable();
+    renderKaryawanTable(); // Update tabel payroll juga
   } else {
-    statusEl.innerText = "STATUS: NON-AKTIF (BELUM DISETUJUI)";
-    statusEl.style.background = "var(--danger)";
+    alert("Gagal update status: " + error.message);
   }
 }
 
@@ -221,8 +255,11 @@ function hitungDetailGaji(gapok, namaKaryawan) {
 
   const g = parseFloat(gapok) || 0;
   const hkeRate = k ? (parseFloat(k.hke_rate) || 50000) : 50000;
-  const incentive = (k && INCENTIVE_APPROVED) ? (parseFloat(k.incentive) || 0) : 0;
-  const incentiveLuar = (k && INCENTIVE_APPROVED) ? (parseFloat(k.incentive_luar) || 0) : 0;
+  
+  // Otoritas CEO Per Karyawan
+  const isApproved = k ? (k.is_incentive_approved !== false) : true;
+  const incentive = (k && isApproved) ? (parseFloat(k.incentive) || 0) : 0;
+  const incentiveLuar = (k && isApproved) ? (parseFloat(k.incentive_luar) || 0) : 0;
   const pinjaman = k ? (parseFloat(k.pinjaman) || 0) : 0;
 
   let dataLogKaryawan = allLogs
