@@ -17,24 +17,32 @@ const TOLERANSI_MASUK_MENIT = 15; // Sampai 09:15 tetap tidak telat
 let KARYAWAN = [];
 let logs = [];
 let allLogs = [];
+let CEO_PHONE = "628123456789"; // Ganti dengan nomor WA CEO Anda
 let INCENTIVE_APPROVED = true; // Status Persetujuan CEO
 
 // --- CORE SYNC ---
 async function syncData() {
   if (!document.getElementById("filterTglMulai").value) setPeriodeIni();
+  showLoading(true);
   try {
-    const { data: dataKar } = await supabaseClient.from("karyawan").select("*").order("nama", { ascending: true });
+    const { data: dataKar, error: errK } = await supabaseClient.from("karyawan").select("*").order("nama", { ascending: true });
+    if (errK) throw errK;
     KARYAWAN = dataKar || [];
 
-    const { data: dataAllLog } = await supabaseClient.from("logs").select("id, nama, dept, waktu, status, isLate").order("id", { ascending: false });
+    const { data: dataAllLog, error: errA } = await supabaseClient.from("logs").select("id, nama, dept, waktu, status, isLate").order("id", { ascending: false });
+    if (errA) throw errA;
     allLogs = dataAllLog || [];
 
-    const { data: dataLog } = await supabaseClient.from("logs").select("*").order("id", { ascending: false }).limit(200);
+    const { data: dataLog, error: errL } = await supabaseClient.from("logs").select("*").order("id", { ascending: false }).limit(200);
+    if (errL) throw errL;
     logs = dataLog || [];
 
     refreshUI();
+    showToast("Data berhasil disinkronkan", "success");
   } catch (e) {
-    console.error("Sync Failed:", e.message);
+    showToast("Sync Gagal: " + e.message, "error");
+  } finally {
+    showLoading(false);
   }
 }
 
@@ -556,7 +564,47 @@ function kirimSlipWA(index) {
   window.open(url, '_blank');
 }
 
-// --- MODAL & ACTIONS ---
+// --- UTILS & UX ---
+function showLoading(show) {
+  document.getElementById("loadingOverlay").style.display = show ? "flex" : "none";
+}
+
+function showToast(msg, type = "info") {
+  const container = document.getElementById("toastContainer");
+  const t = document.createElement("div");
+  t.className = `toast ${type}`;
+  t.innerHTML = `<span>${msg}</span>`;
+  container.appendChild(t);
+  setTimeout(() => t.remove(), 4000);
+}
+
+async function logAudit(action, details = "") {
+  await supabaseClient.from("audit_logs").insert([{ action, details }]);
+}
+
+function notifikasiCEOPayroll() {
+  const date = new Date();
+  const month = date.toLocaleString('id-ID', { month: 'long', year: 'numeric' });
+  
+  let totalTHP = 0;
+  KARYAWAN.forEach(k => {
+    const d = hitungDetailGaji(k.gaji, k.nama);
+    totalTHP += d.thp;
+  });
+
+  let pesan = `*LAPORAN REKAP GAJI - PT. KOLA BORASI INDONESIA*\n`;
+  pesan += `Periode: ${month}\n`;
+  pesan += `----------------------------------\n`;
+  pesan += `Total Karyawan: ${KARYAWAN.length} Orang\n`;
+  pesan += `Estimasi Total Payroll: *Rp ${Math.floor(totalTHP).toLocaleString('id-ID')}*\n`;
+  pesan += `----------------------------------\n`;
+  pesan += `_Laporan siap untuk di-review & disetujui di Dashboard CEO Access._\n\n`;
+  pesan += `Klik link admin: ${window.location.href}`;
+
+  const url = `https://wa.me/${CEO_PHONE}?text=${encodeURIComponent(pesan)}`;
+  window.open(url, '_blank');
+  logAudit("Notifikasi CEO", `Mengirim rekap payroll bulan ${month} ke CEO`);
+}
 function showModal() {
   document.getElementById("modalTitle").innerText = "Tambah Karyawan (Master Data)";
   document.getElementById("editKaryawanId").value = "";
@@ -607,17 +655,26 @@ async function simpanKaryawan() {
 
   if (!data.nama || !data.gaji) return alert("Harap isi Nama dan Gaji Pokok!");
 
-  if (id) {
-    // UPDATE
-    const { error } = await supabaseClient.from("karyawan").update(data).eq("id", id);
-    if (!error) { alert("Data Berhasil Diperbarui!"); hideModal(); syncData(); }
-    else alert("Gagal Update: " + error.message);
-  } else {
-    // INSERT NEW
-    if (!data.nik) data.nik = "KBI-" + Date.now().toString().slice(-6); // Auto-generate if empty
-    const { error } = await supabaseClient.from("karyawan").insert([data]);
-    if (!error) { alert("Karyawan Baru Berhasil Ditambahkan!"); hideModal(); syncData(); }
-    else alert("Gagal Simpan: " + error.message);
+  showLoading(true);
+  try {
+    if (id) {
+      const { error } = await supabaseClient.from("karyawan").update(data).eq("id", id);
+      if (error) throw error;
+      showToast("Data karyawan berhasil diperbarui", "success");
+      logAudit("Edit Karyawan", `Mengubah data karyawan: ${data.nama}`);
+    } else {
+      if (!data.nik) data.nik = "KBI-" + Date.now().toString().slice(-6);
+      const { error } = await supabaseClient.from("karyawan").insert([data]);
+      if (error) throw error;
+      showToast("Karyawan baru berhasil ditambahkan", "success");
+      logAudit("Tambah Karyawan", `Menambahkan karyawan baru: ${data.nama}`);
+    }
+    hideModal();
+    syncData();
+  } catch (err) {
+    showToast("Gagal menyimpan: " + err.message, "error");
+  } finally {
+    showLoading(false);
   }
 }
 
@@ -653,9 +710,21 @@ function bukaModalEditKaryawan(index) {
 }
 
 async function hapusKaryawan(id) {
-  if (confirm("Hapus?")) {
+  if (!confirm("Hapus karyawan ini secara permanen?")) return;
+  
+  showLoading(true);
+  try {
+    const k = KARYAWAN.find(x => x.id == id);
     const { error } = await supabaseClient.from("karyawan").delete().eq("id", id);
-    if (!error) syncData();
+    if (error) throw error;
+    
+    showToast("Karyawan berhasil dihapus", "success");
+    logAudit("Hapus Karyawan", `Menghapus karyawan: ${k ? k.nama : id}`);
+    syncData();
+  } catch (err) {
+    showToast("Gagal menghapus: " + err.message, "error");
+  } finally {
+    showLoading(false);
   }
 }
 

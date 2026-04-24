@@ -140,6 +140,11 @@
                             <input type="date" id="filterTglSelesai" class="input-date" onchange="refreshUI()">
                             <button class="btn btn-outline btn-small" onclick="setPeriodeIni()">Bulan Ini</button>
                         </div>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="btn btn-primary btn-small" style="background:#25d366; border:none;" onclick="notifikasiCEOPayroll()">
+                                <i data-lucide="bell" style="width:14px;"></i> <span>Notif CEO</span>
+                            </button>
+                        </div>
                     </div>
                     <div class="table-wrapper">
                         <table>
@@ -347,6 +352,12 @@
                 </div>
             </div>
         </div>
+    </div>
+
+    <div id="toastContainer" class="toast-container"></div>
+    <div id="loadingOverlay">
+        <div class="spinner"></div>
+        <p style="font-weight: 700;">Memproses Data...</p>
     </div>
 
     <!-- Scripts -->
