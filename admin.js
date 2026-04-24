@@ -93,8 +93,9 @@ function renderCEOTable() {
 
   let htmlRows = "";
   KARYAWAN.forEach((k, index) => {
-    const totalInsentif = (parseFloat(k.incentive) || 0) + (parseFloat(k.incentive_luar) || 0);
-    const isApproved = k.is_incentive_approved !== false; // Default true if not set
+    const masterInsentif = (parseFloat(k.incentive) || 0) + (parseFloat(k.incentive_luar) || 0);
+    const approvedVal = parseFloat(k.incentive_approved_val) || 0;
+    const isApproved = k.is_incentive_approved === true;
     
     htmlRows += `
       <tr>
@@ -102,41 +103,65 @@ function renderCEOTable() {
           <div style="font-weight: 700;">${k.nama}</div>
           <div style="font-size: 0.75rem; color: var(--text-muted);">${k.dept}</div>
         </td>
-        <td>${k.jabatan || "-"}</td>
-        <td>Rp ${totalInsentif.toLocaleString('id-ID')}</td>
+        <td>Rp ${masterInsentif.toLocaleString('id-ID')}</td>
+        <td>
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted);">Rp</span>
+            <input type="number" id="valInsentifCEO_${index}" class="form-input" 
+                   value="${isApproved ? approvedVal : masterInsentif}" 
+                   style="width: 150px; padding: 5px 10px; font-weight: 800; color: var(--primary);">
+          </div>
+        </td>
         <td>
           <span class="badge ${isApproved ? 'badge-success' : 'badge-warning'}">
-            ${isApproved ? 'DISETUJUI' : 'DITANGGUHKAN'}
+            ${isApproved ? 'DISETUJUI CEO' : 'MENUNGGU'}
           </span>
         </td>
         <td>
-          <button class="btn ${isApproved ? 'btn-danger' : 'btn-primary'} btn-small" onclick="toggleIncentivePerKaryawan(${index})">
-            ${isApproved ? 'Batalkan Insentif' : 'Setujui Insentif'}
-          </button>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn btn-primary btn-small" onclick="simpanIncentiveCEO(${index})">
+                Setujui Nominal
+            </button>
+            ${isApproved ? `<button class="btn btn-danger btn-small" onclick="batalkanIncentiveCEO(${index})">Batalkan</button>` : ''}
+          </div>
         </td>
       </tr>`;
   });
   body.innerHTML = htmlRows;
 }
 
-async function toggleIncentivePerKaryawan(index) {
+async function simpanIncentiveCEO(index) {
   const k = KARYAWAN[index];
-  const newStatus = !(k.is_incentive_approved !== false);
+  const inputVal = document.getElementById(`valInsentifCEO_${index}`).value;
+  const nominal = parseFloat(inputVal) || 0;
   
-  // Update local
-  KARYAWAN[index].is_incentive_approved = newStatus;
-  
-  // Update Supabase
+  if (nominal < 0) return alert("Nominal tidak boleh negatif!");
+
   const { error } = await supabaseClient
     .from("karyawan")
-    .update({ is_incentive_approved: newStatus })
+    .update({ 
+      is_incentive_approved: true,
+      incentive_approved_val: nominal 
+    })
     .eq("id", k.id);
     
   if (!error) {
-    renderCEOTable();
-    renderKaryawanTable(); // Update tabel payroll juga
+    alert(`Insentif ${k.nama} disetujui sebesar Rp ${nominal.toLocaleString('id-ID')}`);
+    syncData(); // Sinkronkan data agar tabel payroll ikut update
   } else {
-    alert("Gagal update status: " + error.message);
+    alert("Gagal menyimpan: " + error.message);
+  }
+}
+
+async function batalkanIncentiveCEO(index) {
+  const k = KARYAWAN[index];
+  const { error } = await supabaseClient
+    .from("karyawan")
+    .update({ is_incentive_approved: false })
+    .eq("id", k.id);
+    
+  if (!error) {
+    syncData();
   }
 }
 
@@ -256,10 +281,10 @@ function hitungDetailGaji(gapok, namaKaryawan) {
   const g = parseFloat(gapok) || 0;
   const hkeRate = k ? (parseFloat(k.hke_rate) || 50000) : 50000;
   
-  // Otoritas CEO Per Karyawan
-  const isApproved = k ? (k.is_incentive_approved !== false) : true;
-  const incentive = (k && isApproved) ? (parseFloat(k.incentive) || 0) : 0;
-  const incentiveLuar = (k && isApproved) ? (parseFloat(k.incentive_luar) || 0) : 0;
+  // Otoritas CEO Per Karyawan (Gunakan Nominal yang disetujui CEO)
+  const isApproved = k ? (k.is_incentive_approved === true) : false;
+  const incentive = isApproved ? (parseFloat(k.incentive_approved_val) || 0) : 0;
+  const incentiveLuar = 0; // Dipusatkan ke satu nilai approved_val oleh CEO
   const pinjaman = k ? (parseFloat(k.pinjaman) || 0) : 0;
 
   let dataLogKaryawan = allLogs
