@@ -217,13 +217,15 @@ function hitungDetailGaji(gapok, namaKaryawan) {
 
   // --- LOGIKA LEMBUR (Hardcoded: Pembulatan 0.1 Jam) ---
   let uangLembur = 0;
-  let jamLemburBulat = totalLembur;
+  const adjJam = k ? (parseFloat(k.lembur_adj) || 0) : 0;
+  let jamLemburFinal = totalLembur + adjJam; // Terapkan penyesuaian manual
+  let jamLemburBulat = jamLemburFinal;
   
   // CEK APAKAH LEMBUR AKTIF UNTUK KARYAWAN INI
   const isLemburAktif = k ? (k.is_lembur !== false) : true;
 
   if (isLemburAktif) {
-    jamLemburBulat = Math.round(totalLembur * 10) / 10;
+    jamLemburBulat = Math.round(jamLemburFinal * 10) / 10;
     uangLembur = jamLemburBulat * TARIF_LEMBUR;
   } else {
     uangLembur = 0;
@@ -399,14 +401,14 @@ function showModal() {
   document.getElementById("btnSimpanKaryawan").innerText = "Simpan Master Data";
 
   // Reset Form
-  const fields = ["inpNama", "inpNikKtp", "inpWa", "inpJabatan", "inpCuti", "inpNikKbi", "inpIsLembur", "inpPin", "inpGaji", "inpHkeRate", "inpIncentive", "inpIncentiveLuar", "inpRekening", "inpNpwp", "inpPinjaman"];
+  const fields = ["inpNama", "inpNikKtp", "inpWa", "inpJabatan", "inpCuti", "inpNikKbi", "inpIsLembur", "inpLemburAdj", "inpPin", "inpGaji", "inpHkeRate", "inpIncentive", "inpIncentiveLuar", "inpRekening", "inpNpwp", "inpPinjaman"];
   fields.forEach(f => {
     const el = document.getElementById(f);
     if (el) {
         if (f === "inpCuti") el.value = 12;
         else if (f === "inpHkeRate") el.value = 50000;
         else if (f === "inpIsLembur") el.value = "true";
-        else if (f === "inpPinjaman" || f === "inpIncentive" || f === "inpIncentiveLuar") el.value = 0;
+        else if (f === "inpLemburAdj" || f === "inpPinjaman" || f === "inpIncentive" || f === "inpIncentiveLuar") el.value = 0;
         else el.value = "";
     }
   });
@@ -429,6 +431,7 @@ async function simpanKaryawan() {
     sisa_cuti: parseInt(document.getElementById("inpCuti").value) || 0,
     nik: document.getElementById("inpNikKbi").value,
     is_lembur: document.getElementById("inpIsLembur").value === "true",
+    lembur_adj: parseFloat(document.getElementById("inpLemburAdj").value) || 0,
     pin: document.getElementById("inpPin").value,
     gaji: parseFloat(document.getElementById("inpGaji").value) || 0,
     hke_rate: parseFloat(document.getElementById("inpHkeRate").value) || 0,
@@ -473,6 +476,7 @@ function bukaModalEditKaryawan(index) {
   document.getElementById("inpCuti").value = k.sisa_cuti || 0;
   document.getElementById("inpNikKbi").value = k.nik || "";
   document.getElementById("inpIsLembur").value = k.is_lembur !== false ? "true" : "false";
+  document.getElementById("inpLemburAdj").value = k.lembur_adj || 0;
   document.getElementById("inpPin").value = k.pin || "";
   document.getElementById("inpGaji").value = k.gaji || 0;
   document.getElementById("inpHkeRate").value = k.hke_rate || 50000;

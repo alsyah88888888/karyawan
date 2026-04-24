@@ -222,12 +222,16 @@
                             <label>PIN Absensi (4-6 Digit)</label>
                             <input type="text" id="inpPin" class="form-input" placeholder="1234">
                         </div>
-                        <div class="form-group" style="display: flex; align-items: center; gap: 10px; padding-top: 25px;">
+                        <div class="form-group" style="display: flex; flex-direction: column; gap: 5px;">
                             <label style="margin: 0;">Lembur Aktif?</label>
-                            <select id="inpIsLembur" class="form-input" style="width: 80px;">
+                            <select id="inpIsLembur" class="form-input" style="width: 100%;">
                                 <option value="true">YES</option>
                                 <option value="false">NO</option>
                             </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Adj. Lembur (Jam)</label>
+                            <input type="number" id="inpLemburAdj" class="form-input" step="0.1" value="0" placeholder="+/- Jam">
                         </div>
                     </div>
                 </div>
