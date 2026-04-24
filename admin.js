@@ -21,12 +21,13 @@ let CEO_PHONE = "6285774444805"; // Nomor WA CEO PT. Kola Borasi Indonesia
 let INCENTIVE_APPROVED = true; // Status Persetujuan CEO
 
 // Chart Instances
-let deptChartInstance = null;
+let punctualityChartInstance = null;
 let attendanceChartInstance = null;
 
 // --- CORE SYNC ---
 async function syncData() {
   if (!document.getElementById("filterTglMulai").value) setPeriodeIni();
+  if (!document.getElementById("kpiFilterTglMulai").value) setPeriodeKPI('ini');
   // Set default tab to dashboard if none active
   if (!document.querySelector(".nav-link.active")) switchTab('tabDashboard');
   
@@ -90,23 +91,20 @@ function renderStats() {
 }
 
 function renderVisualStats() {
-  // 1. Chart Distribusi Departemen
-  const deptCtx = document.getElementById('deptChart')?.getContext('2d');
-  if (deptCtx) {
-    const deptData = {};
-    KARYAWAN.forEach(k => {
-      const d = k.dept || "LAINNYA";
-      deptData[d] = (deptData[d] || 0) + 1;
-    });
+  // 1. Chart Analisis Kedisiplinan (Punctuality)
+  const punctCtx = document.getElementById('punctualityChart')?.getContext('2d');
+  if (punctCtx) {
+    const onTime = allLogs.filter(l => l.status === 'MASUK' && !l.isLate).length;
+    const late = allLogs.filter(l => l.status === 'MASUK' && l.isLate).length;
 
-    if (deptChartInstance) deptChartInstance.destroy();
-    deptChartInstance = new Chart(deptCtx, {
-      type: 'doughnut',
+    if (punctualityChartInstance) punctualityChartInstance.destroy();
+    punctualityChartInstance = new Chart(punctCtx, {
+      type: 'pie',
       data: {
-        labels: Object.keys(deptData),
+        labels: ['Tepat Waktu', 'Terlambat'],
         datasets: [{
-          data: Object.values(deptData),
-          backgroundColor: ['#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#0ea5e9', '#8b5cf6', '#ec4899'],
+          data: [onTime, late],
+          backgroundColor: ['#10b981', '#ef4444'],
           borderWidth: 0
         }]
       },
@@ -115,8 +113,7 @@ function renderVisualStats() {
         maintainAspectRatio: false,
         plugins: {
           legend: { position: 'bottom', labels: { usePointStyle: true, font: { family: 'Outfit', size: 11 } } }
-        },
-        cutout: '70%'
+        }
       }
     });
   }
@@ -203,14 +200,28 @@ function renderKPITable() {
   const body = document.getElementById("kpiTableBody");
   if (!body) return;
 
+  const customStart = document.getElementById("kpiFilterTglMulai")?.value;
+  const customEnd = document.getElementById("kpiFilterTglSelesai")?.value;
+
   let htmlRows = "";
   KARYAWAN.forEach(k => {
-    const d = hitungDetailGaji(k.gaji, k.nama);
+    const d = hitungDetailGaji(k.gaji, k.nama, customStart, customEnd);
     
     // Perhitungan KPI
     const attendanceRate = ((d.hadir / d.totalHariKerja) * 100) || 0;
     
-    const logsKar = allLogs.filter(l => l.nama.trim().toLowerCase() === k.nama.trim().toLowerCase() && l.status === 'MASUK');
+    let logsKar = allLogs.filter(l => l.nama.trim().toLowerCase() === k.nama.trim().toLowerCase() && l.status === 'MASUK');
+    
+    // Filter logs berdasarkan tanggal dashboard
+    if (customStart && customEnd) {
+        const start = new Date(customStart + "T00:00:00");
+        const end = new Date(customEnd + "T23:59:59");
+        logsKar = logsKar.filter(l => {
+            const w = new Date(l.waktu);
+            return w >= start && w <= end;
+        });
+    }
+    
     const lateCount = logsKar.filter(l => l.isLate).length;
 
     // Status Performa
@@ -462,12 +473,12 @@ function hitungHariKerjaEfektif(startStr, endStr) {
   return count;
 }
 
-function hitungDetailGaji(gapok, namaKaryawan) {
+function hitungDetailGaji(gapok, namaKaryawan, customStart = null, customEnd = null) {
   const targetNama = namaKaryawan.trim().toLowerCase();
   const k = KARYAWAN.find(item => item.nama.trim().toLowerCase() === targetNama);
 
-  const tglMulai = document.getElementById("filterTglMulai")?.value;
-  const tglSelesai = document.getElementById("filterTglSelesai")?.value;
+  const tglMulai = customStart || document.getElementById("filterTglMulai")?.value;
+  const tglSelesai = customEnd || document.getElementById("filterTglSelesai")?.value;
   const totalHariKerja = hitungHariKerjaEfektif(tglMulai, tglSelesai);
 
   const g = parseFloat(gapok) || 0;
@@ -937,6 +948,23 @@ async function hapusKaryawan(id) {
     showToast("Gagal menghapus: " + err.message, "error");
   } finally {
     showLoading(false);
+  }
+}
+
+function setPeriodeKPI(type) {
+  const now = new Date();
+  const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+  const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+  const fmt = (d) => d.toISOString().split('T')[0];
+  
+  const inpStart = document.getElementById("kpiFilterTglMulai");
+  const inpEnd = document.getElementById("kpiFilterTglSelesai");
+
+  if (inpStart && inpEnd) {
+    inpStart.value = fmt(firstDay);
+    inpEnd.value = fmt(lastDay);
+    renderKPITable();
   }
 }
 
