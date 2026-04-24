@@ -1012,97 +1012,90 @@ function exportKPIReport() {
 
   const avgRate = (totalRate / KARYAWAN.length).toFixed(1);
 
-  // Template HTML untuk PDF (Versi One-Page Precision)
+  // Template HTML untuk PDF (Ultra-Compact Executive Version)
   const element = document.createElement('div');
   element.innerHTML = `
-    <div style="width: 210mm; height: 296mm; padding: 10mm; font-family: 'Outfit', sans-serif; color: #1e293b; background: #fff; box-sizing: border-box; display: flex; flex-direction: column;">
-      <header style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #4f46e5; padding-bottom: 12px; margin-bottom: 15px;">
-        <div style="display: flex; align-items: center; gap: 12px;">
-          <img src="logokoboi.png" style="width: 50px; height: 50px; object-fit: contain;">
-          <div>
-            <h1 style="margin: 0; font-size: 1.4rem; font-weight: 800; color: #4f46e5; letter-spacing: -0.5px;">PT. KOLA BORASI INDONESIA</h1>
-            <p style="margin: 0; font-size: 0.75rem; color: #64748b; font-weight: 600;">Human Resources & Performance Analytics</p>
-          </div>
+    <div style="padding: 15mm; font-family: 'Outfit', sans-serif; color: #1e293b; background: #fff; width: 180mm;">
+      <!-- Header Ramping Satu Baris -->
+      <header style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #4f46e5; padding-bottom: 10px; margin-bottom: 15px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <img src="logokoboi.png" style="width: 35px; height: 35px;">
+          <h1 style="margin: 0; font-size: 1.1rem; font-weight: 800; color: #4f46e5;">PT. KOLA BORASI INDONESIA</h1>
         </div>
         <div style="text-align: right;">
-          <h2 style="margin: 0; font-size: 1.1rem; font-weight: 800; letter-spacing: 1px; color: #1e293b;">KPI REPORT</h2>
-          <p style="margin: 0; font-size: 0.8rem; font-weight: 700; color: #64748b;">Periode: ${periodeTampil}</p>
+          <div style="font-size: 0.9rem; font-weight: 800; color: #1e293b;">KPI PERFORMANCE REPORT</div>
+          <div style="font-size: 0.7rem; font-weight: 600; color: #64748b;">Periode: ${periodeTampil}</div>
         </div>
       </header>
 
-      <section style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px;">
-        <div style="background: #f8fafc; padding: 15px 10px; border-radius: 12px; border: 1px solid #e2e8f0; text-align: center;">
-          <div style="font-size: 0.65rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;">Total Manpower</div>
-          <div style="font-size: 1.5rem; font-weight: 800; color: #1e293b;">${KARYAWAN.length}</div>
+      <!-- Summary Bar Ramping -->
+      <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+        <div style="flex: 1; background: #f8fafc; padding: 8px; border-radius: 8px; border: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-size: 0.6rem; font-weight: 800; color: #64748b; text-transform: uppercase;">Manpower</span>
+          <span style="font-size: 0.9rem; font-weight: 800;">${KARYAWAN.length}</span>
         </div>
-        <div style="background: #f8fafc; padding: 15px 10px; border-radius: 12px; border: 1px solid #e2e8f0; text-align: center;">
-          <div style="font-size: 0.65rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;">Avg. Attendance</div>
-          <div style="font-size: 1.5rem; font-weight: 800; color: #4f46e5;">${avgRate}%</div>
+        <div style="flex: 1; background: #f8fafc; padding: 8px; border-radius: 8px; border: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-size: 0.6rem; font-weight: 800; color: #64748b; text-transform: uppercase;">Attendance</span>
+          <span style="font-size: 0.9rem; font-weight: 800; color: #4f46e5;">${avgRate}%</span>
         </div>
-        <div style="background: #f8fafc; padding: 15px 10px; border-radius: 12px; border: 1px solid #e2e8f0; text-align: center;">
-          <div style="font-size: 0.65rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;">Total Overtime</div>
-          <div style="font-size: 1.5rem; font-weight: 800; color: #10b981;">${totalLemburAll.toFixed(1)} <span style="font-size: 0.8rem;">Hrs</span></div>
+        <div style="flex: 1; background: #f8fafc; padding: 8px; border-radius: 8px; border: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-size: 0.6rem; font-weight: 800; color: #64748b; text-transform: uppercase;">Overtime</span>
+          <span style="font-size: 0.9rem; font-weight: 800; color: #10b981;">${totalLemburAll.toFixed(1)}h</span>
         </div>
-      </section>
-
-      <div style="flex-grow: 1; overflow: hidden;">
-        <table style="width: 100%; border-collapse: collapse;">
-          <thead>
-            <tr style="background: #f1f5f9;">
-              <th style="padding: 10px; text-align: left; font-size: 0.7rem; text-transform: uppercase; border-bottom: 2px solid #e2e8f0; font-weight: 800;">Nama Karyawan</th>
-              <th style="padding: 10px; text-align: center; font-size: 0.7rem; text-transform: uppercase; border-bottom: 2px solid #e2e8f0; font-weight: 800;">Dept</th>
-              <th style="padding: 10px; text-align: center; font-size: 0.7rem; text-transform: uppercase; border-bottom: 2px solid #e2e8f0; font-weight: 800;">Hadir (%)</th>
-              <th style="padding: 10px; text-align: center; font-size: 0.7rem; text-transform: uppercase; border-bottom: 2px solid #e2e8f0; font-weight: 800;">Telat</th>
-              <th style="padding: 10px; text-align: center; font-size: 0.7rem; text-transform: uppercase; border-bottom: 2px solid #e2e8f0; font-weight: 800;">Lembur</th>
-              <th style="padding: 10px; text-align: center; font-size: 0.7rem; text-transform: uppercase; border-bottom: 2px solid #e2e8f0; font-weight: 800;">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${listKPI.map((k, idx) => `
-              <tr style="background: ${idx % 2 === 0 ? '#ffffff' : '#f8fafc'};">
-                <td style="padding: 8px 10px; border-bottom: 1px solid #f1f5f9;">
-                  <div style="font-weight: 800; font-size: 0.85rem; color: #1e293b;">${k.nama}</div>
-                  <div style="font-size: 0.65rem; color: #64748b; font-weight: 600;">${k.nik}</div>
-                </td>
-                <td style="padding: 8px 10px; text-align: center; border-bottom: 1px solid #f1f5f9; font-size: 0.75rem; font-weight: 600; color: #475569;">${k.dept}</td>
-                <td style="padding: 8px 10px; text-align: center; border-bottom: 1px solid #f1f5f9; font-weight: 800; font-size: 0.9rem; color: #1e293b;">${k.rate.toFixed(1)}%</td>
-                <td style="padding: 8px 10px; text-align: center; border-bottom: 1px solid #f1f5f9; font-size: 0.8rem; font-weight: 700; color: ${k.lateCount > 0 ? '#ef4444' : '#1e293b'}">${k.lateCount}x</td>
-                <td style="padding: 8px 10px; text-align: center; border-bottom: 1px solid #f1f5f9; font-size: 0.8rem; font-weight: 600;">${k.d.totalLembur}h</td>
-                <td style="padding: 8px 10px; text-align: center; border-bottom: 1px solid #f1f5f9;">
-                  <span style="background: ${k.statusColor}20; color: ${k.statusColor}; padding: 4px 8px; border-radius: 6px; font-size: 0.6rem; font-weight: 800; text-transform: uppercase;">
-                    ${k.statusLabel}
-                  </span>
-                </td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
       </div>
 
-      <footer style="margin-top: 15px; padding-top: 10px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: flex-end;">
-        <div>
-          <p style="margin: 0; font-size: 0.7rem; color: #94a3b8; font-weight: 700;">Dicetak oleh: HRIS KOBOI System</p>
-          <p style="margin: 0; font-size: 0.7rem; color: #94a3b8;">Waktu Cetak: ${new Date().toLocaleString('id-ID')}</p>
-        </div>
-        <div style="text-align: right;">
-          <div style="font-size: 0.65rem; font-weight: 900; color: #ef4444; letter-spacing: 1px; margin-bottom: 3px;">PRIVATE & CONFIDENTIAL</div>
-          <p style="margin: 0; font-size: 0.7rem; color: #94a3b8; font-weight: 600;">&copy; 2026 PT. Kola Borasi Indonesia</p>
-        </div>
+      <!-- Tabel Ultra Compact -->
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px;">
+        <thead>
+          <tr style="background: #f1f5f9;">
+            <th style="padding: 6px 8px; text-align: left; font-size: 0.6rem; text-transform: uppercase; border-bottom: 2px solid #e2e8f0;">Karyawan</th>
+            <th style="padding: 6px 8px; text-align: center; font-size: 0.6rem; text-transform: uppercase; border-bottom: 2px solid #e2e8f0;">Dept</th>
+            <th style="padding: 6px 8px; text-align: center; font-size: 0.6rem; text-transform: uppercase; border-bottom: 2px solid #e2e8f0;">Hadir (%)</th>
+            <th style="padding: 6px 8px; text-align: center; font-size: 0.6rem; text-transform: uppercase; border-bottom: 2px solid #e2e8f0;">Telat</th>
+            <th style="padding: 6px 8px; text-align: center; font-size: 0.6rem; text-transform: uppercase; border-bottom: 2px solid #e2e8f0;">Lembur</th>
+            <th style="padding: 6px 8px; text-align: center; font-size: 0.6rem; text-transform: uppercase; border-bottom: 2px solid #e2e8f0;">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${listKPI.map((k, idx) => `
+            <tr style="background: ${idx % 2 === 0 ? '#ffffff' : '#f8fafc'};">
+              <td style="padding: 4px 8px; border-bottom: 1px solid #f1f5f9;">
+                <span style="font-weight: 800; font-size: 0.75rem;">${k.nama}</span>
+                <span style="font-size: 0.6rem; color: #94a3b8; margin-left: 5px;">(${k.nik})</span>
+              </td>
+              <td style="padding: 4px 8px; text-align: center; border-bottom: 1px solid #f1f5f9; font-size: 0.7rem;">${k.dept}</td>
+              <td style="padding: 4px 8px; text-align: center; border-bottom: 1px solid #f1f5f9; font-weight: 800; font-size: 0.75rem;">${k.rate.toFixed(1)}%</td>
+              <td style="padding: 4px 8px; text-align: center; border-bottom: 1px solid #f1f5f9; font-size: 0.7rem; color: ${k.lateCount > 0 ? '#ef4444' : '#1e293b'}">${k.lateCount}x</td>
+              <td style="padding: 4px 8px; text-align: center; border-bottom: 1px solid #f1f5f9; font-size: 0.7rem;">${k.d.totalLembur}h</td>
+              <td style="padding: 4px 8px; text-align: center; border-bottom: 1px solid #f1f5f9;">
+                <span style="background: ${k.statusColor}20; color: ${k.statusColor}; padding: 2px 6px; border-radius: 4px; font-size: 0.55rem; font-weight: 800;">
+                  ${k.statusLabel}
+                </span>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+
+      <!-- Footer Tipis -->
+      <footer style="border-top: 1px solid #e2e8f0; padding-top: 8px; display: flex; justify-content: space-between; align-items: center;">
+        <div style="font-size: 0.6rem; color: #94a3b8;">Printed by KOBOI HRIS | ${new Date().toLocaleString('id-ID')}</div>
+        <div style="font-size: 0.55rem; font-weight: 800; color: #ef4444; letter-spacing: 1px;">PRIVATE & CONFIDENTIAL</div>
       </footer>
     </div>
   `;
 
   const opt = {
-    margin: 0,
-    filename: `KPI_Report_${periodeTampil.replace(/\//g, '-')}.pdf`,
+    margin: 5,
+    filename: `KPI_Report_OnePage.pdf`,
     image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+    html2canvas: { scale: 3, useCORS: true },
     jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
   };
 
   html2pdf().set(opt).from(element).save().then(() => {
     showLoading(false);
-    showToast("Laporan PDF 1 Halaman Berhasil", "success");
+    showToast("Laporan Satu Halaman Berhasil", "success");
   });
 }
 
