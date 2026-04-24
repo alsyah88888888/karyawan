@@ -20,7 +20,6 @@ let allLogs = [];
 
 // --- CORE SYNC ---
 async function syncData() {
-  loadRumus();
   if (!document.getElementById("filterTglMulai").value) setPeriodeIni();
   try {
     const { data: dataKar } = await supabaseClient.from("karyawan").select("*").order("nama", { ascending: true });
@@ -216,8 +215,7 @@ function hitungDetailGaji(gapok, namaKaryawan) {
     } else { i++; }
   }
 
-  // --- LOGIKA DINAMIS ---
-  const rumusStr = document.getElementById("inputRumusLembur")?.value || "(Math.round(totalLembur * 10) / 10) * TARIF_LEMBUR";
+  // --- LOGIKA LEMBUR (Hardcoded: Pembulatan 0.1 Jam) ---
   let uangLembur = 0;
   let jamLemburBulat = totalLembur;
   
@@ -225,10 +223,8 @@ function hitungDetailGaji(gapok, namaKaryawan) {
   const isLemburAktif = k ? (k.is_lembur !== false) : true;
 
   if (isLemburAktif) {
-    try {
-      uangLembur = eval(rumusStr);
-      if (rumusStr.includes("Math.round")) jamLemburBulat = Math.round(totalLembur * 10) / 10;
-    } catch (e) { uangLembur = totalLembur * TARIF_LEMBUR; }
+    jamLemburBulat = Math.round(totalLembur * 10) / 10;
+    uangLembur = jamLemburBulat * TARIF_LEMBUR;
   } else {
     uangLembur = 0;
     jamLemburBulat = 0;
@@ -675,19 +671,6 @@ function exportMasterKaryawan() {
 
   const fileName = `Master_Data_Karyawan_${new Date().toLocaleDateString("id-ID").replace(/\//g, "-")}.xlsx`;
   XLSX.writeFile(wb, fileName);
-}
-
-function simpanRumus() {
-  const r = document.getElementById("inputRumusLembur").value;
-  localStorage.setItem("koboi_rumus_lembur", r);
-  syncData(); // Refresh UI dengan rumus baru
-}
-
-function loadRumus() {
-  const r = localStorage.getItem("koboi_rumus_lembur");
-  if (r && document.getElementById("inputRumusLembur")) {
-    document.getElementById("inputRumusLembur").value = r;
-  }
 }
 
 function setPeriodeIni() {
