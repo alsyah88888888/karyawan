@@ -124,14 +124,6 @@
                     <div class="table-header" style="flex-wrap: wrap; gap: 20px;">
                         <div>
                             <h3>Database Karyawan & Payroll</h3>
-                            <div style="margin-top: 10px; display: flex; align-items: center; gap: 10px; background: #fef3c7; padding: 10px; border-radius: 8px; border: 1px solid #f59e0b;">
-                                <span style="font-size: 0.8rem; font-weight: 700; color: #b45309;">⚙️ RUMUS LEMBUR:</span>
-                                <input type="text" id="inputRumusLembur" 
-                                    style="flex: 1; padding: 5px 10px; border: 1px solid #d1d5db; border-radius: 4px; font-family: monospace; font-size: 0.85rem;" 
-                                    value="(Math.round(totalLembur * 10) / 10) * TARIF_LEMBUR"
-                                    onchange="simpanRumus()">
-                                <small style="font-size: 0.7rem; color: #78350f;">Variabel tersedia: <b>totalLembur</b>, <b>TARIF_LEMBUR</b></small>
-                            </div>
                             <div style="margin-top: 10px; display: flex; align-items: center; gap: 15px; background: #f1f5f9; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1;">
                                 <span style="font-size: 0.8rem; font-weight: 700; color: #475569;">📅 PERIODE:</span>
                                 <input type="date" id="filterTglMulai" class="form-input" style="width: auto; padding: 4px 8px;" onchange="refreshUI()">
