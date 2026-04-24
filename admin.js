@@ -160,90 +160,70 @@ function getWIBThreshold(dateObj, targetHour) {
 }
 
 function hitungDetailGaji(gapok, namaKaryawan) {
-  const g = parseFloat(gapok) || 0;
-  
   const targetNama = namaKaryawan.trim().toLowerCase();
+  const k = KARYAWAN.find(item => item.nama.trim().toLowerCase() === targetNama);
+  
+  const g = parseFloat(gapok) || 0;
+  const hkeRate = k ? (parseFloat(k.hke_rate) || 50000) : 50000;
+  const incentive = k ? (parseFloat(k.incentive) || 0) : 0;
+  const incentiveLuar = k ? (parseFloat(k.incentive_luar) || 0) : 0;
+  const pinjaman = k ? (parseFloat(k.pinjaman) || 0) : 0;
+
   const dataLogKaryawan = allLogs
     .filter((l) => l.nama.trim().toLowerCase() === targetNama)
     .sort((a, b) => new Date(a.waktu) - new Date(b.waktu));
   
   const hariHadir = [...new Set(dataLogKaryawan.map((l) => new Date(l.waktu).toISOString().slice(0, 10)))].length;
-  const jumlahTelat = dataLogKaryawan.filter((l) => {
-    const s = l.status.toUpperCase();
-    return (s === "MASUK" || s === "BERANGKAT") && (l.isLate || l.is_late);
-  }).length;
 
   let totalLembur = 0;
   let i = 0;
-  
   while (i < dataLogKaryawan.length) {
     const l = dataLogKaryawan[i];
     const statusUpper = l.status.toUpperCase();
-    
     if (statusUpper === 'MASUK' || statusUpper === 'BERANGKAT') {
       const actualMasuk = new Date(l.waktu);
       const thresholdMasuk = getWIBThreshold(actualMasuk, STANDAR_MASUK);
-      
       if (actualMasuk < thresholdMasuk) {
         let jamPagi = (thresholdMasuk - actualMasuk) / (1000 * 60 * 60);
         if (jamPagi > 0) totalLembur += jamPagi;
       }
-      
       let shiftEnd = null;
       let j = i + 1;
       while (j < dataLogKaryawan.length && dataLogKaryawan[j].status.toUpperCase() === 'PULANG') {
         shiftEnd = new Date(dataLogKaryawan[j].waktu);
         j++;
       }
-      
       if (shiftEnd) {
         const thresholdPulang = getWIBThreshold(actualMasuk, STANDAR_PULANG);
         let jamSore = (shiftEnd - thresholdPulang) / (1000 * 60 * 60);
         if (jamSore > 0) totalLembur += jamSore;
         i = j;
-      } else {
-        i++;
-      }
-    } else {
-      i++;
-    }
+      } else { i++; }
+    } else { i++; }
   }
 
-  // --- LOGIKA DINAMIS (Mengambil dari Kolom Rumus di UI) ---
+  // --- LOGIKA DINAMIS ---
   const rumusStr = document.getElementById("inputRumusLembur")?.value || "(Math.round(totalLembur * 10) / 10) * TARIF_LEMBUR";
   let uangLembur = 0;
   let jamLemburBulat = totalLembur;
-
   try {
-    // Jalankan rumus dari input
     uangLembur = eval(rumusStr);
-    
-    // Untuk tampilan jam lembur di slip, kita ambil bagian Math.round-nya saja jika ada
-    if (rumusStr.includes("Math.round")) {
-        jamLemburBulat = Math.round(totalLembur * 10) / 10;
-    }
-  } catch (e) {
-    console.error("Kesalahan Rumus:", e.message);
-    uangLembur = totalLembur * TARIF_LEMBUR; // Fallback jika rumus error
-  }
+    if (rumusStr.includes("Math.round")) jamLemburBulat = Math.round(totalLembur * 10) / 10;
+  } catch (e) { uangLembur = totalLembur * TARIF_LEMBUR; }
 
-  // --- PERHITUNGAN PAYROLL ---
-  const uangHKE = hariHadir * TARIF_HKE;
-  const incentive = 0; // Bisa ditambahkan field input nanti jika perlu
-  
-  // Potongan (Misal Pinjaman dari database)
-  const k = KARYAWAN.find(item => item.nama.trim().toLowerCase() === targetNama);
-  const pinjaman = k ? (parseFloat(k.pinjaman) || 0) : 0;
-
-  const thp = g + uangHKE + incentive + uangLembur - pinjaman;
+  // --- TOTAL SALARY ---
+  const uangHKE = hariHadir * hkeRate;
+  const thp = g + uangHKE + incentive + incentiveLuar + uangLembur - pinjaman;
 
   return { 
     gapok: g, 
+    hkeRate,
     uangHKE,
     hadir: hariHadir, 
-    jumlahTelat, 
     totalLembur: jamLemburBulat.toFixed(1), 
     uangLembur, 
+    incentive,
+    incentiveLuar,
     pinjaman,
     thp: thp > 0 ? thp : 0 
   };
@@ -330,8 +310,20 @@ function cetakSlip(index) {
           <td class="val">Rp ${d.pinjaman.toLocaleString('id-ID')}</td>
         </tr>
         <tr>
-          <td>HKE (${d.hadir} HARI)</td>
+          <td>HKE (${d.hadir} x Rp ${d.hkeRate.toLocaleString('id-ID')})</td>
           <td class="val">Rp ${d.uangHKE.toLocaleString('id-ID')}</td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>INCENTIVE</td>
+          <td class="val">Rp ${d.incentive.toLocaleString('id-ID')}</td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>INCENTIVE (LK/NGINAP)</td>
+          <td class="val">Rp ${d.incentiveLuar.toLocaleString('id-ID')}</td>
           <td></td>
           <td></td>
         </tr>
@@ -343,7 +335,7 @@ function cetakSlip(index) {
         </tr>
         <tr class="row-total">
           <td>JUMLAH PENDAPATAN</td>
-          <td class="val">Rp ${(d.gapok + d.uangHKE + d.uangLembur).toLocaleString('id-ID')}</td>
+          <td class="val">Rp ${(d.gapok + d.uangHKE + d.incentive + d.incentiveLuar + d.uangLembur).toLocaleString('id-ID')}</td>
           <td>JUMLAH POTONGAN</td>
           <td class="val">Rp ${d.pinjaman.toLocaleString('id-ID')}</td>
         </tr>
@@ -388,8 +380,16 @@ function showModal() {
   document.getElementById("btnSimpanKaryawan").innerText = "Simpan Master Data";
 
   // Reset Form
-  const fields = ["inpNama", "inpNikKtp", "inpWa", "inpJabatan", "inpCuti", "inpPin", "inpGaji", "inpRekening", "inpNpwp", "inpPinjaman"];
-  fields.forEach(f => document.getElementById(f).value = (f === "inpCuti" ? 12 : (f === "inpPinjaman" ? 0 : "")));
+  const fields = ["inpNama", "inpNikKtp", "inpWa", "inpJabatan", "inpCuti", "inpPin", "inpGaji", "inpHkeRate", "inpIncentive", "inpIncentiveLuar", "inpRekening", "inpNpwp", "inpPinjaman"];
+  fields.forEach(f => {
+    const el = document.getElementById(f);
+    if (el) {
+        if (f === "inpCuti") el.value = 12;
+        else if (f === "inpHkeRate") el.value = 50000;
+        else if (f === "inpPinjaman" || f === "inpIncentive" || f === "inpIncentiveLuar") el.value = 0;
+        else el.value = "";
+    }
+  });
   document.getElementById("inpDept").value = "OFFICE";
   document.getElementById("inpPtkp").value = "TK/0";
 
@@ -409,6 +409,9 @@ async function simpanKaryawan() {
     sisa_cuti: parseInt(document.getElementById("inpCuti").value) || 0,
     pin: document.getElementById("inpPin").value,
     gaji: parseFloat(document.getElementById("inpGaji").value) || 0,
+    hke_rate: parseFloat(document.getElementById("inpHkeRate").value) || 0,
+    incentive: parseFloat(document.getElementById("inpIncentive").value) || 0,
+    incentive_luar: parseFloat(document.getElementById("inpIncentiveLuar").value) || 0,
     rekening: document.getElementById("inpRekening").value,
     status_ptkp: document.getElementById("inpPtkp").value,
     npwp: document.getElementById("inpNpwp").value,
@@ -448,6 +451,9 @@ function bukaModalEditKaryawan(id) {
   document.getElementById("inpCuti").value = k.sisa_cuti || 0;
   document.getElementById("inpPin").value = k.pin || "";
   document.getElementById("inpGaji").value = k.gaji || 0;
+  document.getElementById("inpHkeRate").value = k.hke_rate || 50000;
+  document.getElementById("inpIncentive").value = k.incentive || 0;
+  document.getElementById("inpIncentiveLuar").value = k.incentive_luar || 0;
   document.getElementById("inpRekening").value = k.rekening || "";
   document.getElementById("inpPtkp").value = k.status_ptkp || "TK/0";
   document.getElementById("inpNpwp").value = k.npwp || "";
