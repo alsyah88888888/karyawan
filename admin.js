@@ -68,7 +68,7 @@ function renderStats() {
   const manpowerEl = document.getElementById("statManpower");
   const hadirEl = document.getElementById("statHadir");
   const terlambatEl = document.getElementById("statTerlambat");
-  const payrollEl = document.getElementById("statPayroll");
+  const avgAttEl = document.getElementById("statAvgAttendance");
 
   if (manpowerEl) manpowerEl.innerText = KARYAWAN.length;
 
@@ -81,13 +81,15 @@ function renderStats() {
   if (hadirEl) hadirEl.innerText = uniqueHadir;
   if (terlambatEl) terlambatEl.innerText = totalTelat;
 
-  // Estimasi Total Payroll Periode Ini
-  let totalPayroll = 0;
+  // Rata-rata Kehadiran Perusahaan Periode Ini
+  let totalRate = 0;
   KARYAWAN.forEach(k => {
     const d = hitungDetailGaji(k.gaji, k.nama);
-    totalPayroll += d.thp;
+    const rate = ((d.hadir / d.totalHariKerja) * 100) || 0;
+    totalRate += rate;
   });
-  if (payrollEl) payrollEl.innerText = "Rp " + Math.floor(totalPayroll).toLocaleString('id-ID');
+  const avgRate = KARYAWAN.length > 0 ? (totalRate / KARYAWAN.length) : 0;
+  if (avgAttEl) avgAttEl.innerText = avgRate.toFixed(1) + "%";
 }
 
 function renderVisualStats() {
@@ -966,6 +968,57 @@ function setPeriodeKPI(type) {
     inpEnd.value = fmt(lastDay);
     renderKPITable();
   }
+}
+
+function exportKPIReport() {
+  const customStart = document.getElementById("kpiFilterTglMulai")?.value;
+  const customEnd = document.getElementById("kpiFilterTglSelesai")?.value;
+  
+  if (!KARYAWAN.length) return alert("Tidak ada data untuk diekspor!");
+
+  const dataExport = KARYAWAN.map(k => {
+    const d = hitungDetailGaji(k.gaji, k.nama, customStart, customEnd);
+    const attendanceRate = ((d.hadir / d.totalHariKerja) * 100) || 0;
+    
+    let logsKar = allLogs.filter(l => l.nama.trim().toLowerCase() === k.nama.trim().toLowerCase() && l.status === 'MASUK');
+    if (customStart && customEnd) {
+      const start = new Date(customStart + "T00:00:00");
+      const end = new Date(customEnd + "T23:59:59");
+      logsKar = logsKar.filter(l => {
+        const w = new Date(l.waktu);
+        return w >= start && w <= end;
+      });
+    }
+    const lateCount = logsKar.filter(l => l.isLate).length;
+
+    // Status Performa
+    let statusLabel = "GOOD";
+    if (attendanceRate >= 95 && lateCount === 0) statusLabel = "EXCELLENT";
+    else if (attendanceRate >= 85 && lateCount <= 2) statusLabel = "GOOD";
+    else if (attendanceRate >= 75 || lateCount <= 4) statusLabel = "AVERAGE";
+    else statusLabel = "NEED IMPROVEMENT";
+
+    return {
+      "NIK": k.nik,
+      "Nama Karyawan": k.nama,
+      "Departemen": k.dept,
+      "Jabatan": k.jabatan || "-",
+      "Hadir (Hari)": d.hadir,
+      "Total Hari Kerja": d.totalHariKerja,
+      "Tingkat Kehadiran (%)": attendanceRate.toFixed(1) + "%",
+      "Keterlambatan (Kali)": lateCount,
+      "Total Lembur (Jam)": d.totalLembur,
+      "Status Performa": statusLabel
+    };
+  });
+
+  const ws = XLSX.utils.json_to_sheet(dataExport);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "KPI Karyawan");
+  
+  const fileName = `KPI_Report_${customStart || 'all'}_to_${customEnd || 'all'}.xlsx`;
+  XLSX.writeFile(wb, fileName);
+  showToast("Laporan KPI berhasil diunduh", "success");
 }
 
 function bukaModalEdit(id) {
