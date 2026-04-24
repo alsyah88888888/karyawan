@@ -10,12 +10,12 @@ const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
 
 const STANDAR_MASUK = 9; // Jam 9 Pagi
 const STANDAR_PULANG = 18; // Jam 6 Sore
-const TARIF_LEMBUR = 20000; // Rp 20.000 per jam
+const TARIF_LEMBUR = 10000; // Rp 10.000 per jam
 const TOLERANSI_MASUK_MENIT = 15; // Sampai 09:15 tetap tidak telat
 
 let KARYAWAN = [];
-let logs = []; 
-let allLogs = []; 
+let logs = [];
+let allLogs = [];
 
 // --- CORE SYNC ---
 async function syncData() {
@@ -51,7 +51,7 @@ function renderStats() {
 
   const todayStr = new Date().toLocaleDateString();
   const logsToday = allLogs.filter(l => new Date(l.waktu).toLocaleDateString() === todayStr);
-  
+
   const uniqueHadir = [...new Set(logsToday.filter(l => l.status === 'MASUK').map(l => l.nama))].length;
   const totalTelat = logsToday.filter(l => l.status === 'MASUK' && l.isLate).length;
 
@@ -152,7 +152,7 @@ function getWIBThreshold(dateObj, targetHour) {
   const d = parts.find(p => p.type === 'day').value;
   const m = parts.find(p => p.type === 'month').value;
   const y = parts.find(p => p.type === 'year').value;
-  
+
   // Buat objek Date absolut di zona WIB (+07:00)
   return new Date(`${y}-${m}-${d}T${String(targetHour).padStart(2, '0')}:00:00+07:00`);
 }
@@ -161,12 +161,12 @@ function hitungDetailGaji(gapok, namaKaryawan) {
   const g = parseFloat(gapok) || 0;
   const standarHari = 22;
   const gajiHarian = g / standarHari;
-  
+
   const targetNama = namaKaryawan.trim().toLowerCase();
   const dataLogKaryawan = allLogs
     .filter((l) => l.nama.trim().toLowerCase() === targetNama)
     .sort((a, b) => new Date(a.waktu) - new Date(b.waktu));
-  
+
   const hariHadir = [...new Set(dataLogKaryawan.map((l) => new Date(l.waktu).toISOString().slice(0, 10)))].length;
   const jumlahTelat = dataLogKaryawan.filter((l) => {
     const s = l.status.toUpperCase();
@@ -175,22 +175,22 @@ function hitungDetailGaji(gapok, namaKaryawan) {
 
   let totalLembur = 0;
   let i = 0;
-  
+
   while (i < dataLogKaryawan.length) {
     const l = dataLogKaryawan[i];
     const statusUpper = l.status.toUpperCase();
-    
+
     // BERANGKAT dianggap sama dengan MASUK
     if (statusUpper === 'MASUK' || statusUpper === 'BERANGKAT') {
       const actualMasuk = new Date(l.waktu);
       const thresholdMasuk = getWIBThreshold(actualMasuk, STANDAR_MASUK);
-      
+
       // 1. LEMBUR PAGI (Masuk/Berangkat < 09:00 WIB)
       if (actualMasuk < thresholdMasuk) {
         let jamPagi = (thresholdMasuk - actualMasuk) / (1000 * 60 * 60);
         if (jamPagi > 0) totalLembur += jamPagi;
       }
-      
+
       // 2. CARI PULANG TERAKHIR UNTUK SHIFT INI
       let shiftEnd = null;
       let j = i + 1;
@@ -198,7 +198,7 @@ function hitungDetailGaji(gapok, namaKaryawan) {
         shiftEnd = new Date(dataLogKaryawan[j].waktu);
         j++;
       }
-      
+
       if (shiftEnd) {
         const thresholdPulang = getWIBThreshold(actualMasuk, STANDAR_PULANG);
         let jamSore = (shiftEnd - thresholdPulang) / (1000 * 60 * 60);
@@ -215,7 +215,7 @@ function hitungDetailGaji(gapok, namaKaryawan) {
   const uangLembur = (Math.round(totalLembur * 10) / 10) * TARIF_LEMBUR;
   const gajiPro = (hariHadir / standarHari) * g;
   const potonganTelat = jumlahTelat * (gajiHarian * 0.02);
-  
+
   const bpjsKes = gajiPro * 0.01;
   const jht = gajiPro * 0.02;
   const jp = gajiPro * 0.01;
@@ -224,31 +224,31 @@ function hitungDetailGaji(gapok, namaKaryawan) {
   const totalPotongan = bpjsKes + jht + jp + pph21 + potonganTelat;
   const thp = gajiPro + uangLembur - totalPotongan;
 
-  return { 
-    gapok: g, 
-    gajiPro, 
-    hadir: hariHadir, 
-    jumlahTelat, 
-    totalLembur: totalLembur.toFixed(2), 
-    uangLembur, 
-    totalPotongan, 
-    thp: thp > 0 ? thp : 0 
+  return {
+    gapok: g,
+    gajiPro,
+    hadir: hariHadir,
+    jumlahTelat,
+    totalLembur: totalLembur.toFixed(2),
+    uangLembur,
+    totalPotongan,
+    thp: thp > 0 ? thp : 0
   };
 }
 
 // --- MODAL & ACTIONS ---
 function showModal() {
-    document.getElementById("modalTitle").innerText = "Tambah Karyawan (Master Data)";
-    document.getElementById("editKaryawanId").value = "";
-    document.getElementById("btnSimpanKaryawan").innerText = "Simpan Master Data";
-    
-    // Reset Form
-    const fields = ["inpNama", "inpNikKtp", "inpWa", "inpJabatan", "inpCuti", "inpPin", "inpGaji", "inpRekening", "inpNpwp", "inpPinjaman"];
-    fields.forEach(f => document.getElementById(f).value = (f === "inpCuti" ? 12 : (f === "inpPinjaman" ? 0 : "")));
-    document.getElementById("inpDept").value = "OFFICE";
-    document.getElementById("inpPtkp").value = "TK/0";
-    
-    document.getElementById("modalKaryawan").style.display = "flex"; 
+  document.getElementById("modalTitle").innerText = "Tambah Karyawan (Master Data)";
+  document.getElementById("editKaryawanId").value = "";
+  document.getElementById("btnSimpanKaryawan").innerText = "Simpan Master Data";
+
+  // Reset Form
+  const fields = ["inpNama", "inpNikKtp", "inpWa", "inpJabatan", "inpCuti", "inpPin", "inpGaji", "inpRekening", "inpNpwp", "inpPinjaman"];
+  fields.forEach(f => document.getElementById(f).value = (f === "inpCuti" ? 12 : (f === "inpPinjaman" ? 0 : "")));
+  document.getElementById("inpDept").value = "OFFICE";
+  document.getElementById("inpPtkp").value = "TK/0";
+
+  document.getElementById("modalKaryawan").style.display = "flex";
 }
 
 function hideModal() { document.getElementById("modalKaryawan").style.display = "none"; }
@@ -287,28 +287,28 @@ async function simpanKaryawan() {
 }
 
 function bukaModalEditKaryawan(id) {
-    const k = KARYAWAN.find(item => item.id == id);
-    if (!k) return;
+  const k = KARYAWAN.find(item => item.id == id);
+  if (!k) return;
 
-    document.getElementById("modalTitle").innerText = "Edit Master Data: " + k.nama;
-    document.getElementById("editKaryawanId").value = k.id;
-    document.getElementById("btnSimpanKaryawan").innerText = "Simpan Perubahan";
+  document.getElementById("modalTitle").innerText = "Edit Master Data: " + k.nama;
+  document.getElementById("editKaryawanId").value = k.id;
+  document.getElementById("btnSimpanKaryawan").innerText = "Simpan Perubahan";
 
-    // Populate Fields
-    document.getElementById("inpNama").value = k.nama || "";
-    document.getElementById("inpNikKtp").value = k.nik_ktp || "";
-    document.getElementById("inpWa").value = k.nomor_wa || "";
-    document.getElementById("inpDept").value = k.dept || "OFFICE";
-    document.getElementById("inpJabatan").value = k.jabatan || "";
-    document.getElementById("inpCuti").value = k.sisa_cuti || 0;
-    document.getElementById("inpPin").value = k.pin || "";
-    document.getElementById("inpGaji").value = k.gaji || 0;
-    document.getElementById("inpRekening").value = k.rekening || "";
-    document.getElementById("inpPtkp").value = k.status_ptkp || "TK/0";
-    document.getElementById("inpNpwp").value = k.npwp || "";
-    document.getElementById("inpPinjaman").value = k.pinjaman || 0;
+  // Populate Fields
+  document.getElementById("inpNama").value = k.nama || "";
+  document.getElementById("inpNikKtp").value = k.nik_ktp || "";
+  document.getElementById("inpWa").value = k.nomor_wa || "";
+  document.getElementById("inpDept").value = k.dept || "OFFICE";
+  document.getElementById("inpJabatan").value = k.jabatan || "";
+  document.getElementById("inpCuti").value = k.sisa_cuti || 0;
+  document.getElementById("inpPin").value = k.pin || "";
+  document.getElementById("inpGaji").value = k.gaji || 0;
+  document.getElementById("inpRekening").value = k.rekening || "";
+  document.getElementById("inpPtkp").value = k.status_ptkp || "TK/0";
+  document.getElementById("inpNpwp").value = k.npwp || "";
+  document.getElementById("inpPinjaman").value = k.pinjaman || 0;
 
-    document.getElementById("modalKaryawan").style.display = "flex";
+  document.getElementById("modalKaryawan").style.display = "flex";
 }
 
 async function hapusKaryawan(id) {
@@ -394,13 +394,13 @@ function exportData() {
       if (statusUpper === 'MASUK' || statusUpper === 'BERANGKAT') {
         const actualMasuk = waktu;
         const thresholdMasuk = getWIBThreshold(actualMasuk, STANDAR_MASUK);
-        
+
         // Cari index PULANG terakhir untuk shift ini
         let j = i + 1;
         while (j < userLogs.length && userLogs[j].status.toUpperCase() === 'PULANG') {
           j++;
         }
-        
+
         if (actualMasuk < thresholdMasuk) {
           jamLembur = (thresholdMasuk - actualMasuk) / (1000 * 60 * 60);
         }
