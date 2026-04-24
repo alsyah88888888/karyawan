@@ -10,7 +10,8 @@ const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
 
 const STANDAR_MASUK = 9; // Jam 9 Pagi
 const STANDAR_PULANG = 18; // Jam 6 Sore
-const TARIF_LEMBUR = 10000; // Rp 10.000 per jam
+const TARIF_LEMBUR = 10000; // Rp 10.000 per jam (Sesuai gambar user)
+const TARIF_HKE = 50000; // Rp 50.000 per hari (Sesuai gambar user: 6 hari = 300rb)
 const TOLERANSI_MASUK_MENIT = 15; // Sampai 09:15 tetap tidak telat
 
 let KARYAWAN = [];
@@ -19,6 +20,7 @@ let allLogs = [];
 
 // --- CORE SYNC ---
 async function syncData() {
+  loadRumus();
   try {
     const { data: dataKar } = await supabaseClient.from("karyawan").select("*").order("nama", { ascending: true });
     KARYAWAN = dataKar || [];
@@ -159,14 +161,12 @@ function getWIBThreshold(dateObj, targetHour) {
 
 function hitungDetailGaji(gapok, namaKaryawan) {
   const g = parseFloat(gapok) || 0;
-  const standarHari = 22;
-  const gajiHarian = g / standarHari;
-
+  
   const targetNama = namaKaryawan.trim().toLowerCase();
   const dataLogKaryawan = allLogs
     .filter((l) => l.nama.trim().toLowerCase() === targetNama)
     .sort((a, b) => new Date(a.waktu) - new Date(b.waktu));
-
+  
   const hariHadir = [...new Set(dataLogKaryawan.map((l) => new Date(l.waktu).toISOString().slice(0, 10)))].length;
   const jumlahTelat = dataLogKaryawan.filter((l) => {
     const s = l.status.toUpperCase();
@@ -175,30 +175,27 @@ function hitungDetailGaji(gapok, namaKaryawan) {
 
   let totalLembur = 0;
   let i = 0;
-
+  
   while (i < dataLogKaryawan.length) {
     const l = dataLogKaryawan[i];
     const statusUpper = l.status.toUpperCase();
-
-    // BERANGKAT dianggap sama dengan MASUK
+    
     if (statusUpper === 'MASUK' || statusUpper === 'BERANGKAT') {
       const actualMasuk = new Date(l.waktu);
       const thresholdMasuk = getWIBThreshold(actualMasuk, STANDAR_MASUK);
-
-      // 1. LEMBUR PAGI (Masuk/Berangkat < 09:00 WIB)
+      
       if (actualMasuk < thresholdMasuk) {
         let jamPagi = (thresholdMasuk - actualMasuk) / (1000 * 60 * 60);
         if (jamPagi > 0) totalLembur += jamPagi;
       }
-
-      // 2. CARI PULANG TERAKHIR UNTUK SHIFT INI
+      
       let shiftEnd = null;
       let j = i + 1;
       while (j < dataLogKaryawan.length && dataLogKaryawan[j].status.toUpperCase() === 'PULANG') {
         shiftEnd = new Date(dataLogKaryawan[j].waktu);
         j++;
       }
-
+      
       if (shiftEnd) {
         const thresholdPulang = getWIBThreshold(actualMasuk, STANDAR_PULANG);
         let jamSore = (shiftEnd - thresholdPulang) / (1000 * 60 * 60);
@@ -212,28 +209,176 @@ function hitungDetailGaji(gapok, namaKaryawan) {
     }
   }
 
-  const uangLembur = (Math.round(totalLembur * 10) / 10) * TARIF_LEMBUR;
-  const gajiPro = (hariHadir / standarHari) * g;
-  const potonganTelat = jumlahTelat * (gajiHarian * 0.02);
+  // --- LOGIKA DINAMIS (Mengambil dari Kolom Rumus di UI) ---
+  const rumusStr = document.getElementById("inputRumusLembur")?.value || "(Math.round(totalLembur * 10) / 10) * TARIF_LEMBUR";
+  let uangLembur = 0;
+  let jamLemburBulat = totalLembur;
 
-  const bpjsKes = gajiPro * 0.01;
-  const jht = gajiPro * 0.02;
-  const jp = gajiPro * 0.01;
-  const pph21 = gajiPro * 0.015;
+  try {
+    // Jalankan rumus dari input
+    uangLembur = eval(rumusStr);
+    
+    // Untuk tampilan jam lembur di slip, kita ambil bagian Math.round-nya saja jika ada
+    if (rumusStr.includes("Math.round")) {
+        jamLemburBulat = Math.round(totalLembur * 10) / 10;
+    }
+  } catch (e) {
+    console.error("Kesalahan Rumus:", e.message);
+    uangLembur = totalLembur * TARIF_LEMBUR; // Fallback jika rumus error
+  }
 
-  const totalPotongan = bpjsKes + jht + jp + pph21 + potonganTelat;
-  const thp = gajiPro + uangLembur - totalPotongan;
+  // --- PERHITUNGAN PAYROLL ---
+  const uangHKE = hariHadir * TARIF_HKE;
+  const incentive = 0; // Bisa ditambahkan field input nanti jika perlu
+  
+  // Potongan (Misal Pinjaman dari database)
+  const k = KARYAWAN.find(item => item.nama.trim().toLowerCase() === targetNama);
+  const pinjaman = k ? (parseFloat(k.pinjaman) || 0) : 0;
 
-  return {
-    gapok: g,
-    gajiPro,
-    hadir: hariHadir,
-    jumlahTelat,
-    totalLembur: totalLembur.toFixed(2),
-    uangLembur,
-    totalPotongan,
-    thp: thp > 0 ? thp : 0
+  const thp = g + uangHKE + incentive + uangLembur - pinjaman;
+
+  return { 
+    gapok: g, 
+    uangHKE,
+    hadir: hariHadir, 
+    jumlahTelat, 
+    totalLembur: jamLemburBulat.toFixed(1), 
+    uangLembur, 
+    pinjaman,
+    thp: thp > 0 ? thp : 0 
   };
+}
+
+function cetakSlip(index) {
+  const k = KARYAWAN[index];
+  const d = hitungDetailGaji(k.gaji, k.nama);
+  const date = new Date();
+  const monthNames = ["JANUARI", "FEBRUARI", "MARET", "APRIL", "MEI", "JUNI", "JULI", "AGUSTUS", "SEPTEMBER", "OKTOBER", "NOVEMBER", "DESEMBER"];
+  const period = `${monthNames[date.getMonth()]} ${date.getFullYear()}`;
+
+  const html = `
+    <html>
+    <head>
+      <title>Slip Gaji - ${k.nama}</title>
+      <style>
+        body { font-family: 'Inter', sans-serif; padding: 40px; color: #333; }
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px; }
+        .logo-box { text-align: left; }
+        .logo-box img { width: 120px; }
+        .company-info { text-align: right; }
+        .company-info h2 { margin: 0; color: #b45309; font-size: 1.2rem; }
+        .company-info p { margin: 2px 0; font-size: 0.8rem; }
+        
+        .slip-title { text-align: right; margin-bottom: 20px; }
+        .slip-title h3 { margin: 0; font-size: 1.1rem; text-decoration: underline; }
+        .slip-title p { margin: 0; font-size: 0.9rem; font-weight: 700; }
+
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-bottom: 20px; font-size: 0.85rem; }
+        .info-row { display: flex; margin-bottom: 4px; }
+        .info-label { width: 120px; font-weight: 600; }
+        
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 0.85rem; }
+        th { background: #f8fafc; text-align: left; padding: 8px; border-top: 1.5px solid #000; border-bottom: 1.5px solid #000; }
+        td { padding: 6px 8px; }
+        .row-total { border-top: 1.5px solid #000; border-bottom: 1.5px solid #000; font-weight: 800; }
+        .val { text-align: right; }
+        
+        .footer { display: flex; justify-content: space-between; margin-top: 40px; font-size: 0.85rem; }
+        .sign-box { text-align: center; width: 200px; }
+        .sign-space { height: 60px; }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <div class="logo-box">
+          <img src="logokoboi.png" alt="Logo">
+        </div>
+        <div class="company-info">
+          <h2>PT. KOLA BORASI INDONESIA</h2>
+          <p>Jl. Arjuna IV Green Kartika Residence Blok EE No.2</p>
+          <p>Cibinong, Bogor - Jawa Barat 16911</p>
+        </div>
+      </div>
+
+      <div class="slip-title">
+        <h3>SLIP GAJI</h3>
+        <p>${period}</p>
+      </div>
+
+      <div class="info-grid">
+        <div>
+          <div class="info-row"><div class="info-label">NAMA</div><div>: ${k.nama}</div></div>
+          <div class="info-row"><div class="info-label">JABATAN</div><div>: ${k.jabatan || '-'}</div></div>
+        </div>
+        <div>
+          <div class="info-row"><div class="info-label">WILAYAH KERJA</div><div>: CIBINONG</div></div>
+          <div class="info-row"><div class="info-label">DEPARTEMEN</div><div>: ${k.dept}</div></div>
+        </div>
+      </div>
+
+      <table>
+        <tr>
+          <th>PENDAPATAN</th>
+          <th></th>
+          <th class="val">POTONGAN</th>
+          <th class="val"></th>
+        </tr>
+        <tr>
+          <td>GAJI POKOK</td>
+          <td class="val">Rp ${d.gapok.toLocaleString('id-ID')}</td>
+          <td>PINJAMAN KANTOR</td>
+          <td class="val">Rp ${d.pinjaman.toLocaleString('id-ID')}</td>
+        </tr>
+        <tr>
+          <td>HKE (${d.hadir} HARI)</td>
+          <td class="val">Rp ${d.uangHKE.toLocaleString('id-ID')}</td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>OVERTIME (${d.totalLembur} JAM)</td>
+          <td class="val">Rp ${d.uangLembur.toLocaleString('id-ID')}</td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr class="row-total">
+          <td>JUMLAH PENDAPATAN</td>
+          <td class="val">Rp ${(d.gapok + d.uangHKE + d.uangLembur).toLocaleString('id-ID')}</td>
+          <td>JUMLAH POTONGAN</td>
+          <td class="val">Rp ${d.pinjaman.toLocaleString('id-ID')}</td>
+        </tr>
+      </table>
+
+      <div style="display: flex; align-items: center; gap: 20px;">
+        <span style="font-weight: 800; font-size: 1rem;">GAJI BERSIH :</span>
+        <div style="border: 2px solid #000; padding: 5px 30px; font-weight: 800; font-size: 1.1rem;">
+          Rp ${Math.floor(d.thp).toLocaleString('id-ID')}
+        </div>
+      </div>
+
+      <div class="footer">
+        <div class="sign-box">
+          <p>CIBINONG, ${new Date().toLocaleDateString('id-ID', {day:'numeric', month:'long', year:'numeric'})}</p>
+          <p>Dibuat Oleh,</p>
+          <div class="sign-space"></div>
+          <p><strong>ADMIN</strong></p>
+        </div>
+        <div class="sign-box">
+          <p>&nbsp;</p>
+          <p>Diterima Oleh,</p>
+          <div class="sign-space"></div>
+          <p><strong>${k.nama}</strong></p>
+        </div>
+      </div>
+
+      <script>window.print();</script>
+    </body>
+    </html>
+  `;
+
+  const win = window.open('', '_blank');
+  win.document.write(html);
+  win.document.close();
 }
 
 // --- MODAL & ACTIONS ---
@@ -496,6 +641,19 @@ function exportMasterKaryawan() {
 
   const fileName = `Master_Data_Karyawan_${new Date().toLocaleDateString("id-ID").replace(/\//g, "-")}.xlsx`;
   XLSX.writeFile(wb, fileName);
+}
+
+function simpanRumus() {
+  const r = document.getElementById("inputRumusLembur").value;
+  localStorage.setItem("koboi_rumus_lembur", r);
+  syncData(); // Refresh UI dengan rumus baru
+}
+
+function loadRumus() {
+  const r = localStorage.getItem("koboi_rumus_lembur");
+  if (r && document.getElementById("inputRumusLembur")) {
+    document.getElementById("inputRumusLembur").value = r;
+  }
 }
 
 window.onload = syncData;
