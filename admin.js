@@ -229,8 +229,16 @@ function renderKaryawanTable() {
     htmlRows += `
       <tr>
         <td>
-          <div style="font-weight: 800; color: var(--dark);">${k.nama}</div>
-          <div style="font-size: 0.75rem; color: #64748b;">${k.nik || "-"}</div>
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 45px; height: 45px; border-radius: 50%; overflow: hidden; border: 2px solid var(--border); background: #f1f5f9;">
+              <img src="${k.nik === 'KBI-000001' ? 'KBI-000001.jpg' : 'https://ui-avatars.com/api/?name=' + encodeURIComponent(k.nama) + '&background=random'}" 
+                   style="width: 100%; height: 100%; object-fit: cover;">
+            </div>
+            <div>
+              <div style="font-weight: 700; color: var(--primary); font-size: 1rem;">${k.nama}</div>
+              <div style="font-size: 0.7rem; color: #64748b; letter-spacing: 1px;">ID: ${k.nik}</div>
+            </div>
+          </div>
         </td>
         <td>
           <div style="font-weight: 600;">${k.jabatan || k.dept}</div>
