@@ -17,7 +17,7 @@ const TOLERANSI_MASUK_MENIT = 15; // Sampai 09:15 tetap tidak telat
 let KARYAWAN = [];
 let logs = [];
 let allLogs = [];
-let CEO_PHONE = "628123456789"; // Ganti dengan nomor WA CEO Anda
+let CEO_PHONE = "6285774444805"; // Nomor WA CEO PT. Kola Borasi Indonesia
 let INCENTIVE_APPROVED = true; // Status Persetujuan CEO
 
 // --- CORE SYNC ---
