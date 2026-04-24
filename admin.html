@@ -25,13 +25,19 @@
             
             <ul class="nav-menu">
                 <li class="nav-item">
+                    <a href="#" class="nav-link active" id="linkTabDashboard" onclick="switchTab('tabDashboard')">
+                        <i data-lucide="layout-dashboard"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a href="#" class="nav-link" id="linkTabLog" onclick="switchTab('tabLog')">
                         <i data-lucide="activity"></i>
                         <span>Log Absensi</span>
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="#" class="nav-link active" id="linkTabKaryawan" onclick="switchTab('tabKaryawan')">
+                    <a href="#" class="nav-link" id="linkTabKaryawan" onclick="switchTab('tabKaryawan')">
                         <i data-lucide="users"></i>
                         <span>Kelola Karyawan</span>
                     </a>
@@ -73,67 +79,93 @@
                 </div>
             </header>
 
-            <!-- STATS CARDS -->
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-icon" style="background: #eef2ff; color: #4f46e5;">
-                        <i data-lucide="user-check"></i>
+            <!-- TAB: DASHBOARD -->
+            <section id="tabDashboard">
+                <!-- STATS CARDS -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: #eef2ff; color: #4f46e5;">
+                            <i data-lucide="user-check"></i>
+                        </div>
+                        <div>
+                            <div class="stat-val" id="statManpower">0</div>
+                            <div class="stat-label">Total Manpower</div>
+                        </div>
                     </div>
-                    <div>
-                        <div class="stat-val" id="statManpower">0</div>
-                        <div class="stat-label">Total Manpower</div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: #ecfdf5; color: #10b981;">
+                            <i data-lucide="calendar-days"></i>
+                        </div>
+                        <div>
+                            <div class="stat-val" id="statHadir">0</div>
+                            <div class="stat-label">Hadir Hari Ini</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: #fff7ed; color: #f59e0b;">
+                            <i data-lucide="clock"></i>
+                        </div>
+                        <div>
+                            <div class="stat-val" id="statTerlambat">0</div>
+                            <div class="stat-label">Total Terlambat</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: #fef2f2; color: #ef4444;">
+                            <i data-lucide="wallet"></i>
+                        </div>
+                        <div>
+                            <div class="stat-val" id="statPayroll">Rp 0</div>
+                            <div class="stat-label">Estimasi Payroll</div>
+                        </div>
                     </div>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-icon" style="background: #ecfdf5; color: #10b981;">
-                        <i data-lucide="calendar-days"></i>
-                    </div>
-                    <div>
-                        <div class="stat-val" id="statHadir">0</div>
-                        <div class="stat-label">Hadir Hari Ini</div>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon" style="background: #fff7ed; color: #f59e0b;">
-                        <i data-lucide="clock"></i>
-                    </div>
-                    <div>
-                        <div class="stat-val" id="statTerlambat">0</div>
-                        <div class="stat-label">Total Terlambat</div>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon" style="background: #fef2f2; color: #ef4444;">
-                        <i data-lucide="wallet"></i>
-                    </div>
-                    <div>
-                        <div class="stat-val" id="statPayroll">Rp 0</div>
-                        <div class="stat-label">Estimasi Payroll</div>
-                    </div>
-                </div>
-            </div>
 
-            <!-- VISUAL STATS (CHARTS) -->
-            <div class="stats-visuals" id="statsVisuals">
-                <div class="chart-card">
-                    <div class="chart-header">
-                        <h3>Distribusi Departemen</h3>
-                        <p>Komposisi tim per divisi</p>
+                <!-- VISUAL STATS (CHARTS) -->
+                <div class="stats-visuals" id="statsVisuals">
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <h3>Distribusi Departemen</h3>
+                            <p>Komposisi tim per divisi</p>
+                        </div>
+                        <div class="chart-body">
+                            <canvas id="deptChart"></canvas>
+                        </div>
                     </div>
-                    <div class="chart-body">
-                        <canvas id="deptChart"></canvas>
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <h3>Tren Kehadiran (7 Hari Terakhir)</h3>
+                            <p>Persentase kehadiran harian</p>
+                        </div>
+                        <div class="chart-body">
+                            <canvas id="attendanceChart"></canvas>
+                        </div>
                     </div>
                 </div>
-                <div class="chart-card">
-                    <div class="chart-header">
-                        <h3>Tren Kehadiran (7 Hari Terakhir)</h3>
-                        <p>Persentase kehadiran harian</p>
+
+                <!-- KPI KARYAWAN SECTION -->
+                <div class="data-section">
+                    <div class="section-header">
+                        <h3>Performa & KPI Karyawan</h3>
+                        <p style="font-size: 0.8rem; color: var(--text-muted);">Ringkasan produktivitas individu periode ini.</p>
                     </div>
-                    <div class="chart-body">
-                        <canvas id="attendanceChart"></canvas>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Karyawan</th>
+                                    <th>Dept</th>
+                                    <th>Kehadiran (%)</th>
+                                    <th>Keterlambatan</th>
+                                    <th>Total Lembur</th>
+                                    <th>Status Performa</th>
+                                </tr>
+                            </thead>
+                            <tbody id="kpiTableBody"></tbody>
+                        </table>
                     </div>
                 </div>
-            </div>
+            </section>
 
             <!-- TAB: LOG ABSENSI -->
             <section id="tabLog" style="display: none;">

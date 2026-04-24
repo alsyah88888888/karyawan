@@ -27,6 +27,9 @@ let attendanceChartInstance = null;
 // --- CORE SYNC ---
 async function syncData() {
   if (!document.getElementById("filterTglMulai").value) setPeriodeIni();
+  // Set default tab to dashboard if none active
+  if (!document.querySelector(".nav-link.active")) switchTab('tabDashboard');
+  
   showLoading(true);
   try {
     const { data: dataKar, error: errK } = await supabaseClient.from("karyawan").select("*").order("nama", { ascending: true });
@@ -56,6 +59,7 @@ function refreshUI() {
   renderKaryawanTable();
   renderCEOTable();
   renderVisualStats();
+  renderKPITable();
 }
 
 // --- DASHBOARD UI ---
@@ -167,39 +171,89 @@ function renderVisualStats() {
 }
 
 function switchTab(tab) {
-  const tabs = ["tabLog", "tabKaryawan", "tabCEO"];
+  const tabs = ["tabDashboard", "tabLog", "tabKaryawan", "tabCEO"];
   tabs.forEach((t) => {
     const el = document.getElementById(t);
     if (el) el.style.display = t === tab ? "block" : "none";
   });
 
   // Update Sidebar Active States
-  const links = ["linkTabLog", "linkTabKaryawan", "linkTabCEO"];
+  const links = ["linkTabDashboard", "linkTabLog", "linkTabKaryawan", "linkTabCEO"];
   links.forEach(l => {
     const el = document.getElementById(l);
     if (el) el.classList.toggle("active", l.includes(tab.replace('tab', '')));
   });
 
-  // Sembunyikan Header & Stats jika di Tab CEO
+  // Sembunyikan Header Actions (Tambah/Export) jika di Dashboard atau CEO
   const headerActions = document.querySelector(".header-actions");
-  const statsGrid = document.querySelector(".stats-grid");
-  const statsVisuals = document.getElementById("statsVisuals");
-
-  if (headerActions) headerActions.style.display = tab === "tabCEO" ? "none" : "flex";
-  if (statsGrid) statsGrid.style.display = tab === "tabCEO" ? "none" : "grid";
-  if (statsVisuals) statsVisuals.style.display = tab === "tabCEO" ? "none" : "grid";
+  if (headerActions) headerActions.style.display = (tab === "tabCEO" || tab === "tabDashboard") ? "none" : "flex";
 
   const title = document.getElementById("pageTitle");
   if (title) {
-    if (tab === "tabLog") title.innerText = "Log Absensi Real-time";
-    else if (tab === "tabCEO") {
-      title.innerText = "Direksi / CEO Panel";
-      renderCEOTable();
-    }
+    if (tab === "tabDashboard") title.innerText = "Executive Dashboard";
+    else if (tab === "tabLog") title.innerText = "Log Absensi Real-time";
+    else if (tab === "tabCEO") title.innerText = "Direksi / CEO Panel";
     else title.innerText = "Manajemen Karyawan";
   }
 
   if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+function renderKPITable() {
+  const body = document.getElementById("kpiTableBody");
+  if (!body) return;
+
+  let htmlRows = "";
+  KARYAWAN.forEach(k => {
+    const d = hitungDetailGaji(k.gaji, k.nama);
+    
+    // Perhitungan KPI
+    const attendanceRate = ((d.hadir / d.totalHariKerja) * 100) || 0;
+    
+    const logsKar = allLogs.filter(l => l.nama.trim().toLowerCase() === k.nama.trim().toLowerCase() && l.status === 'MASUK');
+    const lateCount = logsKar.filter(l => l.isLate).length;
+
+    // Status Performa
+    let statusLabel = "GOOD";
+    let statusClass = "badge-success";
+    
+    if (attendanceRate >= 95 && lateCount === 0) {
+      statusLabel = "EXCELLENT";
+      statusClass = "badge-success";
+    } else if (attendanceRate >= 85 && lateCount <= 2) {
+      statusLabel = "GOOD";
+      statusClass = "badge-success";
+    } else if (attendanceRate >= 75 || lateCount <= 4) {
+      statusLabel = "AVERAGE";
+      statusClass = "badge-warning";
+    } else {
+      statusLabel = "NEED IMPROVEMENT";
+      statusClass = "badge-danger";
+    }
+
+    htmlRows += `
+      <tr>
+        <td>
+          <div style="font-weight: 700;">${k.nama}</div>
+          <div style="font-size: 0.7rem; color: var(--text-muted);">${k.jabatan || "-"}</div>
+        </td>
+        <td><span class="badge" style="background: #f1f5f9; color: #475569;">${k.dept}</span></td>
+        <td>
+          <div style="font-weight: 800; color: ${attendanceRate < 80 ? 'var(--danger)' : 'var(--text-main)'}">
+            ${attendanceRate.toFixed(1)}%
+          </div>
+          <div style="font-size: 0.7rem; color: var(--text-muted);">${d.hadir} / ${d.totalHariKerja} Hari</div>
+        </td>
+        <td style="font-weight: 700; color: ${lateCount > 0 ? 'var(--danger)' : 'var(--success)'}">
+          ${lateCount} Kali
+        </td>
+        <td>
+          <div style="font-weight: 700;">${d.totalLembur} Jam</div>
+        </td>
+        <td><span class="badge ${statusClass}">${statusLabel}</span></td>
+      </tr>`;
+  });
+  body.innerHTML = htmlRows;
 }
 
 function renderCEOTable() {
