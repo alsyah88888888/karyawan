@@ -1104,12 +1104,6 @@ function exportKPIReport() {
   });
 }
 
-  html2pdf().set(opt).from(element).save().then(() => {
-    showLoading(false);
-    showToast("Laporan PDF Premium berhasil diunduh", "success");
-  });
-}
-
 function bukaModalEdit(id) {
   const log = logs.find((l) => l.id === id);
   if (!log) return;
