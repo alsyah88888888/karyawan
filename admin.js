@@ -234,7 +234,7 @@ function renderKaryawanTable() {
         </td>
         <td>
           <div style="font-weight: 600;">${k.jabatan || k.dept}</div>
-          <div style="font-size: 0.75rem; color: #64748b;">Hadir: ${d.hadir}/22</div>
+          <div style="font-size: 0.75rem; color: #64748b;">Hadir: ${d.hadir}/${d.totalHariKerja}</div>
         </td>
         <td>
           <div style="font-weight: 700;">${d.totalLembur} Jam</div>
@@ -288,12 +288,26 @@ function getWIBThreshold(dateObj, targetHour) {
   return new Date(`${y}-${m}-${d}T${String(targetHour).padStart(2, '0')}:00:00+07:00`);
 }
 
+function hitungHariKerjaEfektif(startStr, endStr) {
+  if (!startStr || !endStr) return 22; // Fallback
+  let start = new Date(startStr + "T00:00:00");
+  let end = new Date(endStr + "T23:59:59");
+  let count = 0;
+  let cur = new Date(start);
+  while (cur <= end) {
+    if (cur.getDay() !== 0) count++; // 0 = Minggu, skip Minggu
+    cur.setDate(cur.getDate() + 1);
+  }
+  return count;
+}
+
 function hitungDetailGaji(gapok, namaKaryawan) {
   const targetNama = namaKaryawan.trim().toLowerCase();
   const k = KARYAWAN.find(item => item.nama.trim().toLowerCase() === targetNama);
   
   const tglMulai = document.getElementById("filterTglMulai")?.value;
   const tglSelesai = document.getElementById("filterTglSelesai")?.value;
+  const totalHariKerja = hitungHariKerjaEfektif(tglMulai, tglSelesai);
 
   const g = parseFloat(gapok) || 0;
   const hkeRate = k ? (parseFloat(k.hke_rate) || 50000) : 50000;
@@ -373,6 +387,7 @@ function hitungDetailGaji(gapok, namaKaryawan) {
     hkeRate,
     uangHKE,
     hadir: hariHadir, 
+    totalHariKerja,
     totalLembur: jamLemburBulat.toFixed(1), 
     uangLembur, 
     incentive,
