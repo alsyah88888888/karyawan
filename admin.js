@@ -973,13 +973,22 @@ function setPeriodeKPI(type) {
 function exportKPIReport() {
   const customStart = document.getElementById("kpiFilterTglMulai")?.value;
   const customEnd = document.getElementById("kpiFilterTglSelesai")?.value;
+  const fmtDate = (d) => d ? d.split('-').reverse().join('/') : '-';
+  const periodeTampil = (customStart && customEnd) ? `${fmtDate(customStart)} - ${fmtDate(customEnd)}` : "Bulan Berjalan";
   
-  if (!KARYAWAN.length) return alert("Tidak ada data untuk diekspor!");
+  if (!KARYAWAN.length) return alert("Tidak ada data untuk laporan!");
 
-  const dataExport = KARYAWAN.map(k => {
+  showLoading(true);
+
+  // Hitung Data Summary
+  let totalRate = 0;
+  let totalLemburAll = 0;
+  const listKPI = KARYAWAN.map(k => {
     const d = hitungDetailGaji(k.gaji, k.nama, customStart, customEnd);
-    const attendanceRate = ((d.hadir / d.totalHariKerja) * 100) || 0;
-    
+    const rate = ((d.hadir / d.totalHariKerja) * 100) || 0;
+    totalRate += rate;
+    totalLemburAll += parseFloat(d.totalLembur) || 0;
+
     let logsKar = allLogs.filter(l => l.nama.trim().toLowerCase() === k.nama.trim().toLowerCase() && l.status === 'MASUK');
     if (customStart && customEnd) {
       const start = new Date(customStart + "T00:00:00");
@@ -991,34 +1000,108 @@ function exportKPIReport() {
     }
     const lateCount = logsKar.filter(l => l.isLate).length;
 
-    // Status Performa
     let statusLabel = "GOOD";
-    if (attendanceRate >= 95 && lateCount === 0) statusLabel = "EXCELLENT";
-    else if (attendanceRate >= 85 && lateCount <= 2) statusLabel = "GOOD";
-    else if (attendanceRate >= 75 || lateCount <= 4) statusLabel = "AVERAGE";
-    else statusLabel = "NEED IMPROVEMENT";
+    let statusColor = "#10b981";
+    if (rate >= 95 && lateCount === 0) { statusLabel = "EXCELLENT"; statusColor = "#4f46e5"; }
+    else if (rate >= 85 && lateCount <= 2) { statusLabel = "GOOD"; statusColor = "#10b981"; }
+    else if (rate >= 75 || lateCount <= 4) { statusLabel = "AVERAGE"; statusColor = "#f59e0b"; }
+    else { statusLabel = "POOR"; statusColor = "#ef4444"; }
 
-    return {
-      "NIK": k.nik,
-      "Nama Karyawan": k.nama,
-      "Departemen": k.dept,
-      "Jabatan": k.jabatan || "-",
-      "Hadir (Hari)": d.hadir,
-      "Total Hari Kerja": d.totalHariKerja,
-      "Tingkat Kehadiran (%)": attendanceRate.toFixed(1) + "%",
-      "Keterlambatan (Kali)": lateCount,
-      "Total Lembur (Jam)": d.totalLembur,
-      "Status Performa": statusLabel
-    };
+    return { ...k, d, rate, lateCount, statusLabel, statusColor };
   });
 
-  const ws = XLSX.utils.json_to_sheet(dataExport);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "KPI Karyawan");
-  
-  const fileName = `KPI_Report_${customStart || 'all'}_to_${customEnd || 'all'}.xlsx`;
-  XLSX.writeFile(wb, fileName);
-  showToast("Laporan KPI berhasil diunduh", "success");
+  const avgRate = (totalRate / KARYAWAN.length).toFixed(1);
+
+  // Template HTML untuk PDF
+  const element = document.createElement('div');
+  element.innerHTML = `
+    <div style="padding: 40px; font-family: 'Outfit', sans-serif; color: #1e293b; background: #fff;">
+      <header style="display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #4f46e5; padding-bottom: 20px; margin-bottom: 30px;">
+        <div style="display: flex; align-items: center; gap: 15px;">
+          <img src="logokoboi.png" style="width: 60px; height: 60px; object-fit: contain;">
+          <div>
+            <h1 style="margin: 0; font-size: 1.5rem; font-weight: 800; color: #4f46e5;">PT. KOLA BORASI INDONESIA</h1>
+            <p style="margin: 0; font-size: 0.75rem; color: #64748b;">Human Resources & Performance Analytics</p>
+          </div>
+        </div>
+        <div style="text-align: right;">
+          <h2 style="margin: 0; font-size: 1.2rem; font-weight: 800; letter-spacing: 1px;">KPI REPORT</h2>
+          <p style="margin: 0; font-size: 0.8rem; font-weight: 600; color: #64748b;">Periode: ${periodeTampil}</p>
+        </div>
+      </header>
+
+      <section style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 40px;">
+        <div style="background: #f8fafc; padding: 20px; border-radius: 16px; border: 1px solid #e2e8f0; text-align: center;">
+          <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase;">Total Manpower</div>
+          <div style="font-size: 1.75rem; font-weight: 800; color: #1e293b;">${KARYAWAN.length}</div>
+        </div>
+        <div style="background: #f8fafc; padding: 20px; border-radius: 16px; border: 1px solid #e2e8f0; text-align: center;">
+          <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase;">Avg. Attendance</div>
+          <div style="font-size: 1.75rem; font-weight: 800; color: #4f46e5;">${avgRate}%</div>
+        </div>
+        <div style="background: #f8fafc; padding: 20px; border-radius: 16px; border: 1px solid #e2e8f0; text-align: center;">
+          <div style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase;">Total Overtime</div>
+          <div style="font-size: 1.75rem; font-weight: 800; color: #10b981;">${totalLemburAll.toFixed(1)} <span style="font-size: 1rem;">Hrs</span></div>
+        </div>
+      </section>
+
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 40px;">
+        <thead>
+          <tr style="background: #f1f5f9;">
+            <th style="padding: 12px 15px; text-align: left; font-size: 0.7rem; text-transform: uppercase; border-bottom: 2px solid #e2e8f0;">Nama Karyawan</th>
+            <th style="padding: 12px 15px; text-align: center; font-size: 0.7rem; text-transform: uppercase; border-bottom: 2px solid #e2e8f0;">Departemen</th>
+            <th style="padding: 12px 15px; text-align: center; font-size: 0.7rem; text-transform: uppercase; border-bottom: 2px solid #e2e8f0;">Kehadiran (%)</th>
+            <th style="padding: 12px 15px; text-align: center; font-size: 0.7rem; text-transform: uppercase; border-bottom: 2px solid #e2e8f0;">Telat</th>
+            <th style="padding: 12px 15px; text-align: center; font-size: 0.7rem; text-transform: uppercase; border-bottom: 2px solid #e2e8f0;">Lembur</th>
+            <th style="padding: 12px 15px; text-align: center; font-size: 0.7rem; text-transform: uppercase; border-bottom: 2px solid #e2e8f0;">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${listKPI.map((k, idx) => `
+            <tr style="background: ${idx % 2 === 0 ? '#ffffff' : '#f8fafc'};">
+              <td style="padding: 12px 15px; border-bottom: 1px solid #f1f5f9;">
+                <div style="font-weight: 800; font-size: 0.9rem;">${k.nama}</div>
+                <div style="font-size: 0.7rem; color: #64748b;">${k.nik}</div>
+              </td>
+              <td style="padding: 12px 15px; text-align: center; border-bottom: 1px solid #f1f5f9; font-size: 0.8rem;">${k.dept}</td>
+              <td style="padding: 12px 15px; text-align: center; border-bottom: 1px solid #f1f5f9; font-weight: 700; font-size: 0.9rem;">${k.rate.toFixed(1)}%</td>
+              <td style="padding: 12px 15px; text-align: center; border-bottom: 1px solid #f1f5f9; font-size: 0.85rem; color: ${k.lateCount > 0 ? '#ef4444' : '#1e293b'}">${k.lateCount}x</td>
+              <td style="padding: 12px 15px; text-align: center; border-bottom: 1px solid #f1f5f9; font-size: 0.85rem;">${k.d.totalLembur}h</td>
+              <td style="padding: 12px 15px; text-align: center; border-bottom: 1px solid #f1f5f9;">
+                <span style="background: ${k.statusColor}20; color: ${k.statusColor}; padding: 4px 10px; border-radius: 6px; font-size: 0.65rem; font-weight: 800; text-transform: uppercase;">
+                  ${k.statusLabel}
+                </span>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+
+      <footer style="margin-top: 50px; border-top: 1px solid #e2e8f0; padding-top: 20px; display: flex; justify-content: space-between; align-items: flex-end;">
+        <div>
+          <p style="margin: 0; font-size: 0.7rem; color: #94a3b8; font-weight: 600;">Dicetak oleh: HRIS KOBOI System</p>
+          <p style="margin: 0; font-size: 0.7rem; color: #94a3b8;">Waktu Cetak: ${new Date().toLocaleString('id-ID')}</p>
+        </div>
+        <div style="text-align: right;">
+          <div style="font-size: 0.65rem; font-weight: 800; color: #ef4444; letter-spacing: 1px; margin-bottom: 4px;">PRIVATE & CONFIDENTIAL</div>
+          <p style="margin: 0; font-size: 0.7rem; color: #94a3b8;">&copy; 2026 PT. Kola Borasi Indonesia</p>
+        </div>
+      </footer>
+    </div>
+  `;
+
+  const opt = {
+    margin: [0.5, 0.5],
+    filename: `KPI_Report_${periodeTampil.replace(/\//g, '-')}.pdf`,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: true },
+    jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+  };
+
+  html2pdf().set(opt).from(element).save().then(() => {
+    showLoading(false);
+    showToast("Laporan PDF Premium berhasil diunduh", "success");
+  });
 }
 
 function bukaModalEdit(id) {
