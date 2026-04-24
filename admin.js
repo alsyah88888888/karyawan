@@ -95,12 +95,12 @@ function switchTab(tab) {
   if (title) {
     if (tab === "tabLog") title.innerText = "Log Absensi Real-time";
     else if (tab === "tabCEO") {
-        title.innerText = "Direksi / CEO Panel";
-        renderCEOTable();
+      title.innerText = "Direksi / CEO Panel";
+      renderCEOTable();
     }
     else title.innerText = "Manajemen Karyawan";
   }
-  
+
   if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
@@ -113,7 +113,7 @@ function renderCEOTable() {
     const masterInsentif = (parseFloat(k.incentive) || 0) + (parseFloat(k.incentive_luar) || 0);
     const approvedVal = parseFloat(k.incentive_approved_val) || 0;
     const isApproved = k.is_incentive_approved === true;
-    
+
     htmlRows += `
       <tr>
         <td>
@@ -151,17 +151,17 @@ async function simpanIncentiveCEO(index) {
   const k = KARYAWAN[index];
   const inputVal = document.getElementById(`valInsentifCEO_${index}`).value;
   const nominal = parseFloat(inputVal) || 0;
-  
+
   if (nominal < 0) return alert("Nominal tidak boleh negatif!");
 
   const { error } = await supabaseClient
     .from("karyawan")
-    .update({ 
+    .update({
       is_incentive_approved: true,
-      incentive_approved_val: nominal 
+      incentive_approved_val: nominal
     })
     .eq("id", k.id);
-    
+
   if (!error) {
     alert(`Insentif ${k.nama} disetujui sebesar Rp ${nominal.toLocaleString('id-ID')}`);
     syncData(); // Sinkronkan data agar tabel payroll ikut update
@@ -176,7 +176,7 @@ async function batalkanIncentiveCEO(index) {
     .from("karyawan")
     .update({ is_incentive_approved: false })
     .eq("id", k.id);
-    
+
   if (!error) {
     syncData();
   }
@@ -192,7 +192,7 @@ function renderLogTable() {
   logs.forEach((l) => {
     const sClass = l.status === "MASUK" ? "badge-success" : "badge-warning";
     const tgl = new Date(l.waktu);
-    
+
     htmlRows += `
       <tr>
         <td>
@@ -201,7 +201,7 @@ function renderLogTable() {
         </td>
         <td><span class="badge ${sClass}">${l.status}</span></td>
         <td>
-          <div style="font-weight: 600;">${tgl.toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})}</div>
+          <div style="font-weight: 600;">${tgl.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</div>
           <div style="font-size: 0.75rem; color: var(--text-muted);">${tgl.toLocaleDateString('id-ID')}</div>
         </td>
         <td>
@@ -304,14 +304,14 @@ function hitungHariKerjaEfektif(startStr, endStr) {
 function hitungDetailGaji(gapok, namaKaryawan) {
   const targetNama = namaKaryawan.trim().toLowerCase();
   const k = KARYAWAN.find(item => item.nama.trim().toLowerCase() === targetNama);
-  
+
   const tglMulai = document.getElementById("filterTglMulai")?.value;
   const tglSelesai = document.getElementById("filterTglSelesai")?.value;
   const totalHariKerja = hitungHariKerjaEfektif(tglMulai, tglSelesai);
 
   const g = parseFloat(gapok) || 0;
   const hkeRate = k ? (parseFloat(k.hke_rate) || 50000) : 50000;
-  
+
   // Otoritas CEO Per Karyawan (Gunakan Nominal yang disetujui CEO)
   const isApproved = k ? (k.is_incentive_approved === true) : false;
   const incentive = isApproved ? (parseFloat(k.incentive_approved_val) || 0) : 0;
@@ -321,7 +321,7 @@ function hitungDetailGaji(gapok, namaKaryawan) {
   let dataLogKaryawan = allLogs
     .filter((l) => l.nama.trim().toLowerCase() === targetNama)
     .sort((a, b) => new Date(a.waktu) - new Date(b.waktu));
-  
+
   // --- FILTER TANGGAL ---
   if (tglMulai && tglSelesai) {
     const start = new Date(tglMulai + "T00:00:00");
@@ -331,7 +331,7 @@ function hitungDetailGaji(gapok, namaKaryawan) {
       return w >= start && w <= end;
     });
   }
-  
+
   const hariHadir = [...new Set(dataLogKaryawan.map((l) => new Date(l.waktu).toISOString().slice(0, 10)))].length;
 
   let totalLembur = 0;
@@ -366,7 +366,7 @@ function hitungDetailGaji(gapok, namaKaryawan) {
   const adjJam = k ? (parseFloat(k.lembur_adj) || 0) : 0;
   let jamLemburFinal = totalLembur + adjJam; // Terapkan penyesuaian manual
   let jamLemburBulat = jamLemburFinal;
-  
+
   // CEK APAKAH LEMBUR AKTIF UNTUK KARYAWAN INI
   const isLemburAktif = k ? (k.is_lembur !== false) : true;
 
@@ -382,18 +382,18 @@ function hitungDetailGaji(gapok, namaKaryawan) {
   const uangHKE = hariHadir * hkeRate;
   const thp = g + uangHKE + incentive + incentiveLuar + uangLembur - pinjaman;
 
-  return { 
-    gapok: g, 
+  return {
+    gapok: g,
     hkeRate,
     uangHKE,
-    hadir: hariHadir, 
+    hadir: hariHadir,
     totalHariKerja,
-    totalLembur: jamLemburBulat.toFixed(1), 
-    uangLembur, 
+    totalLembur: jamLemburBulat.toFixed(1),
+    uangLembur,
     incentive,
     incentiveLuar,
     pinjaman,
-    thp: thp > 0 ? thp : 0 
+    thp: thp > 0 ? thp : 0
   };
 }
 
@@ -518,7 +518,7 @@ function cetakSlip(index) {
 
       <div class="footer">
         <div class="sign-box">
-          <p>CIBINONG, ${new Date().toLocaleDateString('id-ID', {day:'numeric', month:'long', year:'numeric'})}</p>
+          <p>CIBINONG, ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
           <p>Dibuat Oleh,</p>
           <div class="sign-space"></div>
           <p><strong>ADMIN</strong></p>
@@ -559,7 +559,7 @@ function kirimSlipWA(index) {
   if (d.incentive > 0) pesan += `Incentive: Rp ${d.incentive.toLocaleString('id-ID')}\n`;
   if (d.incentiveLuar > 0) pesan += `Incentive Luar Kota: Rp ${d.incentiveLuar.toLocaleString('id-ID')}\n`;
   pesan += `Lembur (${d.totalLembur} jam): Rp ${d.uangLembur.toLocaleString('id-ID')}\n`;
-  
+
   if (d.pinjaman > 0) {
     pesan += `----------------------------------\n`;
     pesan += `Potongan Pinjaman: Rp ${d.pinjaman.toLocaleString('id-ID')}\n`;
@@ -600,18 +600,18 @@ async function logAudit(action, details = "") {
 function notifikasiCEOPayroll(deptFilter = "ALL") {
   const tglMulai = document.getElementById("filterTglMulai")?.value;
   const tglSelesai = document.getElementById("filterTglSelesai")?.value;
-  
+
   // Format Tanggal untuk Pesan
   const fmt = (d) => d ? d.split('-').reverse().join('/') : '-';
   const periodeTampil = (tglMulai && tglSelesai) ? `${fmt(tglMulai)} - ${fmt(tglSelesai)}` : "Bulan Ini";
-  
+
   let totalTHP = 0;
   let rincianKaryawan = "";
   let count = 0;
 
   // Filter Karyawan berdasarkan Departemen
-  const filteredKar = deptFilter === "ALL" 
-    ? KARYAWAN 
+  const filteredKar = deptFilter === "ALL"
+    ? KARYAWAN
     : KARYAWAN.filter(k => k.dept.toUpperCase() === deptFilter.toUpperCase());
 
   if (filteredKar.length === 0) return showToast(`Tidak ada data karyawan ${deptFilter} untuk periode ini.`, "info");
@@ -620,10 +620,10 @@ function notifikasiCEOPayroll(deptFilter = "ALL") {
     const d = hitungDetailGaji(k.gaji, k.nama);
     const isApproved = k.is_incentive_approved === true;
     const insentifVal = isApproved ? (parseFloat(k.incentive_approved_val) || 0) : 0;
-    
+
     totalTHP += d.thp;
     count++;
-    
+
     rincianKaryawan += `${count}. *${k.nama}* (${k.dept})\n`;
     rincianKaryawan += `   - GAJI POKOK: Rp ${Math.floor(d.gapok).toLocaleString('id-ID')}\n`;
     rincianKaryawan += `   - PINJAMAN KANTOR: Rp ${Math.floor(d.pinjaman).toLocaleString('id-ID')}\n`;
@@ -660,11 +660,11 @@ function showModal() {
   fields.forEach(f => {
     const el = document.getElementById(f);
     if (el) {
-        if (f === "inpCuti") el.value = 12;
-        else if (f === "inpHkeRate") el.value = 50000;
-        else if (f === "inpIsLembur") el.value = "true";
-        else if (f === "inpLemburAdj" || f === "inpPinjaman" || f === "inpIncentive" || f === "inpIncentiveLuar") el.value = 0;
-        else el.value = "";
+      if (f === "inpCuti") el.value = 12;
+      else if (f === "inpHkeRate") el.value = 50000;
+      else if (f === "inpIsLembur") el.value = "true";
+      else if (f === "inpLemburAdj" || f === "inpPinjaman" || f === "inpIncentive" || f === "inpIncentiveLuar") el.value = 0;
+      else el.value = "";
     }
   });
   document.getElementById("inpDept").value = "OFFICE";
@@ -756,13 +756,13 @@ function bukaModalEditKaryawan(index) {
 
 async function hapusKaryawan(id) {
   if (!confirm("Hapus karyawan ini secara permanen?")) return;
-  
+
   showLoading(true);
   try {
     const k = KARYAWAN.find(x => x.id == id);
     const { error } = await supabaseClient.from("karyawan").delete().eq("id", id);
     if (error) throw error;
-    
+
     showToast("Karyawan berhasil dihapus", "success");
     logAudit("Hapus Karyawan", `Menghapus karyawan: ${k ? k.nama : id}`);
     syncData();
@@ -957,7 +957,7 @@ function setPeriodeIni() {
   const now = new Date();
   const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
   const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-  
+
   document.getElementById("filterTglMulai").value = firstDay.toISOString().split('T')[0];
   document.getElementById("filterTglSelesai").value = lastDay.toISOString().split('T')[0];
   refreshUI();
