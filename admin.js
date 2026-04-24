@@ -583,8 +583,12 @@ async function logAudit(action, details = "") {
 }
 
 function notifikasiCEOPayroll() {
-  const date = new Date();
-  const month = date.toLocaleString('id-ID', { month: 'long', year: 'numeric' });
+  const tglMulai = document.getElementById("filterTglMulai")?.value;
+  const tglSelesai = document.getElementById("filterTglSelesai")?.value;
+  
+  // Format Tanggal untuk Pesan
+  const fmt = (d) => d ? d.split('-').reverse().join('/') : '-';
+  const periodeTampil = (tglMulai && tglSelesai) ? `${fmt(tglMulai)} - ${fmt(tglSelesai)}` : "Bulan Ini";
   
   let totalTHP = 0;
   let rincianKaryawan = "";
@@ -604,19 +608,19 @@ function notifikasiCEOPayroll() {
   });
 
   let pesan = `*LAPORAN REKAP PAYROLL - PT. KOLA BORASI INDONESIA*\n`;
-  pesan += `Periode: ${month}\n`;
+  pesan += `Periode: ${periodeTampil}\n`;
   pesan += `----------------------------------\n\n`;
   pesan += `*DETAIL PER KARYAWAN:*\n`;
   pesan += rincianKaryawan;
   pesan += `----------------------------------\n`;
   pesan += `*TOTAL ESTIMASI DANA: Rp ${Math.floor(totalTHP).toLocaleString('id-ID')}*\n`;
   pesan += `----------------------------------\n`;
-  pesan += `_Laporan ini adalah ringkasan rekapitulasi gaji bulanan._\n\n`;
+  pesan += `_Laporan disesuaikan dengan filter tanggal di dashboard._\n\n`;
   pesan += `Mohon review di panel CEO: ${window.location.href}`;
 
   const url = `https://wa.me/${CEO_PHONE}?text=${encodeURIComponent(pesan)}`;
   window.open(url, '_blank');
-  logAudit("Notifikasi CEO", `Mengirim rekap detail payroll bulan ${month} ke CEO`);
+  logAudit("Notifikasi CEO", `Mengirim rekap detail payroll periode ${periodeTampil} ke CEO`);
 }
 function showModal() {
   document.getElementById("modalTitle").innerText = "Tambah Karyawan (Master Data)";
