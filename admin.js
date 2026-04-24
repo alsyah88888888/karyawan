@@ -409,137 +409,143 @@ function hitungDetailGaji(gapok, namaKaryawan) {
 function cetakSlip(index) {
   const k = KARYAWAN[index];
   const d = hitungDetailGaji(k.gaji, k.nama);
-  const date = new Date();
-  const monthNames = ["JANUARI", "FEBRUARI", "MARET", "APRIL", "MEI", "JUNI", "JULI", "AGUSTUS", "SEPTEMBER", "OKTOBER", "NOVEMBER", "DESEMBER"];
-  const period = `${monthNames[date.getMonth()]} ${date.getFullYear()}`;
+  const tglMulai = document.getElementById("filterTglMulai")?.value;
+  const tglSelesai = document.getElementById("filterTglSelesai")?.value;
+  
+  const fmt = (d) => d ? d.split('-').reverse().join('/') : '-';
+  const periodeTampil = (tglMulai && tglSelesai) ? `${fmt(tglMulai)} - ${fmt(tglSelesai)}` : "Bulan Berjalan";
 
   const html = `
     <html>
     <head>
       <title>Slip Gaji - ${k.nama}</title>
+      <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
       <style>
-        body { font-family: 'Inter', sans-serif; padding: 40px; color: #333; }
-        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px; }
-        .logo-box { text-align: left; }
-        .logo-box img { width: 120px; }
-        .company-info { text-align: right; }
-        .company-info h2 { margin: 0; color: #b45309; font-size: 1.2rem; }
-        .company-info p { margin: 2px 0; font-size: 0.8rem; }
+        :root { --primary: #4f46e5; --slate-800: #1e293b; --slate-500: #64748b; --slate-200: #e2e8f0; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Outfit', sans-serif; color: var(--slate-800); background: #f1f5f9; padding: 30px; }
         
-        .slip-title { text-align: right; margin-bottom: 20px; }
-        .slip-title h3 { margin: 0; font-size: 1.1rem; text-decoration: underline; }
-        .slip-title p { margin: 0; font-size: 0.9rem; font-weight: 700; }
+        .payslip-card { background: white; max-width: 800px; margin: 0 auto; padding: 40px; border-radius: 16px; border: 1px solid var(--slate-200); position: relative; overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
+        .confidential { position: absolute; top: 20px; right: -35px; background: #fee2e2; color: #ef4444; padding: 5px 40px; transform: rotate(45deg); font-size: 0.6rem; font-weight: 800; letter-spacing: 1px; }
 
-        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-bottom: 20px; font-size: 0.85rem; }
-        .info-row { display: flex; margin-bottom: 4px; }
-        .info-label { width: 120px; font-weight: 600; }
-        
-        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 0.85rem; }
-        th { background: #f8fafc; text-align: left; padding: 8px; border-top: 1.5px solid #000; border-bottom: 1.5px solid #000; }
-        td { padding: 6px 8px; }
-        .row-total { border-top: 1.5px solid #000; border-bottom: 1.5px solid #000; font-weight: 800; }
-        .val { text-align: right; }
-        
-        .footer { display: flex; justify-content: space-between; margin-top: 40px; font-size: 0.85rem; }
-        .sign-box { text-align: center; width: 200px; }
-        .sign-space { height: 60px; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 2px solid var(--slate-800); padding-bottom: 20px; }
+        .logo-section { display: flex; align-items: center; gap: 15px; }
+        .logo-section img { width: 60px; height: 60px; object-fit: contain; }
+        .company-name h1 { font-size: 1.25rem; font-weight: 800; color: var(--primary); margin: 0; }
+        .company-name p { font-size: 0.7rem; color: var(--slate-500); max-width: 250px; }
+        .doc-title { text-align: right; }
+        .doc-title h2 { font-size: 1.8rem; font-weight: 800; text-transform: uppercase; margin: 0; }
+        .doc-title p { font-size: 0.8rem; font-weight: 600; color: var(--slate-500); }
+
+        /* INFO BOX */
+        .info-box { display: flex; gap: 20px; background: #f8fafc; padding: 20px; border-radius: 12px; margin-bottom: 30px; border: 1px solid var(--slate-200); }
+        .info-photo { width: 85px; height: 85px; border-radius: 8px; border: 2px solid white; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); overflow: hidden; }
+        .info-photo img { width: 100%; height: 100%; object-fit: cover; }
+        .info-details { flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 10px 30px; }
+        .info-item { display: flex; flex-direction: column; }
+        .info-item .label { font-size: 0.6rem; text-transform: uppercase; color: var(--slate-500); font-weight: 700; }
+        .info-item .val { font-size: 0.85rem; font-weight: 600; }
+
+        /* SALARY GRID */
+        .salary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 30px; }
+        .salary-col h3 { font-size: 0.85rem; font-weight: 800; text-transform: uppercase; padding-bottom: 8px; border-bottom: 2px solid var(--slate-200); margin-bottom: 12px; color: var(--primary); }
+        .row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 0.8rem; border-bottom: 1px solid #f8fafc; }
+        .row .label { color: var(--slate-500); }
+        .row .val { font-weight: 600; }
+
+        /* TOTAL SECTION */
+        .total-section { background: var(--slate-800); color: white; padding: 20px 30px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .total-thp { display: flex; flex-direction: column; }
+        .total-thp .label { font-size: 0.75rem; font-weight: 600; opacity: 0.7; }
+        .total-thp .val { font-size: 1.75rem; font-weight: 800; }
+        .thp-message { text-align: right; font-size: 0.75rem; font-style: italic; opacity: 0.8; max-width: 250px; }
+
+        /* SIGNATURES */
+        .signatures { display: flex; justify-content: space-between; margin-top: 40px; }
+        .sign-box { text-align: center; width: 180px; }
+        .sign-box .label { font-size: 0.7rem; font-weight: 700; color: var(--slate-500); margin-bottom: 60px; text-transform: uppercase; }
+        .sign-box .name { font-size: 0.85rem; font-weight: 800; border-bottom: 1.5px solid var(--slate-800); padding-bottom: 3px; }
+
+        @media print {
+            body { background: white; padding: 0; }
+            .payslip-card { border: none; box-shadow: none; padding: 20px; }
+        }
       </style>
     </head>
     <body>
-      <div class="header">
-        <div class="logo-box">
-          <img src="logokoboi.png" alt="Logo">
-        </div>
-        <div class="company-info">
-          <h2>PT. KOLA BORASI INDONESIA</h2>
-          <p>Jl. Arjuna IV Green Kartika Residence Blok EE No.2</p>
-          <p>Cibinong, Bogor - Jawa Barat 16911</p>
-        </div>
+      <div class="payslip-card">
+        <div class="confidential">CONFIDENTIAL</div>
+        
+        <header class="header">
+          <div class="logo-section">
+            <img src="logokoboi.png" alt="Logo KBI">
+            <div class="company-name">
+              <h1>PT. KOLA BORASI INDONESIA</h1>
+              <p>Green Kartika Residence Blok EE No.2, Cibinong, Bogor</p>
+            </div>
+          </div>
+          <div class="doc-title">
+            <h2>PAYSLIP</h2>
+            <p>${periodeTampil}</p>
+          </div>
+        </header>
+
+        <section class="info-box">
+          <div class="info-photo">
+            <img src="image/NAME CARD KOLA BORASI INDONESIA/${k.nik}.jpg" 
+                 onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(k.nama)}&background=4f46e5&color=fff'">
+          </div>
+          <div class="info-details">
+            <div class="info-item"><span class="label">Nama Karyawan</span><span class="val">${k.nama}</span></div>
+            <div class="info-item"><span class="label">NIK / ID</span><span class="val">${k.nik}</span></div>
+            <div class="info-item"><span class="label">Jabatan / Dept</span><span class="val">${k.jabatan || k.dept}</span></div>
+            <div class="info-item"><span class="label">No. Rekening</span><span class="val">${k.rekening || '-'}</span></div>
+            <div class="info-item"><span class="label">Hadir / Hari Kerja</span><span class="val">${d.hadir} / ${d.totalHariKerja} Hari</span></div>
+            <div class="info-item"><span class="label">NPWP</span><span class="val">${k.npwp || '-'}</span></div>
+          </div>
+        </section>
+
+        <section class="salary-grid">
+          <div class="salary-col">
+            <h3>Penerimaan (Earnings)</h3>
+            <div class="row"><span class="label">Gaji Pokok</span><span class="val">Rp ${Math.floor(d.gapok).toLocaleString('id-ID')}</span></div>
+            <div class="row"><span class="label">HKE (${d.hadir} Hari)</span><span class="val">Rp ${Math.floor(d.uangHKE).toLocaleString('id-ID')}</span></div>
+            <div class="row"><span class="label">Insentif Khusus</span><span class="val">Rp ${Math.floor(d.incentiveLuarMaster).toLocaleString('id-ID')}</span></div>
+            <div class="row"><span class="label">Bonus CEO</span><span class="val">Rp ${Math.floor(d.incentive).toLocaleString('id-ID')}</span></div>
+            <div class="row"><span class="label">Lembur (${d.totalLembur} Jam)</span><span class="val">Rp ${Math.floor(d.uangLembur).toLocaleString('id-ID')}</span></div>
+          </div>
+          <div class="salary-col">
+            <h3>Potongan (Deductions)</h3>
+            <div class="row"><span class="label">Pinjaman / Kasbon</span><span class="val">Rp ${Math.floor(d.pinjaman).toLocaleString('id-ID')}</span></div>
+            <div class="row"><span class="label">PPh21 (Estimasi)</span><span class="val">Rp 0</span></div>
+            <div class="row" style="margin-top: 15px; border-top: 1px solid var(--slate-200); padding-top: 10px;">
+                <span class="label" style="font-weight: 800;">TOTAL POTONGAN</span>
+                <span class="val">Rp ${Math.floor(d.pinjaman).toLocaleString('id-ID')}</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="total-section">
+          <div class="total-thp">
+            <span class="label">TAKE HOME PAY (TOTAL GAJI BERSIH)</span>
+            <span class="val">Rp ${Math.floor(d.thp).toLocaleString('id-ID')}</span>
+          </div>
+          <div class="thp-message">
+            "Semoga bermanfaat untuk keluarga. Terus berkarya bersama KOLA BORASI."
+          </div>
+        </section>
+
+        <footer class="signatures">
+          <div class="sign-box">
+            <p class="label">Diterima Oleh,</p>
+            <p class="name">${k.nama}</p>
+          </div>
+          <div class="sign-box">
+            <p class="label">HRD Manager,</p>
+            <p class="name">PT. Kola Borasi Indonesia</p>
+          </div>
+        </footer>
       </div>
-
-      <div class="slip-title">
-        <h3>SLIP GAJI</h3>
-        <p>${period}</p>
-      </div>
-
-      <div class="info-grid">
-        <div>
-          <div class="info-row"><div class="info-label">NAMA</div><div>: ${k.nama}</div></div>
-          <div class="info-row"><div class="info-label">JABATAN</div><div>: ${k.jabatan || '-'}</div></div>
-        </div>
-        <div>
-          <div class="info-row"><div class="info-label">WILAYAH KERJA</div><div>: CIBINONG</div></div>
-          <div class="info-row"><div class="info-label">DEPARTEMEN</div><div>: ${k.dept}</div></div>
-        </div>
-      </div>
-
-      <table>
-        <tr>
-          <th>PENDAPATAN</th>
-          <th></th>
-          <th class="val">POTONGAN</th>
-          <th class="val"></th>
-        </tr>
-        <tr>
-          <td>GAJI POKOK</td>
-          <td class="val">Rp ${d.gapok.toLocaleString('id-ID')}</td>
-          <td>PINJAMAN KANTOR</td>
-          <td class="val">Rp ${d.pinjaman.toLocaleString('id-ID')}</td>
-        </tr>
-        <tr>
-          <td>HKE (${d.hadir} x Rp ${d.hkeRate.toLocaleString('id-ID')})</td>
-          <td class="val">Rp ${d.uangHKE.toLocaleString('id-ID')}</td>
-          <td></td>
-          <td></td>
-        </tr>
-        <tr>
-          <td>INCENTIVE</td>
-          <td class="val">Rp ${d.incentive.toLocaleString('id-ID')}</td>
-          <td></td>
-          <td></td>
-        </tr>
-        <tr>
-          <td>INCENTIVE (LK/NGINAP)</td>
-          <td class="val">Rp ${d.incentiveLuar.toLocaleString('id-ID')}</td>
-          <td></td>
-          <td></td>
-        </tr>
-        <tr>
-          <td>OVERTIME (${d.totalLembur} JAM)</td>
-          <td class="val">Rp ${d.uangLembur.toLocaleString('id-ID')}</td>
-          <td></td>
-          <td></td>
-        </tr>
-        <tr class="row-total">
-          <td>JUMLAH PENDAPATAN</td>
-          <td class="val">Rp ${(d.gapok + d.uangHKE + d.incentive + d.incentiveLuar + d.uangLembur).toLocaleString('id-ID')}</td>
-          <td>JUMLAH POTONGAN</td>
-          <td class="val">Rp ${d.pinjaman.toLocaleString('id-ID')}</td>
-        </tr>
-      </table>
-
-      <div style="display: flex; align-items: center; gap: 20px;">
-        <span style="font-weight: 800; font-size: 1rem;">GAJI BERSIH :</span>
-        <div style="border: 2px solid #000; padding: 5px 30px; font-weight: 800; font-size: 1.1rem;">
-          Rp ${Math.floor(d.thp).toLocaleString('id-ID')}
-        </div>
-      </div>
-
-      <div class="footer">
-        <div class="sign-box">
-          <p>CIBINONG, ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
-          <p>Dibuat Oleh,</p>
-          <div class="sign-space"></div>
-          <p><strong>ADMIN</strong></p>
-        </div>
-        <div class="sign-box">
-          <p>&nbsp;</p>
-          <p>Diterima Oleh,</p>
-          <div class="sign-space"></div>
-          <p><strong>${k.nama}</strong></p>
-        </div>
-      </div>
-
       <script>window.print();</script>
     </body>
     </html>
