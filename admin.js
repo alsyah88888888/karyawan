@@ -601,9 +601,12 @@ function notifikasiCEOPayroll() {
     totalTHP += d.thp;
     
     rincianKaryawan += `${index + 1}. *${k.nama}* (${k.dept})\n`;
-    rincianKaryawan += `   - Gaji + HKE: Rp ${Math.floor(d.gapok + d.uangHKE).toLocaleString('id-ID')}\n`;
-    rincianKaryawan += `   - Insentif CEO: Rp ${insentifVal.toLocaleString('id-ID')} ${isApproved ? '✅' : '❌'}\n`;
-    rincianKaryawan += `   - Lembur: Rp ${Math.floor(d.uangLembur).toLocaleString('id-ID')}\n`;
+    rincianKaryawan += `   - GAJI POKOK: Rp ${Math.floor(d.gapok).toLocaleString('id-ID')}\n`;
+    rincianKaryawan += `   - PINJAMAN KANTOR: Rp ${Math.floor(d.pinjaman).toLocaleString('id-ID')}\n`;
+    rincianKaryawan += `   - HKE (${d.hadir} hari): Rp ${Math.floor(d.uangHKE).toLocaleString('id-ID')}\n`;
+    rincianKaryawan += `   - INCENTIVE: Rp ${insentifVal.toLocaleString('id-ID')} ${isApproved ? '✅' : '❌'}\n`;
+    rincianKaryawan += `   - INCENTIVE (LK/NGINAP): Rp ${Math.floor(d.incentiveLuarMaster).toLocaleString('id-ID')}\n`;
+    rincianKaryawan += `   - OVERTIME (${d.totalLembur} jam): Rp ${Math.floor(d.uangLembur).toLocaleString('id-ID')}\n`;
     rincianKaryawan += `   - *Total THP: Rp ${Math.floor(d.thp).toLocaleString('id-ID')}*\n\n`;
   });
 
