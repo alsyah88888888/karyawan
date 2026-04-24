@@ -587,23 +587,36 @@ function notifikasiCEOPayroll() {
   const month = date.toLocaleString('id-ID', { month: 'long', year: 'numeric' });
   
   let totalTHP = 0;
-  KARYAWAN.forEach(k => {
+  let rincianKaryawan = "";
+  
+  KARYAWAN.forEach((k, index) => {
     const d = hitungDetailGaji(k.gaji, k.nama);
+    const isApproved = k.is_incentive_approved === true;
+    const insentifVal = isApproved ? (parseFloat(k.incentive_approved_val) || 0) : 0;
+    
     totalTHP += d.thp;
+    
+    rincianKaryawan += `${index + 1}. *${k.nama}* (${k.dept})\n`;
+    rincianKaryawan += `   - Gaji + HKE: Rp ${Math.floor(d.gapok + d.uangHKE).toLocaleString('id-ID')}\n`;
+    rincianKaryawan += `   - Insentif CEO: Rp ${insentifVal.toLocaleString('id-ID')} ${isApproved ? '✅' : '❌'}\n`;
+    rincianKaryawan += `   - Lembur: Rp ${Math.floor(d.uangLembur).toLocaleString('id-ID')}\n`;
+    rincianKaryawan += `   - *Total THP: Rp ${Math.floor(d.thp).toLocaleString('id-ID')}*\n\n`;
   });
 
-  let pesan = `*LAPORAN REKAP GAJI - PT. KOLA BORASI INDONESIA*\n`;
+  let pesan = `*LAPORAN REKAP PAYROLL - PT. KOLA BORASI INDONESIA*\n`;
   pesan += `Periode: ${month}\n`;
+  pesan += `----------------------------------\n\n`;
+  pesan += `*DETAIL PER KARYAWAN:*\n`;
+  pesan += rincianKaryawan;
   pesan += `----------------------------------\n`;
-  pesan += `Total Karyawan: ${KARYAWAN.length} Orang\n`;
-  pesan += `Estimasi Total Payroll: *Rp ${Math.floor(totalTHP).toLocaleString('id-ID')}*\n`;
+  pesan += `*TOTAL ESTIMASI DANA: Rp ${Math.floor(totalTHP).toLocaleString('id-ID')}*\n`;
   pesan += `----------------------------------\n`;
-  pesan += `_Laporan siap untuk di-review & disetujui di Dashboard CEO Access._\n\n`;
-  pesan += `Klik link admin: ${window.location.href}`;
+  pesan += `_Laporan ini adalah ringkasan rekapitulasi gaji bulanan._\n\n`;
+  pesan += `Mohon review di panel CEO: ${window.location.href}`;
 
   const url = `https://wa.me/${CEO_PHONE}?text=${encodeURIComponent(pesan)}`;
   window.open(url, '_blank');
-  logAudit("Notifikasi CEO", `Mengirim rekap payroll bulan ${month} ke CEO`);
+  logAudit("Notifikasi CEO", `Mengirim rekap detail payroll bulan ${month} ke CEO`);
 }
 function showModal() {
   document.getElementById("modalTitle").innerText = "Tambah Karyawan (Master Data)";
