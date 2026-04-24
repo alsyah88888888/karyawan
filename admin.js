@@ -582,7 +582,7 @@ async function logAudit(action, details = "") {
   await supabaseClient.from("audit_logs").insert([{ action, details }]);
 }
 
-function notifikasiCEOPayroll() {
+function notifikasiCEOPayroll(deptFilter = "ALL") {
   const tglMulai = document.getElementById("filterTglMulai")?.value;
   const tglSelesai = document.getElementById("filterTglSelesai")?.value;
   
@@ -592,15 +592,24 @@ function notifikasiCEOPayroll() {
   
   let totalTHP = 0;
   let rincianKaryawan = "";
-  
-  KARYAWAN.forEach((k, index) => {
+  let count = 0;
+
+  // Filter Karyawan berdasarkan Departemen
+  const filteredKar = deptFilter === "ALL" 
+    ? KARYAWAN 
+    : KARYAWAN.filter(k => k.dept.toUpperCase() === deptFilter.toUpperCase());
+
+  if (filteredKar.length === 0) return showToast(`Tidak ada data karyawan ${deptFilter} untuk periode ini.`, "info");
+
+  filteredKar.forEach((k, index) => {
     const d = hitungDetailGaji(k.gaji, k.nama);
     const isApproved = k.is_incentive_approved === true;
     const insentifVal = isApproved ? (parseFloat(k.incentive_approved_val) || 0) : 0;
     
     totalTHP += d.thp;
+    count++;
     
-    rincianKaryawan += `${index + 1}. *${k.nama}* (${k.dept})\n`;
+    rincianKaryawan += `${count}. *${k.nama}* (${k.dept})\n`;
     rincianKaryawan += `   - GAJI POKOK: Rp ${Math.floor(d.gapok).toLocaleString('id-ID')}\n`;
     rincianKaryawan += `   - PINJAMAN KANTOR: Rp ${Math.floor(d.pinjaman).toLocaleString('id-ID')}\n`;
     rincianKaryawan += `   - HKE (${d.hadir} hari): Rp ${Math.floor(d.uangHKE).toLocaleString('id-ID')}\n`;
@@ -610,7 +619,8 @@ function notifikasiCEOPayroll() {
     rincianKaryawan += `   - *Total THP: Rp ${Math.floor(d.thp).toLocaleString('id-ID')}*\n\n`;
   });
 
-  let pesan = `*LAPORAN REKAP PAYROLL - PT. KOLA BORASI INDONESIA*\n`;
+  let pesan = `*LAPORAN REKAP PAYROLL - ${deptFilter.toUpperCase()}*\n`;
+  pesan += `PT. KOLA BORASI INDONESIA\n`;
   pesan += `Periode: ${periodeTampil}\n`;
   pesan += `----------------------------------\n\n`;
   pesan += `*DETAIL PER KARYAWAN:*\n`;
@@ -618,12 +628,12 @@ function notifikasiCEOPayroll() {
   pesan += `----------------------------------\n`;
   pesan += `*TOTAL ESTIMASI DANA: Rp ${Math.floor(totalTHP).toLocaleString('id-ID')}*\n`;
   pesan += `----------------------------------\n`;
-  pesan += `_Laporan disesuaikan dengan filter tanggal di dashboard._\n\n`;
-  pesan += `Mohon review di panel CEO: ${window.location.href}`;
+  pesan += `_Laporan disesuaikan dengan departemen ${deptFilter}_.\n\n`;
+  pesan += `Review Detail: ${window.location.href}`;
 
   const url = `https://wa.me/${CEO_PHONE}?text=${encodeURIComponent(pesan)}`;
   window.open(url, '_blank');
-  logAudit("Notifikasi CEO", `Mengirim rekap detail payroll periode ${periodeTampil} ke CEO`);
+  logAudit(`Notif CEO ${deptFilter}`, `Mengirim rekap payroll ${deptFilter} periode ${periodeTampil}`);
 }
 function showModal() {
   document.getElementById("modalTitle").innerText = "Tambah Karyawan (Master Data)";
