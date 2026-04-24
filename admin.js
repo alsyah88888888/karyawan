@@ -153,6 +153,9 @@ function renderKaryawanTable() {
             <button class="btn btn-outline btn-small" onclick="cetakSlip(${index})">
                 <i data-lucide="printer" style="width:14px;"></i> <span>Cetak</span>
             </button>
+            <button class="btn btn-primary btn-small" style="background:#25d366; border:none;" onclick="kirimSlipWA(${index})">
+                <i data-lucide="message-circle" style="width:14px;"></i> <span>WhatsApp</span>
+            </button>
             <button class="btn btn-outline btn-small" onclick="bukaModalEditKaryawan(${index})">
                 <i data-lucide="edit-3" style="width:14px;"></i> <span>Edit</span>
             </button>
@@ -419,6 +422,44 @@ function cetakSlip(index) {
   const win = window.open('', '_blank');
   win.document.write(html);
   win.document.close();
+}
+
+function kirimSlipWA(index) {
+  const k = KARYAWAN[index];
+  const d = hitungDetailGaji(k.gaji, k.nama);
+  const date = new Date();
+  const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+  const period = `${monthNames[date.getMonth()]} ${date.getFullYear()}`;
+
+  if (!k.nomor_wa) return alert("Nomor WhatsApp tidak ditemukan!");
+
+  // Format Pesan
+  let pesan = `*SLIP GAJI - ${k.nama.toUpperCase()}*\n`;
+  pesan += `Periode: ${period}\n`;
+  pesan += `----------------------------------\n`;
+  pesan += `Gaji Pokok: Rp ${d.gapok.toLocaleString('id-ID')}\n`;
+  pesan += `HKE (${d.hadir} hari): Rp ${d.uangHKE.toLocaleString('id-ID')}\n`;
+  if (d.incentive > 0) pesan += `Incentive: Rp ${d.incentive.toLocaleString('id-ID')}\n`;
+  if (d.incentiveLuar > 0) pesan += `Incentive Luar Kota: Rp ${d.incentiveLuar.toLocaleString('id-ID')}\n`;
+  pesan += `Lembur (${d.totalLembur} jam): Rp ${d.uangLembur.toLocaleString('id-ID')}\n`;
+  
+  if (d.pinjaman > 0) {
+    pesan += `----------------------------------\n`;
+    pesan += `Potongan Pinjaman: Rp ${d.pinjaman.toLocaleString('id-ID')}\n`;
+  }
+
+  pesan += `----------------------------------\n`;
+  pesan += `*GAJI BERSIH (THP): Rp ${Math.floor(d.thp).toLocaleString('id-ID')}*\n`;
+  pesan += `----------------------------------\n`;
+  pesan += `_Pesan otomatis dari Sistem HRIS KOBOI_`;
+
+  // Format nomor (ubah 0 jadi 62)
+  let noWa = k.nomor_wa.trim();
+  if (noWa.startsWith("0")) noWa = "62" + noWa.slice(1);
+  else if (!noWa.startsWith("62")) noWa = "62" + noWa;
+
+  const url = `https://wa.me/${noWa}?text=${encodeURIComponent(pesan)}`;
+  window.open(url, '_blank');
 }
 
 // --- MODAL & ACTIONS ---
