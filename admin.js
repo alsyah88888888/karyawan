@@ -220,10 +220,19 @@ function hitungDetailGaji(gapok, namaKaryawan) {
   const rumusStr = document.getElementById("inputRumusLembur")?.value || "(Math.round(totalLembur * 10) / 10) * TARIF_LEMBUR";
   let uangLembur = 0;
   let jamLemburBulat = totalLembur;
-  try {
-    uangLembur = eval(rumusStr);
-    if (rumusStr.includes("Math.round")) jamLemburBulat = Math.round(totalLembur * 10) / 10;
-  } catch (e) { uangLembur = totalLembur * TARIF_LEMBUR; }
+  
+  // CEK APAKAH LEMBUR AKTIF UNTUK KARYAWAN INI
+  const isLemburAktif = k ? (k.is_lembur !== false) : true;
+
+  if (isLemburAktif) {
+    try {
+      uangLembur = eval(rumusStr);
+      if (rumusStr.includes("Math.round")) jamLemburBulat = Math.round(totalLembur * 10) / 10;
+    } catch (e) { uangLembur = totalLembur * TARIF_LEMBUR; }
+  } else {
+    uangLembur = 0;
+    jamLemburBulat = 0;
+  }
 
   // --- TOTAL SALARY ---
   const uangHKE = hariHadir * hkeRate;
@@ -394,12 +403,13 @@ function showModal() {
   document.getElementById("btnSimpanKaryawan").innerText = "Simpan Master Data";
 
   // Reset Form
-  const fields = ["inpNama", "inpNikKtp", "inpWa", "inpJabatan", "inpCuti", "inpPin", "inpGaji", "inpHkeRate", "inpIncentive", "inpIncentiveLuar", "inpRekening", "inpNpwp", "inpPinjaman"];
+  const fields = ["inpNama", "inpNikKtp", "inpWa", "inpJabatan", "inpCuti", "inpNikKbi", "inpIsLembur", "inpPin", "inpGaji", "inpHkeRate", "inpIncentive", "inpIncentiveLuar", "inpRekening", "inpNpwp", "inpPinjaman"];
   fields.forEach(f => {
     const el = document.getElementById(f);
     if (el) {
         if (f === "inpCuti") el.value = 12;
         else if (f === "inpHkeRate") el.value = 50000;
+        else if (f === "inpIsLembur") el.value = "true";
         else if (f === "inpPinjaman" || f === "inpIncentive" || f === "inpIncentiveLuar") el.value = 0;
         else el.value = "";
     }
@@ -421,6 +431,8 @@ async function simpanKaryawan() {
     dept: document.getElementById("inpDept").value,
     jabatan: document.getElementById("inpJabatan").value.toUpperCase(),
     sisa_cuti: parseInt(document.getElementById("inpCuti").value) || 0,
+    nik: document.getElementById("inpNikKbi").value,
+    is_lembur: document.getElementById("inpIsLembur").value === "true",
     pin: document.getElementById("inpPin").value,
     gaji: parseFloat(document.getElementById("inpGaji").value) || 0,
     hke_rate: parseFloat(document.getElementById("inpHkeRate").value) || 0,
@@ -441,7 +453,7 @@ async function simpanKaryawan() {
     else alert("Gagal Update: " + error.message);
   } else {
     // INSERT NEW
-    data.nik = "KBI-" + Date.now().toString().slice(-6); // Generate NIK KBI
+    if (!data.nik) data.nik = "KBI-" + Date.now().toString().slice(-6); // Auto-generate if empty
     const { error } = await supabaseClient.from("karyawan").insert([data]);
     if (!error) { alert("Karyawan Baru Berhasil Ditambahkan!"); hideModal(); syncData(); }
     else alert("Gagal Simpan: " + error.message);
@@ -463,6 +475,8 @@ function bukaModalEditKaryawan(id) {
   document.getElementById("inpDept").value = k.dept || "OFFICE";
   document.getElementById("inpJabatan").value = k.jabatan || "";
   document.getElementById("inpCuti").value = k.sisa_cuti || 0;
+  document.getElementById("inpNikKbi").value = k.nik || "";
+  document.getElementById("inpIsLembur").value = k.is_lembur !== false ? "true" : "false";
   document.getElementById("inpPin").value = k.pin || "";
   document.getElementById("inpGaji").value = k.gaji || 0;
   document.getElementById("inpHkeRate").value = k.hke_rate || 50000;
