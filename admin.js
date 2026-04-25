@@ -1369,3 +1369,139 @@ function toggleSidebar() {
   const overlay = document.querySelector(".sidebar-overlay");
   if (overlay) overlay.classList.toggle("active");
 }
+
+async function cetakSemuaSlipJPG() {
+  if (KARYAWAN.length === 0) {
+    if (typeof showToast === 'function') showToast("Tidak ada data karyawan.", "error");
+    return;
+  }
+  if (typeof html2canvas === "undefined") {
+    if (typeof showToast === 'function') showToast("Library html2canvas belum siap.", "error");
+    return;
+  }
+
+  showLoading("Memproses Slip JPG Semua Karyawan...");
+
+  const tglMulai = document.getElementById("filterTglMulai")?.value;
+  const tglSelesai = document.getElementById("filterTglSelesai")?.value;
+  const fmt = (d) => d ? d.split('-').reverse().join('/') : '-';
+  const fmtFile = (d) => d ? d.split('-').join('') : 'Current';
+  const periodeTampil = (tglMulai && tglSelesai) ? `${fmt(tglMulai)} - ${fmt(tglSelesai)}` : "Bulan Berjalan";
+
+  const renderContainer = document.createElement("div");
+  renderContainer.style.position = "absolute";
+  renderContainer.style.top = "-9999px";
+  renderContainer.style.left = "-9999px";
+  renderContainer.style.width = "800px";
+  renderContainer.style.backgroundColor = "white";
+  document.body.appendChild(renderContainer);
+
+  try {
+    for (let i = 0; i < KARYAWAN.length; i++) {
+      const k = KARYAWAN[i];
+      const d = hitungDetailGaji(k.gaji, k.nama);
+
+      const slipHtml = `
+        <div style="font-family: 'Outfit', sans-serif; color: #1e293b; background: white; padding: 40px; border: 1px solid #e2e8f0; position: relative;">
+          <div style="position: absolute; top: 20px; right: -35px; background: #fee2e2; color: #ef4444; padding: 5px 40px; transform: rotate(45deg); font-size: 0.6rem; font-weight: 800; letter-spacing: 1px;">CONFIDENTIAL</div>
+          
+          <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 2px solid #1e293b; padding-bottom: 20px;">
+            <div style="display: flex; align-items: center; gap: 15px;">
+              <img src="logokoboi.png" alt="Logo KBI" style="width: 50px; border-radius: 8px;">
+              <div>
+                <h1 style="font-size: 1.2rem; font-weight: 800; margin-bottom: 4px;">PT. KOLA BORASI INDONESIA</h1>
+                <p style="font-size: 0.75rem; color: #64748b;">Human Resource Information System</p>
+              </div>
+            </div>
+            <div style="text-align: right;">
+              <h2 style="font-size: 1.4rem; font-weight: 800; color: #4f46e5; margin-bottom: 4px;">SLIP GAJI</h2>
+              <p style="font-size: 0.85rem; font-weight: 600; color: #64748b;">Periode: ${periodeTampil}</p>
+            </div>
+          </header>
+
+          <section style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 30px; background: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0;">
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              <div style="display: flex; justify-content: space-between; font-size: 0.85rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;"><span style="color: #64748b; font-size: 0.75rem; font-weight: 600; text-transform: uppercase;">ID Karyawan</span><span style="font-weight: 700;">${k.id || '-'}</span></div>
+              <div style="display: flex; justify-content: space-between; font-size: 0.85rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;"><span style="color: #64748b; font-size: 0.75rem; font-weight: 600; text-transform: uppercase;">Nama Lengkap</span><span style="font-weight: 700;">${k.nama}</span></div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              <div style="display: flex; justify-content: space-between; font-size: 0.85rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;"><span style="color: #64748b; font-size: 0.75rem; font-weight: 600; text-transform: uppercase;">Jabatan / Dept</span><span style="font-weight: 700;">${k.jabatan || k.dept || '-'}</span></div>
+              <div style="display: flex; justify-content: space-between; font-size: 0.85rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;"><span style="color: #64748b; font-size: 0.75rem; font-weight: 600; text-transform: uppercase;">Hadir / Hari Kerja</span><span style="font-weight: 700;">${d.hadir} / ${d.totalHariKerja} Hari</span></div>
+            </div>
+          </section>
+
+          <section style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-bottom: 30px;">
+            <div>
+              <h3 style="font-size: 0.85rem; font-weight: 800; text-transform: uppercase; padding-bottom: 8px; border-bottom: 2px solid #e2e8f0; margin-bottom: 12px; color: #4f46e5;">Penerimaan (Earnings)</h3>
+              <div style="display: flex; justify-content: space-between; padding: 6px 0; font-size: 0.8rem; border-bottom: 1px solid #f8fafc;"><span style="color: #64748b;">GAJI POKOK</span><span style="font-weight: 600;">Rp ${Math.floor(d.gapok).toLocaleString('id-ID')}</span></div>
+              <div style="display: flex; justify-content: space-between; padding: 6px 0; font-size: 0.8rem; border-bottom: 1px solid #f8fafc;"><span style="color: #64748b;">HKE (${d.hadir} hari)</span><span style="font-weight: 600;">Rp ${Math.floor(d.uangHKE).toLocaleString('id-ID')}</span></div>
+              <div style="display: flex; justify-content: space-between; padding: 6px 0; font-size: 0.8rem; border-bottom: 1px solid #f8fafc;"><span style="color: #64748b;">INCENTIVE</span><span style="font-weight: 600;">Rp ${Math.floor(d.incentive || 0).toLocaleString('id-ID')}</span></div>
+              <div style="display: flex; justify-content: space-between; padding: 6px 0; font-size: 0.8rem; border-bottom: 1px solid #f8fafc;"><span style="color: #64748b;">INCENTIVE (LK/NGINAP)</span><span style="font-weight: 600;">Rp ${Math.floor(d.incentiveLuar || 0).toLocaleString('id-ID')}</span></div>
+              <div style="display: flex; justify-content: space-between; padding: 6px 0; font-size: 0.8rem; border-bottom: 1px solid #f8fafc;"><span style="color: #64748b;">OVERTIME (${d.totalLembur} jam)</span><span style="font-weight: 600;">Rp ${Math.floor(d.uangLembur).toLocaleString('id-ID')}</span></div>
+            </div>
+            <div>
+              <h3 style="font-size: 0.85rem; font-weight: 800; text-transform: uppercase; padding-bottom: 8px; border-bottom: 2px solid #e2e8f0; margin-bottom: 12px; color: #4f46e5;">Potongan (Deductions)</h3>
+              <div style="display: flex; justify-content: space-between; padding: 6px 0; font-size: 0.8rem; border-bottom: 1px solid #f8fafc;"><span style="color: #64748b;">PINJAMAN KANTOR</span><span style="font-weight: 600;">Rp ${Math.floor(d.pinjaman).toLocaleString('id-ID')}</span></div>
+              <div style="margin-top: 15px; border-top: 1px solid #e2e8f0; padding-top: 10px; display: flex; justify-content: space-between; font-size: 0.8rem;">
+                  <span style="font-weight: 800; color: #64748b;">TOTAL POTONGAN</span>
+                  <span style="font-weight: 600;">Rp ${Math.floor(d.pinjaman).toLocaleString('id-ID')}</span>
+              </div>
+            </div>
+          </section>
+
+          <section style="background: #1e293b; color: white; padding: 20px 30px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+            <div style="display: flex; flex-direction: column;">
+              <span style="font-size: 0.75rem; font-weight: 600; opacity: 0.7;">Total THP</span>
+              <span style="font-size: 1.75rem; font-weight: 800;">Rp ${Math.floor(d.thp).toLocaleString('id-ID')}</span>
+            </div>
+            <div style="text-align: right; font-size: 0.75rem; font-style: italic; opacity: 0.8; max-width: 250px;">
+              "Semoga bermanfaat untuk keluarga. Terus berkarya bersama KOLA BORASI."
+            </div>
+          </section>
+
+          <footer style="display: flex; justify-content: space-between; margin-top: 40px;">
+            <div style="text-align: center; width: 180px;">
+              <p style="font-size: 0.7rem; font-weight: 700; color: #64748b; margin-bottom: 60px; text-transform: uppercase;">Diterima Oleh,</p>
+              <p style="font-size: 0.85rem; font-weight: 800; border-bottom: 1.5px solid #1e293b; padding-bottom: 3px;">${k.nama}</p>
+              <p style="font-size: 0.65rem; color: #64748b; margin-top: 4px;">Karyawan</p>
+            </div>
+            <div style="text-align: center; width: 180px;">
+              <p style="font-size: 0.7rem; font-weight: 700; color: #64748b; margin-bottom: 60px; text-transform: uppercase;">Disetujui Oleh,</p>
+              <p style="font-size: 0.85rem; font-weight: 800; border-bottom: 1.5px solid #1e293b; padding-bottom: 3px;">Manajemen</p>
+              <p style="font-size: 0.65rem; color: #64748b; margin-top: 4px;">PT. Kola Borasi Indonesia</p>
+            </div>
+          </footer>
+        </div>
+      `;
+
+      renderContainer.innerHTML = slipHtml;
+
+      // Beri sedikit waktu agar browser sempat merender DOM
+      await new Promise(r => setTimeout(r, i === 0 ? 300 : 50)); 
+
+      const canvas = await html2canvas(renderContainer, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: "#ffffff",
+        logging: false
+      });
+
+      const imgData = canvas.toDataURL("image/jpeg", 0.95);
+      const link = document.createElement("a");
+      link.download = `Slip_Gaji_${k.nama.replace(/\s+/g, '_')}_${fmtFile(tglMulai)}.jpg`;
+      link.href = imgData;
+      link.click();
+
+      // Jeda antrean agar browser tidak membeku (freeze)
+      await new Promise(r => setTimeout(r, 400));
+    }
+    
+    if (typeof showToast === 'function') showToast("Berhasil mencetak slip JPG untuk semua karyawan.", "success");
+  } catch (err) {
+    console.error("Error generating JPGs:", err);
+    if (typeof showToast === 'function') showToast("Gagal mencetak slip JPG.", "error");
+  } finally {
+    document.body.removeChild(renderContainer);
+    hideLoading();
+  }
+}
