@@ -196,6 +196,10 @@ function switchTab(tab) {
   }
 
   if (typeof lucide !== 'undefined') lucide.createIcons();
+  
+  // Tutup sidebar di mobile setelah klik menu
+  const sidebar = document.getElementById("mainSidebar");
+  if (sidebar) sidebar.classList.remove("active");
 }
 
 function renderKPITable() {
@@ -1358,4 +1362,8 @@ async function downloadUserManualWord() {
   link.click();
   document.body.removeChild(link);
   if (typeof showToast === 'function') showToast("Buku Panduan Berhasil Diunduh", "success");
+}
+
+function toggleSidebar() {
+  document.getElementById("mainSidebar").classList.toggle("active");
 }

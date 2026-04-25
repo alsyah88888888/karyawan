@@ -66,6 +66,21 @@ body { font-family: 'Outfit', sans-serif; background-color: var(--bg-main); colo
 /* MAIN CONTENT */
 .main-content { margin-left: 280px; flex: 1; padding: 2.5rem; }
 
+.sidebar-toggle {
+    display: none;
+    position: fixed;
+    top: 1.25rem;
+    left: 1.25rem;
+    z-index: 1000;
+    background: var(--sidebar-bg);
+    color: white;
+    border: none;
+    padding: 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    box-shadow: var(--shadow-md);
+}
+
 /* HEADER */
 .top-header {
     display: flex;
@@ -246,8 +261,46 @@ tr:hover { background: #fbfcfe; }
 
 @media (max-width: 1024px) {
     .sidebar { width: 80px; padding: 2rem 0.5rem; }
+    .brand h1, .nav-link span, .sidebar-footer span { display: none; }
+    .brand { justify-content: center; }
+    .nav-link { justify-content: center; padding: 1rem; }
     .main-content { margin-left: 80px; }
     .form-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 768px) {
+    .sidebar { 
+        transform: translateX(-100%); 
+        transition: transform 0.3s ease;
+        width: 280px;
+    }
+    .sidebar.active { 
+        transform: translateX(0); 
+    }
+    .sidebar-toggle {
+        display: flex !important;
+    }
+    .main-content { 
+        margin-left: 0; 
+        padding: 1.5rem; 
+    }
+    .top-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1.5rem;
+    }
+    .header-actions {
+        width: 100%;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
+    .stats-visuals {
+        grid-template-columns: 1fr;
+    }
+    .chart-card {
+        min-height: 300px;
+    }
 }
 
 /* TOAST NOTIFICATION */
