@@ -1289,63 +1289,54 @@ function setPeriodeIni() {
   refreshUI();
 }
 
-window.onload = syncData;
+window.onload = () => {
+  if (typeof syncData === 'function') syncData();
+};
+
 async function downloadUserManualWord() {
   const content = `
     <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
     <head><meta charset='utf-8'><title>User Manual KOBOI</title>
     <style>
-      body { font-family: 'Arial', sans-serif; line-height: 1.6; color: #333; }
+      body { font-family: 'Arial', sans-serif; line-height: 1.6; color: #333; padding: 20px; }
       h1 { color: #4f46e5; border-bottom: 2px solid #4f46e5; padding-bottom: 10px; }
       h2 { color: #1e293b; margin-top: 25px; border-left: 5px solid #4f46e5; padding-left: 10px; }
       h3 { color: #475569; }
       .feature-box { background: #f8fafc; border: 1px solid #e2e8f0; padding: 15px; margin: 10px 0; border-radius: 8px; }
-      table { width: 100%; border-collapse: collapse; margin: 15px 0; }
-      th, td { border: 1px solid #cbd5e1; padding: 8px; text-align: left; font-size: 10pt; }
-      th { background: #f1f5f9; font-weight: bold; }
-      .tip { color: #059669; font-weight: bold; }
+      ul { margin-bottom: 15px; }
+      li { margin-bottom: 5px; }
+      .tip { color: #059669; font-weight: bold; background: #ecfdf5; padding: 10px; border-radius: 5px; }
     </style>
     </head>
     <body>
       <h1>BUKU PANDUAN PENGGUNAAN SISTEM HRIS - KOBOI</h1>
-      <p>Selamat datang di sistem Manajemen SDM PT. Kola Borasi Indonesia. Dokumen ini berisi panduan lengkap untuk operasional admin.</p>
+      <p>Dokumen ini berisi panduan operasional untuk sistem manajemen SDM PT. Kola Borasi Indonesia.</p>
 
-      <h2>1. Modul Dashboard & KPI</h2>
+      <h2>1. Modul Dashboard & Analitik</h2>
       <div class="feature-box">
-        <h3>A. Statistik Real-Time</h3>
-        <p>Halaman utama menampilkan metrik kunci: <b>Total Manpower</b>, <b>Kehadiran Hari Ini</b>, <b>Total Terlambat</b>, dan <b>Rata-rata Kehadiran Perusahaan</b>.</p>
-        
-        <h3>B. Analisis Visual</h3>
-        <p>Terdapat grafik <b>Punctuality Analysis</b> untuk melihat rasio kedisiplinan dan <b>Tren Kehadiran 7 Hari</b> untuk melihat stabilitas absensi.</p>
-
-        <h3>C. Performa & KPI Karyawan</h3>
-        <ul>
-          <li>Gunakan <b>Filter Tanggal</b> untuk melihat performa pada periode tertentu.</li>
-          <li>Tombol <b>Download Report</b> akan menghasilkan laporan PDF Premium 1 Halaman untuk audit.</li>
-        </ul>
+        <h3>Statistik & Grafik</h3>
+        <p>Dashboard menampilkan ringkasan Manpower, Kehadiran, dan Kedisiplinan secara real-time. Gunakan grafik untuk melihat tren 7 hari terakhir.</p>
+        <h3>Tabel KPI Performa</h3>
+        <p>Menampilkan nilai kehadiran dan keterlambatan per individu. Gunakan <b>Filter Tanggal</b> untuk menentukan periode laporan sebelum menekan <b>Download Report (PDF)</b>.</p>
       </div>
 
       <h2>2. Modul Kelola Karyawan (Payroll)</h2>
       <div class="feature-box">
-        <p>Modul ini digunakan untuk administrasi data master dan kalkulasi gaji.</p>
-        <ul>
-          <li><b>Tambah Karyawan:</b> Menginput data identitas, jabatan, departemen, dan detail rekening bank.</li>
-          <li><b>Kalkulasi Otomatis:</b> Sistem menghitung THP berdasarkan gaji pokok, HKE, dan lembur secara otomatis sesuai rentang tanggal yang dipilih.</li>
-          <li><b>Notifikasi CEO:</b> Gunakan tombol <i>Notif CEO Office/Ops</i> untuk mengirimkan ringkasan payroll ke pimpinan melalui WhatsApp.</li>
-        </ul>
+        <h3>Master Data</h3>
+        <p>Gunakan tombol <b>Tambah Karyawan</b> untuk mendaftarkan staf baru lengkap dengan detail gaji dan rekening bank.</p>
+        <h3>Perhitungan Gaji (THP)</h3>
+        <p>Sistem menghitung Take Home Pay secara otomatis. Pastikan filter tanggal sudah benar sebelum mengirimkan notifikasi ke CEO atau mengunduh data Excel.</p>
       </div>
 
-      <h2>3. Modul Log Absensi</h2>
-      <p>Menampilkan riwayat rekaman absensi masuk dan pulang. Admin dapat menghapus log yang salah atau membersihkan data lama menggunakan tombol <b>Hapus Semua Log</b>.</p>
+      <h2>3. Modul CEO Access</h2>
+      <p>Modul untuk pimpinan menyetujui insentif. Klik <b>Approve</b> pada karyawan terkait untuk memvalidasi bonus mereka.</p>
 
-      <h2>4. Modul CEO Access</h2>
-      <p>Modul khusus pimpinan untuk memberikan persetujuan (Approval) atas insentif atau penyesuaian gaji tertentu. Status <b>Approved</b> akan mengunci nominal tersebut dalam perhitungan payroll.</p>
+      <h2>4. Pemeliharaan Data</h2>
+      <p>Log Absensi dapat dibersihkan secara berkala menggunakan fitur <b>Hapus Semua Log</b> di tab Log Absensi.</p>
 
-      <h2>5. Tips Operasional</h2>
-      <p class="tip">Selalu pastikan filter tanggal sudah sesuai sebelum mencetak laporan PDF atau mengirim notifikasi payroll untuk menghindari ketidaksinkronan data.</p>
-      
-      <br><br>
-      <p style="font-size: 0.8rem; color: #94a3b8;">&copy; 2026 PT. Kola Borasi Indonesia - HR Technology Department</p>
+      <p class="tip">Tips: Selalu lakukan sinkronisasi data dengan menekan Refresh jika data terbaru belum muncul.</p>
+      <br>
+      <p style="font-size: 0.8rem; color: #94a3b8;">Generated by KOBOI HRIS System</p>
     </body>
     </html>
   `;
@@ -1354,9 +1345,9 @@ async function downloadUserManualWord() {
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
-  link.download = 'Panduan_Aplikasi_KOBOI.doc';
+  link.download = 'User_Manual_KOBOI.doc';
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
-  showToast("Buku Panduan Berhasil Diunduh", "success");
+  if (typeof showToast === 'function') showToast("Buku Panduan Berhasil Diunduh", "success");
 }
