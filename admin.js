@@ -734,19 +734,14 @@ function kirimSlipWA(index) {
   let pesan = `*SLIP GAJI - ${k.nama.toUpperCase()}*\n`;
   pesan += `Periode: ${period}\n`;
   pesan += `----------------------------------\n`;
-  pesan += `Gaji Pokok: Rp ${d.gapok.toLocaleString('id-ID')}\n`;
-  pesan += `HKE (${d.hadir} hari): Rp ${d.uangHKE.toLocaleString('id-ID')}\n`;
-  if (d.incentive > 0) pesan += `Incentive: Rp ${d.incentive.toLocaleString('id-ID')}\n`;
-  if (d.incentiveLuar > 0) pesan += `Incentive Luar Kota: Rp ${d.incentiveLuar.toLocaleString('id-ID')}\n`;
-  pesan += `Lembur (${d.totalLembur} jam): Rp ${d.uangLembur.toLocaleString('id-ID')}\n`;
-
-  if (d.pinjaman > 0) {
-    pesan += `----------------------------------\n`;
-    pesan += `Potongan Pinjaman: Rp ${d.pinjaman.toLocaleString('id-ID')}\n`;
-  }
-
+  pesan += `GAJI POKOK: Rp ${Math.floor(d.gapok).toLocaleString('id-ID')}\n`;
+  pesan += `PINJAMAN KANTOR: Rp ${Math.floor(d.pinjaman).toLocaleString('id-ID')}\n`;
+  pesan += `HKE (${d.hadir} hari): Rp ${Math.floor(d.uangHKE).toLocaleString('id-ID')}\n`;
+  pesan += `INCENTIVE: Rp ${Math.floor(d.incentive || 0).toLocaleString('id-ID')}\n`;
+  pesan += `INCENTIVE (LK/NGINAP): Rp ${Math.floor(d.incentiveLuar || 0).toLocaleString('id-ID')}\n`;
+  pesan += `OVERTIME (${d.totalLembur} jam): Rp ${Math.floor(d.uangLembur).toLocaleString('id-ID')}\n`;
   pesan += `----------------------------------\n`;
-  pesan += `*GAJI BERSIH (THP): Rp ${Math.floor(d.thp).toLocaleString('id-ID')}*\n`;
+  pesan += `*Total THP: Rp ${Math.floor(d.thp).toLocaleString('id-ID')}*\n`;
   pesan += `----------------------------------\n`;
   pesan += `_Pesan otomatis dari Sistem HRIS KOBOI_`;
 
