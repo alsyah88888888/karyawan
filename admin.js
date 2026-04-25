@@ -673,15 +673,15 @@ function cetakSlip(index) {
         <section class="salary-grid">
           <div class="salary-col">
             <h3>Penerimaan (Earnings)</h3>
-            <div class="row"><span class="label">Gaji Pokok</span><span class="val">Rp ${Math.floor(d.gapok).toLocaleString('id-ID')}</span></div>
-            <div class="row"><span class="label">HKE (${d.hadir} Hari)</span><span class="val">Rp ${Math.floor(d.uangHKE).toLocaleString('id-ID')}</span></div>
-            <div class="row"><span class="label">Insentif Khusus</span><span class="val">Rp ${Math.floor(d.incentiveLuarMaster).toLocaleString('id-ID')}</span></div>
-            <div class="row"><span class="label">Bonus CEO</span><span class="val">Rp ${Math.floor(d.incentive).toLocaleString('id-ID')}</span></div>
-            <div class="row"><span class="label">Uang Lembur (${d.totalLembur} Jam)</span><span class="val">Rp ${Math.floor(d.uangLembur).toLocaleString('id-ID')}</span></div>
+            <div class="row"><span class="label">GAJI POKOK</span><span class="val">Rp ${Math.floor(d.gapok).toLocaleString('id-ID')}</span></div>
+            <div class="row"><span class="label">HKE (${d.hadir} hari)</span><span class="val">Rp ${Math.floor(d.uangHKE).toLocaleString('id-ID')}</span></div>
+            <div class="row"><span class="label">INCENTIVE</span><span class="val">Rp ${Math.floor(d.incentive || 0).toLocaleString('id-ID')}</span></div>
+            <div class="row"><span class="label">INCENTIVE (LK/NGINAP)</span><span class="val">Rp ${Math.floor(d.incentiveLuar || 0).toLocaleString('id-ID')}</span></div>
+            <div class="row"><span class="label">OVERTIME (${d.totalLembur} jam)</span><span class="val">Rp ${Math.floor(d.uangLembur).toLocaleString('id-ID')}</span></div>
           </div>
           <div class="salary-col">
             <h3>Potongan (Deductions)</h3>
-            <div class="row"><span class="label">Pinjaman / Kasbon</span><span class="val">Rp ${Math.floor(d.pinjaman).toLocaleString('id-ID')}</span></div>
+            <div class="row"><span class="label">PINJAMAN KANTOR</span><span class="val">Rp ${Math.floor(d.pinjaman).toLocaleString('id-ID')}</span></div>
             <div class="row"><span class="label">PPh21 (Estimasi)</span><span class="val">Rp 0</span></div>
             <div class="row" style="margin-top: 15px; border-top: 1px solid var(--slate-200); padding-top: 10px;">
                 <span class="label" style="font-weight: 800;">TOTAL POTONGAN</span>
@@ -692,7 +692,7 @@ function cetakSlip(index) {
 
         <section class="total-section">
           <div class="total-thp">
-            <span class="label">TAKE HOME PAY (TOTAL GAJI BERSIH)</span>
+            <span class="label">Total THP</span>
             <span class="val">Rp ${Math.floor(d.thp).toLocaleString('id-ID')}</span>
           </div>
           <div class="thp-message">
