@@ -1289,8 +1289,21 @@ function setPeriodeIni() {
   refreshUI();
 }
 
-window.onload = () => {
-  if (typeof syncData === 'function') syncData();
+window.onload = async () => {
+  if (typeof syncData === 'function') {
+    await syncData();
+    // Pastikan tab yang aktif di sidebar ditampilkan kontennya
+    const activeLink = document.querySelector(".nav-link.active");
+    if (activeLink) {
+      const onclickAttr = activeLink.getAttribute("onclick");
+      if (onclickAttr && onclickAttr.includes("switchTab")) {
+        const tabId = onclickAttr.match(/'([^']+)'/)[1];
+        switchTab(tabId);
+      }
+    } else {
+      switchTab('tabDashboard');
+    }
+  }
 };
 
 async function downloadUserManualWord() {
