@@ -510,7 +510,11 @@ function hitungDetailGaji(gapok, namaKaryawan, customStart = null, customEnd = n
     });
   }
 
-  const hariHadir = [...new Set(dataLogKaryawan.map((l) => new Date(l.waktu).toISOString().slice(0, 10)))].length;
+  const getShiftDateStr = (dateObj) => {
+    const d = new Date(dateObj.getTime() - 5 * 3600000);
+    return d.toLocaleDateString("en-CA"); // YYYY-MM-DD format
+  };
+  const hariHadir = [...new Set(dataLogKaryawan.map((l) => getShiftDateStr(new Date(l.waktu))))].length;
 
   let totalLembur = 0;
   let i = 0;
@@ -1155,6 +1159,11 @@ function exportData() {
 
   // --- SHEET 2: DETAIL LOG ABSENSI (Chronological pairing) ---
   const logGroups = {};
+  const getShiftDateStrExport = (dateObj) => {
+    const d = new Date(dateObj.getTime() - 5 * 3600000);
+    return d.toLocaleDateString("id-ID");
+  };
+
   allLogs.forEach(l => {
     const norm = l.nama.trim().toLowerCase();
     if (!logGroups[norm]) logGroups[norm] = [];
@@ -1187,6 +1196,7 @@ function exportData() {
 
         dataLogs.push({
           "NAMA": l.nama,
+          "TANGGAL SHIFT": getShiftDateStrExport(waktu),
           "WAKTU": waktu.toLocaleString("id-ID"),
           "STATUS": l.status,
           "TELAT": l.isLate || l.is_late ? "YA" : "TIDAK",
@@ -1205,6 +1215,7 @@ function exportData() {
           }
           dataLogs.push({
             "NAMA": lp.nama,
+            "TANGGAL SHIFT": getShiftDateStrExport(wp),
             "WAKTU": wp.toLocaleString("id-ID"),
             "STATUS": lp.status,
             "TELAT": "-",
@@ -1215,6 +1226,7 @@ function exportData() {
       } else {
         dataLogs.push({
           "NAMA": l.nama,
+          "TANGGAL SHIFT": getShiftDateStrExport(waktu),
           "WAKTU": waktu.toLocaleString("id-ID"),
           "STATUS": l.status,
           "TELAT": "-",
