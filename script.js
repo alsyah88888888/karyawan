@@ -103,12 +103,15 @@ async function prosesAbsen(tipe) {
 
   try {
     const sekarang = new Date();
-    const tglHariIni = sekarang.toLocaleDateString("id-ID");
+    
+    // Shift date by 5 hours backwards so that 00:00 - 04:59 AM counts as previous day
+    const getShiftDateStr = (dateObj) => new Date(dateObj.getTime() - 5 * 60 * 60 * 1000).toLocaleDateString("id-ID");
+    const tglHariIni = getShiftDateStr(sekarang);
 
     // 1. Check Double Absen
     const sudahAbsen = allLogs.find(l => 
       l.nama === nama && 
-      new Date(l.waktu).toLocaleDateString("id-ID") === tglHariIni && 
+      getShiftDateStr(new Date(l.waktu)) === tglHariIni && 
       l.status === tipe
     );
     if (sudahAbsen) throw new Error(`Anda SUDAH absen ${tipe} hari ini!`);
