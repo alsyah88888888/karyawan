@@ -12,6 +12,7 @@ const OFFICE_IP = "124.158.189.235";
 let KARYAWAN = [];
 let allLogs = [];
 let bypassWiFi = false;
+let isNetworkValid = false;
 
 // --- INITIALIZATION ---
 window.onload = async () => {
@@ -60,6 +61,11 @@ async function updateWiFiStatus() {
   const badge = document.getElementById("wifiStatus");
   if (!badge) return;
 
+  // Lock system by default
+  document.getElementById("btnMasuk").disabled = true;
+  document.getElementById("btnPulang").disabled = true;
+  isNetworkValid = false;
+
   try {
     badge.innerText = "Memverifikasi Jaringan...";
     badge.className = "wifi-badge checking";
@@ -73,27 +79,35 @@ async function updateWiFiStatus() {
       badge.className = "wifi-badge connected";
       document.getElementById("btnMasuk").disabled = false;
       document.getElementById("btnPulang").disabled = false;
+      isNetworkValid = true; // Set flag to true if verified
     } else {
       badge.innerText = `Gunakan WiFi Kantor ❌ (${data.ip})`;
       badge.className = "wifi-badge disconnected";
-      // Allow bypass on click
+      // Allow bypass on click but requires Admin Password
       badge.onclick = () => {
-        if(confirm("Gunakan Mode Bypass? (Hanya untuk testing/darurat)")) {
+        const pass = prompt("Password Admin Bypass:");
+        if (pass === "mautaubanget") {
           bypassWiFi = true;
           updateWiFiStatus();
+        } else if (pass !== null) {
+          alert("Akses Ditolak!");
         }
       };
     }
   } catch (e) {
-    badge.innerText = "Gagal Verifikasi / Offline";
-    // Enable for safety if offline check fails
-    document.getElementById("btnMasuk").disabled = false;
-    document.getElementById("btnPulang").disabled = false;
+    badge.innerText = "Gagal Verifikasi / Offline ❌";
+    badge.className = "wifi-badge disconnected";
+    // SECURE: Do NOT enable buttons if offline or blocked!
+    document.getElementById("btnMasuk").disabled = true;
+    document.getElementById("btnPulang").disabled = true;
+    isNetworkValid = false;
   }
 }
 
 // --- ATTENDANCE PROCESS ---
 async function prosesAbsen(tipe) {
+  if (!isNetworkValid) return alert("❌ SECURITY WARNING: Jaringan Anda belum terverifikasi! Gunakan WiFi Kantor.");
+
   const nama = document.getElementById("namaSelect").value;
   if (!nama) return alert("📢 Harap pilih Nama Anda!");
 
