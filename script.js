@@ -106,14 +106,32 @@ async function updateWiFiStatus() {
 
 // --- ATTENDANCE PROCESS ---
 async function prosesAbsen(tipe) {
-  if (!isNetworkValid) return alert("❌ SECURITY WARNING: Jaringan Anda belum terverifikasi! Gunakan WiFi Kantor.");
+  const isDinas = (tipe === 'DINAS LUAR' || tipe === 'PULANG DINAS');
+
+  if (!isNetworkValid && !isDinas) {
+    return alert("❌ SECURITY WARNING: Jaringan Anda belum terverifikasi! Gunakan WiFi Kantor.");
+  }
 
   const nama = document.getElementById("namaSelect").value;
   if (!nama) return alert("📢 Harap pilih Nama Anda!");
 
-  const btn = tipe === 'MASUK' ? document.getElementById("btnMasuk") : document.getElementById("btnPulang");
-  btn.disabled = true;
-  btn.innerText = "PROSES...";
+  let finalTipe = tipe;
+  if (isDinas) {
+    const lokasi = prompt(`Masukkan lokasi/tujuan ${tipe} Anda (Wajib):`);
+    if (!lokasi || lokasi.trim() === "") return alert("Pendaftaran dibatalkan: Lokasi Dinas Luar wajib diisi!");
+    finalTipe = `${tipe} - ${lokasi.trim().toUpperCase()}`;
+  }
+
+  let btn;
+  if (tipe === 'MASUK') btn = document.getElementById("btnMasuk");
+  else if (tipe === 'PULANG') btn = document.getElementById("btnPulang");
+  else if (tipe === 'DINAS LUAR') btn = document.getElementById("btnDinasMasuk");
+  else if (tipe === 'PULANG DINAS') btn = document.getElementById("btnDinasPulang");
+
+  if (btn) {
+    btn.disabled = true;
+    btn.innerText = "PROSES...";
+  }
 
   try {
     const sekarang = new Date();
@@ -126,7 +144,7 @@ async function prosesAbsen(tipe) {
     const sudahAbsen = allLogs.find(l => 
       l.nama === nama && 
       getShiftDateStr(new Date(l.waktu)) === tglHariIni && 
-      l.status === tipe
+      l.status.startsWith(tipe)
     );
     if (sudahAbsen) throw new Error(`Anda SUDAH absen ${tipe} hari ini!`);
 
@@ -142,7 +160,7 @@ async function prosesAbsen(tipe) {
 
     // 3. Calculation Late
     let telat = false;
-    if (tipe === "MASUK") {
+    if (tipe === "MASUK" || tipe === "DINAS LUAR") {
       const jam = sekarang.getHours();
       const menit = sekarang.getMinutes();
       // Toleransi sampai 09:15 (09:16 baru telat)
@@ -157,7 +175,7 @@ async function prosesAbsen(tipe) {
       nama: info.nama,
       dept: info.dept,
       waktu: sekarang.toISOString(),
-      status: tipe,
+      status: finalTipe,
       foto: fotoData,
       isLate: telat,
     };
@@ -172,8 +190,10 @@ async function prosesAbsen(tipe) {
   } catch (err) {
     alert("❌ ERROR: " + err.message);
   } finally {
-    btn.disabled = false;
-    btn.innerText = tipe;
+    if (btn) {
+      btn.disabled = false;
+      btn.innerText = tipe;
+    }
   }
 }
 
