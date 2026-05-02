@@ -1139,7 +1139,12 @@ function zoomFoto(url) {
 }
 
 function exportData() {
+  const tglMulai = document.getElementById("filterTglMulai")?.value;
+  const tglSelesai = document.getElementById("filterTglSelesai")?.value;
+
   if (allLogs.length === 0) return alert("Belum ada data untuk di-export!");
+
+  showLoading(true);
 
   // --- SHEET 1: REKAP GAJI & LEMBUR (Summary per Employee) ---
   const dataSummary = KARYAWAN.map(k => {
@@ -1148,23 +1153,36 @@ function exportData() {
       "NAMA KARYAWAN": k.nama,
       "NIK": k.nik || "-",
       "JABATAN/DEPT": k.jabatan || k.dept,
+      "REKENING": k.rekening || "-",
       "HARI HADIR": d.hadir,
       "TOTAL JAM LEMBUR": parseFloat(d.totalLembur),
       "UANG LEMBUR (RP)": d.uangLembur,
       "GAJI POKOK (RP)": k.gaji || 0,
-      "POTONGAN (RP)": Math.floor(d.totalPotongan),
+      "INCENTIVE (RP)": d.incentive || 0,
+      "INCENTIVE LUAR (RP)": d.incentiveLuar || 0,
+      "POTONGAN (RP)": Math.floor(d.totalPotongan || d.pinjaman),
       "TOTAL GAJI BERSIH / THP (RP)": Math.floor(d.thp)
     };
   });
 
-  // --- SHEET 2: DETAIL LOG ABSENSI (Chronological pairing) ---
+  // --- SHEET 2: DETAIL LOG ABSENSI (Filtered by Period) ---
+  let filteredLogs = allLogs;
+  if (tglMulai && tglSelesai) {
+    const start = new Date(tglMulai + "T00:00:00");
+    const end = new Date(tglSelesai + "T23:59:59");
+    filteredLogs = allLogs.filter(l => {
+      const w = new Date(l.waktu);
+      return w >= start && w <= end;
+    });
+  }
+
   const logGroups = {};
   const getShiftDateStrExport = (dateObj) => {
     const d = new Date(dateObj.getTime() - 5 * 3600000);
     return d.toLocaleDateString("id-ID");
   };
 
-  allLogs.forEach(l => {
+  filteredLogs.forEach(l => {
     const norm = l.nama.trim().toLowerCase();
     if (!logGroups[norm]) logGroups[norm] = [];
     logGroups[norm].push(l);
@@ -1245,8 +1263,16 @@ function exportData() {
   XLSX.utils.book_append_sheet(wb, wsSummary, "Rekap Gaji & Lembur");
   XLSX.utils.book_append_sheet(wb, wsLogs, "Detail Log Absensi");
 
-  const fileName = `Payroll_Report_${new Date().toLocaleDateString("id-ID").replace(/\//g, "-")}.xlsx`;
+  const dateStr = new Date().toLocaleDateString("id-ID").replace(/\//g, "-");
+  let fileName = `Payroll_Report_${dateStr}.xlsx`;
+  if (tglMulai && tglSelesai) {
+    fileName = `Payroll_Report_${tglMulai}_to_${tglSelesai}.xlsx`;
+  }
+  
   XLSX.writeFile(wb, fileName);
+  
+  showLoading(false);
+  showToast("Payroll Report Berhasil Diunduh", "success");
 }
 
 async function clearData() {
