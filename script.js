@@ -69,11 +69,6 @@ async function updateWiFiStatus() {
   const badge = document.getElementById("wifiStatus");
   if (!badge) return;
 
-  // Lock system by default
-  document.getElementById("btnMasuk").disabled = true;
-  document.getElementById("btnPulang").disabled = true;
-  isNetworkValid = false;
-
   try {
     badge.innerText = "MEMVERIFIKASI JARINGAN...";
     badge.className = "wifi-badge checking";
@@ -85,8 +80,6 @@ async function updateWiFiStatus() {
     if (isOffice) {
       badge.innerText = bypassWiFi ? "BYPASS MODE AKTIF ✅" : "WIFI KANTOR TERHUBUNG ✅";
       badge.className = "wifi-badge connected";
-      document.getElementById("btnMasuk").disabled = false;
-      document.getElementById("btnPulang").disabled = false;
       isNetworkValid = true;
     } else {
       badge.innerText = `Gunakan WiFi Kantor ❌ (${data.ip})`;
@@ -105,8 +98,6 @@ async function updateWiFiStatus() {
   } catch (e) {
     badge.innerText = "GAGAL VERIFIKASI / OFFLINE ❌";
     badge.className = "wifi-badge disconnected";
-    document.getElementById("btnMasuk").disabled = true;
-    document.getElementById("btnPulang").disabled = true;
     isNetworkValid = false;
   }
 }
