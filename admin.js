@@ -588,8 +588,7 @@ function hitungDetailGaji(gapok, namaKaryawan, customStart = null, customEnd = n
   }
 
   // --- TOTAL SALARY ---
-  const hariHadir = [...new Set(periodLogs.map(l => new Date(l.waktu).toLocaleDateString()))].length;
-  const telatCount = periodLogs.filter(l => l.status === 'MASUK' && l.isLate).length;
+  const telatCount = dataLogKaryawan.filter(l => l.status === 'MASUK' && l.isLate).length;
   
   // --- TOTAL SALARY ---
   const uangHKE = hariHadir * hkeRate;
