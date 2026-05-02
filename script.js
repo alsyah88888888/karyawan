@@ -24,6 +24,8 @@ window.onload = async () => {
     const clockEl = document.getElementById("liveClock");
     if (clockEl) clockEl.innerText = new Date().toLocaleTimeString("id-ID");
   }, 1000);
+
+  if (typeof lucide !== 'undefined') lucide.createIcons();
 };
 
 async function syncDataTerminal() {
@@ -126,10 +128,10 @@ async function prosesAbsen(tipe) {
   else if (tipe === 'DINAS LUAR') btn = document.getElementById("btnDinasMasuk");
   else if (tipe === 'PULANG DINAS') btn = document.getElementById("btnDinasPulang");
 
-  const originalText = btn ? btn.innerText : "";
+  const originalContent = btn ? btn.innerHTML : "";
   if (btn) {
     btn.disabled = true;
-    btn.innerText = "PROSES...";
+    btn.innerHTML = `<span class="spinner-mini"></span> MEMPROSES...`;
   }
 
   try {
@@ -137,8 +139,15 @@ async function prosesAbsen(tipe) {
     const getShiftDateStr = (dateObj) => new Date(dateObj.getTime() - 5 * 60 * 60 * 1000).toLocaleDateString("id-ID");
     const tglHariIni = getShiftDateStr(sekarang);
 
-    const sudahAbsen = allLogs.find(l => 
-      l.nama === nama && 
+    // CRITICAL BACKEND CHECK: Fetch latest logs again to prevent double attendance
+    const { data: latestLogs } = await supabaseClient
+        .from("logs")
+        .select("nama, waktu, status")
+        .eq("nama", nama)
+        .order("id", { ascending: false })
+        .limit(10);
+    
+    const sudahAbsen = (latestLogs || []).find(l => 
       getShiftDateStr(new Date(l.waktu)) === tglHariIni && 
       l.status.startsWith(tipe)
     );
@@ -183,7 +192,8 @@ async function prosesAbsen(tipe) {
   } finally {
     if (btn) {
       btn.disabled = false;
-      btn.innerText = originalText;
+      btn.innerHTML = originalContent;
+      if (typeof lucide !== 'undefined') lucide.createIcons();
     }
   }
 }
