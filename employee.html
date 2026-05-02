@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KOBOI - Employee Self Service</title>
+    <!-- Google Fonts: Outfit -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- html2pdf for Payslip Download -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <link rel="stylesheet" href="employee.css">
+</head>
+<body>
+
+    <!-- LOGIN OVERLAY -->
+    <div id="loginOverlay" class="login-overlay">
+        <div class="login-box">
+            <div class="brand">
+                <img src="logokoboi.png" alt="KOBOI">
+                <h1>ESS PORTAL</h1>
+            </div>
+            <p>Silakan masuk menggunakan NIK dan PIN Anda.</p>
+            <div class="form-group">
+                <label>NIK Karyawan</label>
+                <input type="text" id="loginNik" placeholder="KBI-XXXXXX">
+            </div>
+            <div class="form-group">
+                <label>PIN Absensi</label>
+                <input type="password" id="loginPin" placeholder="••••">
+            </div>
+            <button class="btn-login" onclick="loginEmployee()">MASUK KE PORTAL</button>
+            <div id="loginError" class="error-msg"></div>
+        </div>
+    </div>
+
+    <!-- MAIN PORTAL CONTAINER -->
+    <div id="portalContainer" class="portal-container" style="display: none;">
+        <!-- SIDEBAR -->
+        <aside class="sidebar">
+            <div class="brand">
+                <img src="logokoboi.png" alt="Logo">
+                <h1>KOBOI</h1>
+            </div>
+            <nav class="nav-menu">
+                <a href="#" class="nav-link active" onclick="switchTab('tabDashboard')">
+                    <i data-lucide="layout-dashboard"></i> <span>Dashboard</span>
+                </a>
+                <a href="#" class="nav-link" onclick="switchTab('tabPayslip')">
+                    <i data-lucide="file-text"></i> <span>Slip Gaji</span>
+                </a>
+                <a href="#" class="nav-link" onclick="switchTab('tabLeave')">
+                    <i data-lucide="calendar-plus"></i> <span>Pengajuan Cuti</span>
+                </a>
+                <a href="#" class="nav-link" onclick="switchTab('tabPerformance')">
+                    <i data-lucide="trending-up"></i> <span>Performa Saya</span>
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <button class="btn-logout" onclick="logout()">
+                    <i data-lucide="log-out"></i> <span>Keluar</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- MAIN CONTENT -->
+        <main class="main-content">
+            <header class="top-header">
+                <div class="user-info">
+                    <h2 id="welcomeMsg">Selamat Datang, --</h2>
+                    <p id="userDept">Departemen: --</p>
+                </div>
+            </header>
+
+            <!-- TAB: DASHBOARD -->
+            <section id="tabDashboard" class="tab-content">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon"><i data-lucide="calendar-check"></i></div>
+                        <div>
+                            <div class="stat-val" id="statHadir">0</div>
+                            <div class="stat-label">Hadir Bulan Ini</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon"><i data-lucide="clock"></i></div>
+                        <div>
+                            <div class="stat-val" id="statLate">0</div>
+                            <div class="stat-label">Keterlambatan</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon"><i data-lucide="umbrella"></i></div>
+                        <div>
+                            <div class="stat-val" id="statLeave">0</div>
+                            <div class="stat-label">Sisa Cuti</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="data-section">
+                    <h3>Riwayat Absensi Terakhir</h3>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Tanggal</th>
+                                    <th>Waktu</th>
+                                    <th>Status</th>
+                                    <th>Keterangan</th>
+                                </tr>
+                            </thead>
+                            <tbody id="attendanceBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB: PAYSLIP -->
+            <section id="tabPayslip" class="tab-content" style="display: none;">
+                <div class="data-section">
+                    <h3>Unduh Slip Gaji</h3>
+                    <p>Pilih periode bulan untuk mengunduh slip gaji digital Anda.</p>
+                    <div class="payslip-selector">
+                        <select id="slipMonth">
+                            <option value="">Pilih Bulan</option>
+                            <option value="0">Januari</option>
+                            <option value="1">Februari</option>
+                            <option value="2">Maret</option>
+                            <option value="3">April</option>
+                            <option value="4">Mei</option>
+                            <option value="5">Juni</option>
+                            <option value="6">Juli</option>
+                            <option value="7">Agustus</option>
+                            <option value="8">September</option>
+                            <option value="9">Oktober</option>
+                            <option value="10">November</option>
+                            <option value="11">Desember</option>
+                        </select>
+                        <select id="slipYear">
+                            <option value="2026">2026</option>
+                            <option value="2025">2025</option>
+                        </select>
+                        <button class="btn-primary" onclick="downloadPayslip()">
+                            <i data-lucide="download"></i> Download PDF
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB: LEAVE -->
+            <section id="tabLeave" class="tab-content" style="display: none;">
+                <div class="leave-container">
+                    <div class="leave-form">
+                        <h3>Form Pengajuan Cuti</h3>
+                        <div class="form-group">
+                            <label>Jenis Cuti</label>
+                            <select id="leaveType">
+                                <option value="TAHUNAN">Cuti Tahunan</option>
+                                <option value="SAKIT">Sakit (Dengan Surat Dokter)</option>
+                                <option value="IZIN">Izin Mendadak</option>
+                                <option value="LAINNYA">Lainnya</option>
+                            </select>
+                        </div>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Tanggal Mulai</label>
+                                <input type="date" id="leaveStart">
+                            </div>
+                            <div class="form-group">
+                                <label>Tanggal Selesai</label>
+                                <input type="date" id="leaveEnd">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Alasan / Keperluan</label>
+                            <textarea id="leaveReason" rows="3" placeholder="Tuliskan alasan pengajuan..."></textarea>
+                        </div>
+                        <button class="btn-primary" onclick="submitLeave()">AJUKAN SEKARANG</button>
+                    </div>
+                    <div class="leave-history data-section">
+                        <h3>Riwayat Pengajuan</h3>
+                        <div class="table-wrapper">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Jenis</th>
+                                        <th>Periode</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="leaveHistoryBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB: PERFORMANCE -->
+            <section id="tabPerformance" class="tab-content" style="display: none;">
+                <div class="data-section">
+                    <h3>Laporan Performa & KPI</h3>
+                    <div id="performanceContent">
+                        <p class="empty-msg">Belum ada laporan performa yang dipublikasikan oleh HR.</p>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- LOADING OVERLAY -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="spinner"></div>
+        <p>Memproses Data...</p>
+    </div>
+
+    <!-- SDK & Logic -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="employee.js"></script>
+</body>
+</html>

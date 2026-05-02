@@ -42,11 +42,14 @@
                 </li>
                 <li class="nav-item">
                     <a href="#" class="nav-link" id="linkTabKaryawan" onclick="switchTab('tabKaryawan')">
-                        <i data-lucide="users"></i>
-                        <span>Kelola Karyawan</span>
+                        <i data-lucide="users"></i> <span>Karyawan</span>
                     </a>
-                </li>
-                <li class="nav-item">
+                    <a href="#" class="nav-link" id="linkTabLeave" onclick="switchTab('tabLeave')">
+                        <i data-lucide="calendar-plus"></i> <span>Manajemen Cuti</span>
+                    </a>
+                    <a href="#" class="nav-link" id="linkTabPerformance" onclick="switchTab('tabPerformance')">
+                        <i data-lucide="trending-up"></i> <span>Performa (KPI)</span>
+                    </a>
                     <a href="#" class="nav-link" id="linkTabCEO" onclick="switchTab('tabCEO')">
                         <i data-lucide="shield-check"></i>
                         <span>CEO Access</span>
@@ -308,7 +311,101 @@
                 </div>
             </section>
 
+            <!-- TAB: MANAJEMEN CUTI -->
+            <section id="tabLeave" style="display: none;">
+                <div class="data-section">
+                    <div class="section-header">
+                        <div>
+                            <h3>Inbox Pengajuan Cuti</h3>
+                            <p style="font-size:0.8rem; color:var(--text-muted);">Setujui atau tolak pengajuan cuti karyawan di sini.</p>
+                        </div>
+                    </div>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Nama Karyawan</th>
+                                    <th>Jenis</th>
+                                    <th>Periode</th>
+                                    <th>Alasan</th>
+                                    <th>Status</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminLeaveBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB: PENILAIAN PERFORMA -->
+            <section id="tabPerformance" style="display: none;">
+                <div class="data-section">
+                    <div class="section-header">
+                        <h3>Penilaian KPI & OKR</h3>
+                        <button class="btn btn-primary btn-small" onclick="showReviewModal()">
+                            <i data-lucide="plus-circle"></i> Tambah Penilaian
+                        </button>
+                    </div>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Nama Karyawan</th>
+                                    <th>Periode</th>
+                                    <th>Attend.</th>
+                                    <th>KPI</th>
+                                    <th>OKR</th>
+                                    <th>Grade</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminPerformanceBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
         </main>
+    </div>
+
+    <!-- MODAL PENILAIAN PERFORMA -->
+    <div id="modalReview" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Input Penilaian Performa</h3>
+                <button onclick="closeReviewModal()" style="background:none; border:none; cursor:pointer;"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Pilih Karyawan</label>
+                        <select id="revKaryawan" class="form-input"></select>
+                    </div>
+                    <div class="form-group">
+                        <label>Periode (Bulan/Tahun)</label>
+                        <input type="text" id="revPeriod" class="form-input" placeholder="April 2026">
+                    </div>
+                </div>
+                <div class="form-grid" style="margin-top:15px;">
+                    <div class="form-group">
+                        <label>Score KPI (0-100)</label>
+                        <input type="number" id="revKpi" class="form-input" value="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Score OKR (0-100)</label>
+                        <input type="number" id="revOkr" class="form-input" value="0">
+                    </div>
+                </div>
+                <div class="form-group" style="margin-top:15px;">
+                    <label>Catatan / Feedback</label>
+                    <textarea id="revNotes" class="form-input" rows="3"></textarea>
+                </div>
+                <div style="margin-top:20px; display:flex; gap:10px;">
+                    <button class="btn btn-primary" onclick="saveReview()" style="flex:1;">SIMPAN PENILAIAN</button>
+                    <button class="btn btn-outline" onclick="closeReviewModal()" style="flex:1;">BATAL</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- MODAL MASTER KARYAWAN -->

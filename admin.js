@@ -171,18 +171,21 @@ function renderVisualStats() {
 }
 
 function switchTab(tab) {
-  const tabs = ["tabDashboard", "tabLog", "tabKaryawan", "tabCEO"];
+  const tabs = ["tabDashboard", "tabLog", "tabKaryawan", "tabLeave", "tabPerformance", "tabCEO"];
   tabs.forEach((t) => {
     const el = document.getElementById(t);
     if (el) el.style.display = t === tab ? "block" : "none";
   });
 
   // Update Sidebar Active States
-  const links = ["linkTabDashboard", "linkTabLog", "linkTabKaryawan", "linkTabCEO"];
+  const links = ["linkTabDashboard", "linkTabLog", "linkTabKaryawan", "linkTabLeave", "linkTabPerformance", "linkTabCEO"];
   links.forEach(l => {
     const el = document.getElementById(l);
     if (el) el.classList.toggle("active", l.includes(tab.replace('tab', '')));
   });
+
+  if (tab === "tabLeave") fetchLeaveRequests();
+  if (tab === "tabPerformance") fetchReviews();
 
   // Sembunyikan Header Actions (Tambah/Export) jika di Dashboard atau CEO
   const headerActions = document.querySelector(".header-actions");
@@ -1564,4 +1567,131 @@ async function cetakSemuaSlipJPG() {
     document.body.removeChild(renderContainer);
     hideLoading();
   }
+}
+
+// --- MANAJEMEN CUTI (ADMIN) ---
+async function fetchLeaveRequests() {
+    const { data: leaves, error } = await supabaseClient
+        .from("leave_requests")
+        .select("*, karyawan(nama, sisa_cuti)")
+        .order("created_at", { ascending: false });
+
+    if (error) return console.error(error);
+
+    const body = document.getElementById("adminLeaveBody");
+    let html = "";
+    leaves.forEach(lv => {
+        const statusClass = lv.status === "APPROVED" ? "badge-success" : (lv.status === "REJECTED" ? "badge-danger" : "badge-warning");
+        const actions = lv.status === "PENDING" ? `
+            <button class="btn btn-primary btn-small" onclick="processLeave('${lv.id}', 'APPROVED', '${lv.employee_id}')">Setujui</button>
+            <button class="btn btn-danger btn-small" onclick="processLeave('${lv.id}', 'REJECTED')">Tolak</button>
+        ` : "-";
+
+        html += `
+            <tr>
+                <td><strong>${lv.karyawan.nama}</strong></td>
+                <td>${lv.type}</td>
+                <td>${lv.start_date} s/d ${lv.end_date}</td>
+                <td>${lv.reason}</td>
+                <td><span class="badge ${statusClass}">${lv.status}</span></td>
+                <td>${actions}</td>
+            </tr>
+        `;
+    });
+    body.innerHTML = html;
+}
+
+async function processLeave(requestId, status, employeeId) {
+    if (!confirm(`Konfirmasi ${status} pengajuan cuti ini?`)) return;
+
+    showLoading(true);
+    try {
+        const { error } = await supabaseClient
+            .from("leave_requests")
+            .update({ status: status })
+            .eq("id", requestId);
+
+        if (error) throw error;
+
+        if (status === "APPROVED") {
+            const { data: emp } = await supabaseClient.from("karyawan").select("sisa_cuti").eq("id", employeeId).single();
+            const newBalance = (emp.sisa_cuti || 0) - 1; 
+            await supabaseClient.from("karyawan").update({ sisa_cuti: newBalance > 0 ? newBalance : 0 }).eq("id", employeeId);
+        }
+
+        showToast(`Cuti berhasil di-${status.toLowerCase()}`, "success");
+        fetchLeaveRequests();
+    } catch (e) {
+        showToast(e.message, "error");
+    } finally {
+        showLoading(false);
+    }
+}
+
+// --- PENILAIAN PERFORMA (ADMIN) ---
+function showReviewModal() {
+    const sel = document.getElementById("revKaryawan");
+    sel.innerHTML = KARYAWAN.map(k => `<option value="${k.id}">${k.nama}</option>`).join("");
+    document.getElementById("modalReview").style.display = "flex";
+}
+
+function closeReviewModal() {
+    document.getElementById("modalReview").style.display = "none";
+}
+
+async function saveReview() {
+    const review = {
+        employee_id: document.getElementById("revKaryawan").value,
+        period: document.getElementById("revPeriod").value,
+        kpi_score: parseFloat(document.getElementById("revKpi").value) || 0,
+        okr_score: parseFloat(document.getElementById("revOkr").value) || 0,
+        notes: document.getElementById("revNotes").value,
+        attendance_score: 100, 
+    };
+
+    const avg = (review.kpi_score + review.okr_score + review.attendance_score) / 3;
+    review.final_grade = avg >= 85 ? "A" : (avg >= 70 ? "B" : "C");
+
+    showLoading(true);
+    try {
+        const { error } = await supabaseClient.from("performance_reviews").insert([review]);
+        if (error) throw error;
+
+        showToast("Penilaian Berhasil Disimpan", "success");
+        closeReviewModal();
+        fetchReviews();
+    } catch (e) {
+        showToast(e.message, "error");
+    } finally {
+        showLoading(false);
+    }
+}
+
+async function fetchReviews() {
+    const { data: reviews, error } = await supabaseClient
+        .from("performance_reviews")
+        .select("*, karyawan(nama)")
+        .order("id", { ascending: false });
+
+    if (error) return;
+
+    const body = document.getElementById("adminPerformanceBody");
+    body.innerHTML = reviews.map(r => `
+        <tr>
+            <td>${r.karyawan.nama}</td>
+            <td>${r.period}</td>
+            <td>${r.attendance_score}</td>
+            <td>${r.kpi_score}</td>
+            <td>${r.okr_score}</td>
+            <td><span class="badge badge-success">${r.final_grade}</span></td>
+            <td><button class="btn btn-outline btn-small" onclick="deleteReview('${r.id}')"><i data-lucide="trash"></i></button></td>
+        </tr>
+    `).join("");
+    lucide.createIcons();
+}
+
+async function deleteReview(id) {
+    if (!confirm("Hapus penilaian ini?")) return;
+    await supabaseClient.from("performance_reviews").delete().eq("id", id);
+    fetchReviews();
 }
