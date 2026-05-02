@@ -32,16 +32,20 @@ body {
   color: var(--text);
   min-height: 100vh;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  overflow: hidden;
+  justify-content: flex-start; /* Ubah dari center agar bisa scroll ke bawah dengan baik */
+  overflow-x: hidden;
+  overflow-y: auto; /* Izinkan scroll jika layar HP pendek */
+  padding: 20px 0; /* Jarak atas bawah */
 }
 
 .terminal-container {
   width: 100%;
   max-width: 480px;
-  padding: 20px;
+  padding: 15px;
   perspective: 1000px;
+  margin: auto; /* Untuk menjaga tetap ke tengah jika layar tinggi */
 }
 
 /* WIFI BADGE - MINI FLOATING STYLE */
@@ -125,7 +129,7 @@ header p {
   position: relative;
   width: calc(100% - 40px);
   margin: 0 20px;
-  aspect-ratio: 1/1;
+  aspect-ratio: 4/3; /* Lebih hemat ruang vertikal di HP */
   background: #000;
   border-radius: 30px;
   overflow: hidden;
