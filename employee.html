@@ -223,8 +223,13 @@
             <section id="tabPerformance" class="tab-content" style="display: none;">
                 <div class="data-section">
                     <h3>Laporan Performa & KPI</h3>
-                    <div id="performanceContent">
-                        <p class="empty-msg">Belum ada laporan performa yang dipublikasikan oleh HR.</p>
+                    <div id="performanceContent" class="performance-history">
+                        <!-- Placeholder saat data kosong -->
+                        <div style="text-align: center; padding: 60px 20px; background: rgba(255,255,255,0.02); border-radius: 20px; border: 1px dashed var(--border);">
+                            <i data-lucide="award" style="width: 48px; height: 48px; color: var(--text-muted); margin-bottom: 15px; opacity: 0.5;"></i>
+                            <h4 style="color: var(--text); margin-bottom: 8px;">Belum Ada Rapor Performa</h4>
+                            <p style="color: var(--text-muted); font-size: 0.85rem;">HR belum mempublikasikan penilaian untuk periode ini. Tetap semangat bekerja!</p>
+                        </div>
                     </div>
                 </div>
             </section>
