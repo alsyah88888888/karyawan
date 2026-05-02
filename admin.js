@@ -186,7 +186,7 @@ function switchTab(tab) {
 
   // Sembunyikan Header Actions (Tambah/Export) jika di Dashboard atau CEO
   const headerActions = document.querySelector(".header-actions");
-  if (headerActions) headerActions.style.display = (tab === "tabCEO" || tab === "tabDashboard") ? "none" : "flex";
+  if (headerActions) headerActions.style.display = (tab === "tabKaryawan") ? "flex" : "none";
 
   const title = document.getElementById("pageTitle");
   if (title) {
