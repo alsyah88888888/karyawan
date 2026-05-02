@@ -108,9 +108,16 @@ function renderDashboard() {
   // CALCULATE LIVE KPI
   const liveKpi = calculateLiveKPI(hadirCount, lateCount);
   const kpiValEl = document.getElementById("statKpiVal");
+  const kpiBadgeEl = document.getElementById("kpiGradeBadge");
+  
   if (kpiValEl) {
     kpiValEl.innerText = liveKpi.score.toFixed(1);
     kpiValEl.style.color = liveKpi.color;
+  }
+  if (kpiBadgeEl) {
+    kpiBadgeEl.innerText = liveKpi.grade;
+    kpiBadgeEl.style.color = liveKpi.color;
+    kpiBadgeEl.style.background = `${liveKpi.color}22`; // Add transparency
   }
 
   let html = "";
@@ -238,30 +245,47 @@ async function renderPerformance() {
   let html = "";
   reviews.forEach(r => {
     html += `
-      <div class="performance-card data-section" style="margin-bottom: 20px;">
-        <div style="display:flex; justify-content:space-between; margin-bottom:15px;">
-            <h4 style="color:var(--primary)">Periode: ${r.period}</h4>
-            <span class="badge badge-success" style="font-size:1.2rem; padding:10px 20px;">NILAI: ${r.final_grade}</span>
-        </div>
-        <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom:15px;">
-            <div style="background:rgba(0,0,0,0.2); padding:15px; border-radius:12px; text-align:center;">
-                <div style="font-size:0.7rem; color:var(--text-muted);">ATTENDANCE</div>
-                <div style="font-size:1.2rem; font-weight:800;">${r.attendance_score}</div>
+      <div class="performance-card data-section" style="margin-bottom: 24px; border-left: 4px solid ${r.final_grade === 'A' ? 'var(--success)' : (r.final_grade === 'B' ? 'var(--warning)' : 'var(--danger)')}">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <div>
+                <h4 style="color:var(--primary); font-size:1.1rem;">Rapor Periode: ${r.period}</h4>
+                <p style="font-size:0.75rem; color:var(--text-muted);">Diterbitkan pada ${new Date(r.created_at).toLocaleDateString('id-ID')}</p>
             </div>
-            <div style="background:rgba(0,0,0,0.2); padding:15px; border-radius:12px; text-align:center;">
-                <div style="font-size:0.7rem; color:var(--text-muted);">KPI</div>
-                <div style="font-size:1.2rem; font-weight:800;">${r.kpi_score}</div>
-            </div>
-            <div style="background:rgba(0,0,0,0.2); padding:15px; border-radius:12px; text-align:center;">
-                <div style="font-size:0.7rem; color:var(--text-muted);">OKR</div>
-                <div style="font-size:1.2rem; font-weight:800;">${r.okr_score}</div>
+            <div style="text-align:right;">
+                <span style="font-size:0.7rem; color:var(--text-muted); display:block; margin-bottom:4px;">GRADE AKHIR</span>
+                <span class="badge" style="font-size:1.5rem; padding:12px 24px; background:${r.final_grade === 'A' ? 'var(--success)' : (r.final_grade === 'B' ? 'var(--warning)' : 'var(--danger)')}22; color:${r.final_grade === 'A' ? 'var(--success)' : (r.final_grade === 'B' ? 'var(--warning)' : 'var(--danger)')}">${r.final_grade}</span>
             </div>
         </div>
-        <p style="font-size:0.9rem; color:var(--text-muted); font-style:italic;">Catatan HR: "${r.notes || '-'}"</p>
+        
+        <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom:20px;">
+            ${renderMetric("Attendance", r.attendance_score)}
+            ${renderMetric("KPI (Target)", r.kpi_score)}
+            ${renderMetric("OKR (Objektif)", r.okr_score)}
+        </div>
+
+        <div style="background:rgba(0,0,0,0.1); padding:15px; border-radius:12px;">
+            <p style="font-size:0.7rem; color:var(--text-muted); text-transform:uppercase; font-weight:800; margin-bottom:8px;">Feedback Manajer:</p>
+            <p style="font-size:0.9rem; font-style:italic; line-height:1.5;">"${r.notes || 'Pertahankan performa Anda dan terus berikan yang terbaik!'}"</p>
+        </div>
       </div>
     `;
   });
   cont.innerHTML = html;
+}
+
+function renderMetric(label, score) {
+  const color = score >= 85 ? 'var(--success)' : (score >= 70 ? 'var(--warning)' : 'var(--danger)');
+  return `
+    <div>
+        <div style="display:flex; justify-content:space-between; font-size:0.75rem; margin-bottom:8px;">
+            <span style="color:var(--text-muted); font-weight:600;">${label}</span>
+            <span style="font-weight:800; color:${color}">${score}</span>
+        </div>
+        <div style="height:6px; background:rgba(255,255,255,0.1); border-radius:10px; overflow:hidden;">
+            <div style="width:${score}%; height:100%; background:${color}; border-radius:10px;"></div>
+        </div>
+    </div>
+  `;
 }
 
 // --- UTILS & HELPERS ---

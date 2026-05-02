@@ -103,11 +103,20 @@
                             <div class="stat-label">Sisa Cuti</div>
                         </div>
                     </div>
-                    <div class="stat-card" style="background: rgba(79, 70, 229, 0.1); border-color: var(--primary);">
-                        <div class="stat-icon"><i data-lucide="zap"></i></div>
-                        <div>
-                            <div class="stat-val" id="statKpiVal">0</div>
-                            <div class="stat-label">Live KPI Score</div>
+                    <!-- LIVE KPI VISUAL -->
+                    <div class="stat-card" style="background: linear-gradient(135deg, rgba(79, 70, 229, 0.2), rgba(79, 70, 229, 0.05)); border: 1px solid var(--primary); grid-column: span 2;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                            <div style="display: flex; align-items: center; gap: 15px;">
+                                <div class="stat-icon" style="background: var(--primary); color: white;"><i data-lucide="zap"></i></div>
+                                <div>
+                                    <div class="stat-label">Live Performance Index</div>
+                                    <div style="display: flex; align-items: baseline; gap: 5px;">
+                                        <div class="stat-val" id="statKpiVal" style="font-size: 2.5rem;">0</div>
+                                        <div style="font-weight: 800; color: var(--text-muted);">/ 100</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="kpiGradeBadge" style="padding: 10px 20px; border-radius: 12px; font-weight: 900; font-size: 1.5rem; background: rgba(255,255,255,0.1);">?</div>
                         </div>
                     </div>
                 </div>
