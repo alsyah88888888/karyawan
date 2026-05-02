@@ -20,6 +20,23 @@ let allLogs = [];
 let CEO_PHONE = "6285774444805"; // Nomor WA CEO PT. Kola Borasi Indonesia
 let INCENTIVE_APPROVED = true; // Status Persetujuan CEO
 
+// KPI CONFIGURATION LIBRARY
+const KPI_LIBRARY = {
+    "OFFICE": {
+        "ADMIN": ["Ketepatan Laporan", "Kecepatan Respon", "Kerapihan Administrasi"],
+        "DEFAULT": ["Kualitas Kerja", "Inisiatif", "Kedisiplinan"]
+    },
+    "OPERASIONAL": {
+        "DRIVER": ["Ketepatan Waktu Kirim", "Kondisi Kendaraan", "Keamanan Berkendara"],
+        "HELPER": ["Kecepatan Muat/Bongkar", "Kerapihan Gudang", "Kerjasama Tim"],
+        "DEFAULT": ["Kualitas Kerja", "Sikap/Attitude", "Kerjasama"]
+    },
+    "FINANCE": {
+        "DEFAULT": ["Ketelitian Data", "Deadline Pembayaran", "Audit Compliance"]
+    },
+    "DEFAULT": ["Kualitas Kerja", "Sikap", "Tanggung Jawab"]
+};
+
 // Chart Instances
 let punctualityChartInstance = null;
 let attendanceChartInstance = null;
@@ -1632,7 +1649,54 @@ async function processLeave(requestId, status, employeeId) {
 function showReviewModal() {
     const sel = document.getElementById("revKaryawan");
     sel.innerHTML = KARYAWAN.map(k => `<option value="${k.id}">${k.nama}</option>`).join("");
+    
+    // Trigger metrik update saat ganti karyawan
+    sel.onchange = () => updateKpiMetrics();
+    
     document.getElementById("modalReview").style.display = "flex";
+    updateKpiMetrics();
+}
+
+function updateKpiMetrics() {
+    const empId = document.getElementById("revKaryawan").value;
+    const emp = KARYAWAN.find(k => k.id === empId);
+    if (!emp) return;
+
+    const dept = (emp.dept || "DEFAULT").toUpperCase();
+    const pos = (emp.jabatan || "DEFAULT").toUpperCase();
+    
+    // Ambil metrik dari library
+    let metrics = [];
+    if (KPI_LIBRARY[dept]) {
+        metrics = KPI_LIBRARY[dept][pos] || KPI_LIBRARY[dept]["DEFAULT"] || KPI_LIBRARY["DEFAULT"];
+    } else {
+        metrics = KPI_LIBRARY["DEFAULT"];
+    }
+
+    const container = document.getElementById("revKpiContainer");
+    if (!container) {
+        // Create container if not exists in modal-body
+        const target = document.querySelector("#modalReview .modal-body");
+        const kpiGroup = document.createElement("div");
+        kpiGroup.id = "revKpiContainer";
+        kpiGroup.style.marginTop = "20px";
+        kpiGroup.style.padding = "15px";
+        kpiGroup.style.background = "#f8fafc";
+        kpiGroup.style.borderRadius = "12px";
+        target.insertBefore(kpiGroup, target.querySelector(".form-group[style*='margin-top:15px']"));
+    }
+
+    const kpiCont = document.getElementById("revKpiContainer");
+    kpiCont.innerHTML = `<h4 style="font-size:0.8rem; color:var(--primary); margin-bottom:10px;">Metrik KPI (${dept} - ${pos})</h4>`;
+    
+    metrics.forEach((m, i) => {
+        kpiCont.innerHTML += `
+            <div class="form-group" style="margin-bottom:10px;">
+                <label style="font-size:0.75rem;">${m} (0-100)</label>
+                <input type="number" class="form-input kpi-metric-input" data-metric="${m}" value="0" min="0" max="100">
+            </div>
+        `;
+    });
 }
 
 function closeReviewModal() {
@@ -1640,10 +1704,16 @@ function closeReviewModal() {
 }
 
 async function saveReview() {
+    // Hitung rata-rata dari metrik yang diinput
+    const metricInputs = document.querySelectorAll(".kpi-metric-input");
+    let totalKpi = 0;
+    metricInputs.forEach(input => totalKpi += parseFloat(input.value) || 0);
+    const finalKpiScore = metricInputs.length > 0 ? (totalKpi / metricInputs.length) : 0;
+
     const review = {
         employee_id: document.getElementById("revKaryawan").value,
         period: document.getElementById("revPeriod").value,
-        kpi_score: parseFloat(document.getElementById("revKpi").value) || 0,
+        kpi_score: finalKpiScore,
         okr_score: parseFloat(document.getElementById("revOkr").value) || 0,
         notes: document.getElementById("revNotes").value,
         attendance_score: 100, 
