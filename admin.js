@@ -28,6 +28,7 @@ let attendanceChartInstance = null;
 async function syncData() {
   if (!document.getElementById("filterTglMulai").value) setPeriodeIni();
   if (!document.getElementById("kpiFilterTglMulai").value) setPeriodeKPI('ini');
+  if (!document.getElementById("logFilterTglMulai").value) setPeriodeLog('ini');
   // Set default tab to dashboard if none active
   if (!document.querySelector(".nav-link.active")) switchTab('tabDashboard');
   
@@ -1139,8 +1140,19 @@ function zoomFoto(url) {
 }
 
 function exportData() {
-  const tglMulai = document.getElementById("filterTglMulai")?.value;
-  const tglSelesai = document.getElementById("filterTglSelesai")?.value;
+  // Ambil filter yang aktif berdasarkan tab yang sedang dibuka
+  let tglMulai = document.getElementById("filterTglMulai")?.value;
+  let tglSelesai = document.getElementById("filterTglSelesai")?.value;
+
+  const activeTab = document.querySelector('section:not([style*="display: none"])')?.id;
+  
+  if (activeTab === 'tabLog') {
+    tglMulai = document.getElementById("logFilterTglMulai")?.value;
+    tglSelesai = document.getElementById("logFilterTglSelesai")?.value;
+  } else if (activeTab === 'tabDashboard') {
+    tglMulai = document.getElementById("kpiFilterTglMulai")?.value;
+    tglSelesai = document.getElementById("kpiFilterTglSelesai")?.value;
+  }
 
   if (allLogs.length === 0) return alert("Belum ada data untuk di-export!");
 
@@ -1275,7 +1287,7 @@ function exportData() {
   showToast("Payroll Report Berhasil Diunduh", "success");
 }
 
-async function clearData() {
+async function hapusSemuaLog() {
   if (confirm("Hapus SEMUA log?")) {
     const { error } = await supabaseClient.from("logs").delete().neq("id", 0);
     if (!error) syncData();
@@ -1324,6 +1336,16 @@ function setPeriodeIni() {
   document.getElementById("filterTglMulai").value = firstDay.toISOString().split('T')[0];
   document.getElementById("filterTglSelesai").value = lastDay.toISOString().split('T')[0];
   refreshUI();
+}
+
+function setPeriodeLog() {
+  const now = new Date();
+  const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+  const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+  document.getElementById("logFilterTglMulai").value = firstDay.toISOString().split('T')[0];
+  document.getElementById("logFilterTglSelesai").value = lastDay.toISOString().split('T')[0];
+  syncData();
 }
 
 window.onload = async () => {
