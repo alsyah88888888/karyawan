@@ -32,6 +32,9 @@
             </div>
             <button class="btn-login" onclick="loginEmployee()">MASUK KE PORTAL</button>
             <div id="loginError" class="error-msg"></div>
+            <div style="margin-top: 20px; border-top: 1px solid var(--border); padding-top: 20px;">
+                <a href="index.html" style="text-decoration: none; color: var(--text-muted); font-size: 0.8rem; font-weight: 600;">← Kembali ke Menu Absensi</a>
+            </div>
         </div>
     </div>
 
@@ -58,9 +61,12 @@
                 </a>
             </nav>
             <div class="sidebar-footer">
-                <button class="btn-logout" onclick="logout()">
-                    <i data-lucide="log-out"></i> <span>Keluar</span>
+                <button class="btn-logout" onclick="logout()" style="margin-bottom: 15px;">
+                    <i data-lucide="log-out"></i> <span>Keluar Portal</span>
                 </button>
+                <a href="index.html" class="nav-link" style="color: var(--text-muted); border-top: 1px solid var(--border); padding-top: 15px;">
+                    <i data-lucide="arrow-left-circle"></i> <span>Kembali ke Absensi</span>
+                </a>
             </div>
         </aside>
 
