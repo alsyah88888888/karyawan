@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>KOBOI - Intelligent Terminal</title>
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- Google Fonts: Outfit for Modern Look -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css?v=20260417c">
 </head>
 <body>
@@ -17,8 +17,11 @@
 
         <div class="terminal-card">
             <header>
+                <div class="logo-area">
+                    <img src="logokoboi.png" alt="KOBOI Logo" id="terminalLogo">
+                </div>
                 <h1 id="liveClock">00:00:00</h1>
-                <p onclick="hiddenLogin()" style="cursor: default;">Kola Borasi Indonesia</p>
+                <p onclick="hiddenLogin()" style="cursor: default;">PT. KOLA BORASI INDONESIA</p>
             </header>
 
             <div class="cam-box">
@@ -48,6 +51,21 @@
                         PULANG (DINAS LUAR)
                     </button>
                 </div>
+            </div>
+        </div>
+    </div>
+    <!-- CUSTOM MODERN MODAL -->
+    <div id="modalOverlay" class="modal-overlay">
+        <div class="modal-box">
+            <div id="modalIcon" class="modal-icon">!</div>
+            <h3 id="modalTitle">Konfirmasi</h3>
+            <p id="modalMessage">Silakan masukkan data yang diperlukan.</p>
+            <div id="modalInputContainer" class="modal-input-container">
+                <input type="password" id="modalInput" class="modal-input" placeholder="...">
+            </div>
+            <div class="modal-footer">
+                <button id="modalCancelBtn" class="btn-cancel" onclick="closeModal()">Batal</button>
+                <button id="modalConfirmBtn" class="btn-confirm">OK</button>
             </div>
         </div>
     </div>

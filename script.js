@@ -1,6 +1,6 @@
 /**
- * KOBOI TERMINAL - LOGIC (USER SIDE)
- * Handles cameras, WiFi verification, and attendance processing.
+ * KOBOI TERMINAL - PREMIUM LOGIC (USER SIDE)
+ * Handles cameras, WiFi verification, and attendance processing with Modern UI.
  */
 
 // 1. CONFIGURATION
@@ -38,7 +38,12 @@ async function syncDataTerminal() {
     const sel = document.getElementById("namaSelect");
     if (sel) {
       sel.innerHTML = '<option value="">-- Pilih Nama Anda --</option>';
-      KARYAWAN.forEach((k) => sel.innerHTML += `<option value="${k.nama}">${k.nama}</option>`);
+      KARYAWAN.forEach((k) => {
+        const option = document.createElement("option");
+        option.value = k.nama;
+        option.textContent = k.nama;
+        sel.appendChild(option);
+      });
     }
   } catch (e) {
     console.error("Sync Error:", e.message);
@@ -48,10 +53,13 @@ async function syncDataTerminal() {
 // --- USER INTERFACE LOGIC ---
 async function initUser() {
   // CAMERA START
-  navigator.mediaDevices
-    .getUserMedia({ video: { width: 640, height: 640 } })
-    .then((s) => (document.getElementById("video").srcObject = s))
-    .catch(() => alert("Kamera diperlukan untuk absensi!"));
+  const video = document.getElementById("video");
+  if (video) {
+    navigator.mediaDevices
+      .getUserMedia({ video: { width: 640, height: 640 } })
+      .then((s) => (video.srcObject = s))
+      .catch(() => showModernAlert("Kamera diperlukan untuk absensi!", "error"));
+  }
 
   // WIFI VERIFICATION
   updateWiFiStatus();
@@ -67,7 +75,7 @@ async function updateWiFiStatus() {
   isNetworkValid = false;
 
   try {
-    badge.innerText = "Memverifikasi Jaringan...";
+    badge.innerText = "MEMVERIFIKASI JARINGAN...";
     badge.className = "wifi-badge checking";
 
     const res = await fetch("https://api.ipify.org?format=json");
@@ -75,29 +83,28 @@ async function updateWiFiStatus() {
     const isOffice = (data.ip === OFFICE_IP) || bypassWiFi;
 
     if (isOffice) {
-      badge.innerText = bypassWiFi ? "Bypass Mode Aktif ✅" : "Terhubung WiFi Kantor ✅";
+      badge.innerText = bypassWiFi ? "BYPASS MODE AKTIF ✅" : "WIFI KANTOR TERHUBUNG ✅";
       badge.className = "wifi-badge connected";
       document.getElementById("btnMasuk").disabled = false;
       document.getElementById("btnPulang").disabled = false;
-      isNetworkValid = true; // Set flag to true if verified
+      isNetworkValid = true;
     } else {
       badge.innerText = `Gunakan WiFi Kantor ❌ (${data.ip})`;
       badge.className = "wifi-badge disconnected";
-      // Allow bypass on click but requires Admin Password
-      badge.onclick = () => {
-        const pass = prompt("Password Admin Bypass:");
+      
+      badge.onclick = async () => {
+        const pass = await showModernPrompt("Admin Security", "Masukkan Password Admin untuk akses Bypass:", "password");
         if (pass === "mautaubanget") {
           bypassWiFi = true;
           updateWiFiStatus();
         } else if (pass !== null) {
-          alert("Akses Ditolak!");
+          showModernAlert("Akses Ditolak! Password salah.", "error");
         }
       };
     }
   } catch (e) {
-    badge.innerText = "Gagal Verifikasi / Offline ❌";
+    badge.innerText = "GAGAL VERIFIKASI / OFFLINE ❌";
     badge.className = "wifi-badge disconnected";
-    // SECURE: Do NOT enable buttons if offline or blocked!
     document.getElementById("btnMasuk").disabled = true;
     document.getElementById("btnPulang").disabled = true;
     isNetworkValid = false;
@@ -109,16 +116,16 @@ async function prosesAbsen(tipe) {
   const isDinas = (tipe === 'DINAS LUAR' || tipe === 'PULANG DINAS');
 
   if (!isNetworkValid && !isDinas) {
-    return alert("❌ SECURITY WARNING: Jaringan Anda belum terverifikasi! Gunakan WiFi Kantor.");
+    return showModernAlert("SECURITY WARNING: Jaringan Anda belum terverifikasi! Gunakan WiFi Kantor.", "error");
   }
 
   const nama = document.getElementById("namaSelect").value;
-  if (!nama) return alert("📢 Harap pilih Nama Anda!");
+  if (!nama) return showModernAlert("Harap pilih Nama Anda terlebih dahulu!", "info");
 
   let finalTipe = tipe;
   if (isDinas) {
-    const lokasi = prompt(`Masukkan lokasi/tujuan ${tipe} Anda (Wajib):`);
-    if (!lokasi || lokasi.trim() === "") return alert("Pendaftaran dibatalkan: Lokasi Dinas Luar wajib diisi!");
+    const lokasi = await showModernPrompt("Dinas Luar", `Masukkan lokasi/tujuan ${tipe} Anda:`, "text");
+    if (!lokasi || lokasi.trim() === "") return; // Cancelled
     finalTipe = `${tipe} - ${lokasi.trim().toUpperCase()}`;
   }
 
@@ -128,6 +135,7 @@ async function prosesAbsen(tipe) {
   else if (tipe === 'DINAS LUAR') btn = document.getElementById("btnDinasMasuk");
   else if (tipe === 'PULANG DINAS') btn = document.getElementById("btnDinasPulang");
 
+  const originalText = btn ? btn.innerText : "";
   if (btn) {
     btn.disabled = true;
     btn.innerText = "PROSES...";
@@ -135,12 +143,9 @@ async function prosesAbsen(tipe) {
 
   try {
     const sekarang = new Date();
-    
-    // Shift date by 5 hours backwards so that 00:00 - 04:59 AM counts as previous day
     const getShiftDateStr = (dateObj) => new Date(dateObj.getTime() - 5 * 60 * 60 * 1000).toLocaleDateString("id-ID");
     const tglHariIni = getShiftDateStr(sekarang);
 
-    // 1. Check Double Absen
     const sudahAbsen = allLogs.find(l => 
       l.nama === nama && 
       getShiftDateStr(new Date(l.waktu)) === tglHariIni && 
@@ -148,26 +153,22 @@ async function prosesAbsen(tipe) {
     );
     if (sudahAbsen) throw new Error(`Anda SUDAH absen ${tipe} hari ini!`);
 
-    // 2. Capture Photo
     const v = document.getElementById("video");
     const c = document.getElementById("canvas");
-    if (v.videoWidth === 0) throw new Error("Kamera belum siap. Tunggu sebentar.");
+    if (!v || v.videoWidth === 0) throw new Error("Kamera belum siap. Tunggu sebentar.");
     
     c.width = v.videoWidth;
     c.height = v.videoHeight;
     c.getContext("2d").drawImage(v, 0, 0);
     const fotoData = c.toDataURL("image/webp", 0.4);
 
-    // 3. Calculation Late
     let telat = false;
     if (tipe === "MASUK" || tipe === "DINAS LUAR") {
       const jam = sekarang.getHours();
       const menit = sekarang.getMinutes();
-      // Toleransi sampai 09:15 (09:16 baru telat)
       if (jam > 9 || (jam === 9 && menit > 15)) telat = true;
     }
 
-    // 4. Data Info
     const info = KARYAWAN.find((k) => k.nama === nama);
     if (!info) throw new Error("Data karyawan tidak ditemukan!");
 
@@ -180,46 +181,108 @@ async function prosesAbsen(tipe) {
       isLate: telat,
     };
 
-    // 5. Send to Cloud
     const { error } = await supabaseClient.from("logs").insert([newLog]);
     if (error) throw error;
 
-    alert(telat ? "✅ BERHASIL! (Anda Terlambat)" : "✅ BERHASIL! Selamat Bekerja.");
+    showModernAlert(telat ? "BERHASIL! (Anda Terlambat)" : "BERHASIL! Selamat Bekerja.", telat ? "warning" : "success");
     await syncDataTerminal();
 
   } catch (err) {
-    alert("❌ ERROR: " + err.message);
+    showModernAlert("GAGAL: " + err.message, "error");
   } finally {
     if (btn) {
       btn.disabled = false;
-      btn.innerText = tipe;
+      btn.innerText = originalText;
     }
   }
 }
 
-// Admin Entry
+// --- MODERN MODAL SYSTEM ---
+let modalResolve = null;
+
+function showModernAlert(msg, type = "info") {
+  return new Promise((resolve) => {
+    const overlay = document.getElementById("modalOverlay");
+    const title = document.getElementById("modalTitle");
+    const message = document.getElementById("modalMessage");
+    const inputCont = document.getElementById("modalInputContainer");
+    const cancelBtn = document.getElementById("modalCancelBtn");
+    const confirmBtn = document.getElementById("modalConfirmBtn");
+    const icon = document.getElementById("modalIcon");
+
+    title.innerText = type.toUpperCase();
+    message.innerText = msg;
+    inputCont.style.display = "none";
+    cancelBtn.style.display = "none";
+    
+    // Icon & Color
+    icon.style.background = type === "error" ? "rgba(239, 68, 68, 0.1)" : "rgba(79, 70, 229, 0.1)";
+    icon.style.color = type === "error" ? "#ef4444" : "#4f46e5";
+    icon.innerText = type === "success" ? "✓" : "!";
+
+    confirmBtn.onclick = () => {
+      overlay.style.display = "none";
+      resolve();
+    };
+
+    overlay.style.display = "flex";
+  });
+}
+
+function showModernPrompt(ttl, msg, inputType = "text") {
+  return new Promise((resolve) => {
+    const overlay = document.getElementById("modalOverlay");
+    const title = document.getElementById("modalTitle");
+    const message = document.getElementById("modalMessage");
+    const inputCont = document.getElementById("modalInputContainer");
+    const input = document.getElementById("modalInput");
+    const cancelBtn = document.getElementById("modalCancelBtn");
+    const confirmBtn = document.getElementById("modalConfirmBtn");
+
+    title.innerText = ttl;
+    message.innerText = msg;
+    inputCont.style.display = "block";
+    input.type = inputType;
+    input.value = "";
+    cancelBtn.style.display = "block";
+
+    confirmBtn.onclick = () => {
+      overlay.style.display = "none";
+      resolve(input.value);
+    };
+
+    modalResolve = resolve;
+    overlay.style.display = "flex";
+    setTimeout(() => input.focus(), 100);
+  });
+}
+
+function closeModal() {
+  document.getElementById("modalOverlay").style.display = "none";
+  if (modalResolve) modalResolve(null);
+}
+
+// Admin Entry (Hidden)
 let loginClicks = 0;
 let lastClickTime = 0;
 
 function hiddenLogin() {
   const currentTime = Date.now();
-  
-  // Jika klik dilakukan dalam jeda < 500ms dari klik sebelumnya
   if (currentTime - lastClickTime < 500) {
     loginClicks++;
   } else {
-    loginClicks = 1; // Reset jika terlalu lambat
+    loginClicks = 1;
   }
-  
   lastClickTime = currentTime;
 
   if (loginClicks >= 5) {
-    loginClicks = 0; // Reset counter
+    loginClicks = 0;
     loginAdmin();
   }
 }
 
-function loginAdmin() {
-  const p = prompt("Password Admin:");
+async function loginAdmin() {
+  const p = await showModernPrompt("Security Entry", "Masukkan Password Admin:", "password");
   if (p === "mautaubanget") window.location.href = "admin.html";
+  else if (p !== null) showModernAlert("Password Salah!", "error");
 }
