@@ -18,7 +18,7 @@ let isNetworkValid = false;
 window.onload = async () => {
   await syncDataTerminal();
   initUser();
-  
+
   // LIVE CLOCK
   setInterval(() => {
     const clockEl = document.getElementById("liveClock");
@@ -86,7 +86,7 @@ async function updateWiFiStatus() {
     } else {
       badge.innerText = `Gunakan WiFi Kantor ❌ (${data.ip})`;
       badge.className = "wifi-badge disconnected";
-      
+
       badge.onclick = async () => {
         const pass = await showModernPrompt("Admin Security", "Masukkan Password Admin untuk akses Bypass:", "password");
         if (pass === "mautaubanget") {
@@ -113,7 +113,7 @@ function capturePhoto() {
   const video = document.getElementById("video");
   const canvas = document.getElementById("canvas");
   if (!video || video.videoWidth === 0) return null;
-  
+
   canvas.width = video.videoWidth;
   canvas.height = video.videoHeight;
   const ctx = canvas.getContext("2d");
@@ -157,23 +157,23 @@ async function prosesAbsen(tipe) {
 
     // CRITICAL BACKEND CHECK: Fetch latest logs
     const { data: latestLogs, error: fetchErr } = await supabaseClient
-        .from("logs")
-        .select("nama, waktu, status")
-        .eq("nama", nama)
-        .order("id", { ascending: false })
-        .limit(10);
-    
+      .from("logs")
+      .select("nama, waktu, status")
+      .eq("nama", nama)
+      .order("id", { ascending: false })
+      .limit(10);
+
     if (fetchErr) throw new Error("Gagal mengambil data absensi terbaru.");
 
-    const sudahAbsen = (latestLogs || []).find(l => 
-      getISODate(new Date(l.waktu)) === tglHariIni && 
+    const sudahAbsen = (latestLogs || []).find(l =>
+      getISODate(new Date(l.waktu)) === tglHariIni &&
       l.status.startsWith(tipe)
     );
     if (sudahAbsen) throw new Error(`Anda SUDAH absen ${tipe} hari ini!`);
 
     const imageBase64 = capturePhoto();
     if (!imageBase64 && !isDinas) {
-        throw new Error("Kamera belum siap atau izin kamera ditolak. Harap izinkan akses kamera!");
+      throw new Error("Kamera belum siap atau izin kamera ditolak. Harap izinkan akses kamera!");
     }
 
     let telat = false;
@@ -198,7 +198,14 @@ async function prosesAbsen(tipe) {
     const { error } = await supabaseClient.from("logs").insert([newLog]);
     if (error) throw error;
 
-    showModernAlert(telat ? "BERHASIL! (Anda Terlambat)" : "BERHASIL! Selamat Bekerja.", telat ? "warning" : "success");
+    let successMsg = "BERHASIL!";
+    if (tipe.includes('MASUK')) {
+      successMsg = telat ? "BERHASIL! (Anda Terlambat)" : "BERHASIL! Selamat Bekerja.";
+    } else {
+      successMsg = "BERHASIL! Selamat Beristirahat.";
+    }
+
+    showModernAlert(successMsg, telat ? "warning" : "success");
     await syncDataTerminal();
 
   } catch (err) {
@@ -229,7 +236,7 @@ function showModernAlert(msg, type = "info") {
     message.innerText = msg;
     inputCont.style.display = "none";
     cancelBtn.style.display = "none";
-    
+
     // Icon & Color
     icon.style.background = type === "error" ? "rgba(239, 68, 68, 0.1)" : "rgba(79, 70, 229, 0.1)";
     icon.style.color = type === "error" ? "#ef4444" : "#4f46e5";
