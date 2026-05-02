@@ -136,31 +136,28 @@ async function prosesAbsen(tipe) {
 
   try {
     const sekarang = new Date();
-    const getShiftDateStr = (dateObj) => new Date(dateObj.getTime() - 5 * 60 * 60 * 1000).toLocaleDateString("id-ID");
-    const tglHariIni = getShiftDateStr(sekarang);
+    const tglHariIni = getISODate(sekarang);
 
-    // CRITICAL BACKEND CHECK: Fetch latest logs again to prevent double attendance
-    const { data: latestLogs } = await supabaseClient
+    // CRITICAL BACKEND CHECK: Fetch latest logs
+    const { data: latestLogs, error: fetchErr } = await supabaseClient
         .from("logs")
         .select("nama, waktu, status")
         .eq("nama", nama)
         .order("id", { ascending: false })
         .limit(10);
     
+    if (fetchErr) throw new Error("Gagal mengambil data absensi terbaru.");
+
     const sudahAbsen = (latestLogs || []).find(l => 
-      getShiftDateStr(new Date(l.waktu)) === tglHariIni && 
+      getISODate(new Date(l.waktu)) === tglHariIni && 
       l.status.startsWith(tipe)
     );
     if (sudahAbsen) throw new Error(`Anda SUDAH absen ${tipe} hari ini!`);
 
-    const v = document.getElementById("video");
-    const c = document.getElementById("canvas");
-    if (!v || v.videoWidth === 0) throw new Error("Kamera belum siap. Tunggu sebentar.");
-    
-    c.width = v.videoWidth;
-    c.height = v.videoHeight;
-    c.getContext("2d").drawImage(v, 0, 0);
-    const fotoData = c.toDataURL("image/webp", 0.4);
+    const imageBase64 = capturePhoto();
+    if (!imageBase64 && !isDinas) {
+        throw new Error("Kamera belum siap atau izin kamera ditolak. Harap izinkan akses kamera!");
+    }
 
     let telat = false;
     if (tipe === "MASUK" || tipe === "DINAS LUAR") {
@@ -176,8 +173,8 @@ async function prosesAbsen(tipe) {
       nama: info.nama,
       dept: info.dept,
       waktu: sekarang.toISOString(),
-      status: finalTipe,
-      foto: fotoData,
+      status: tipe,
+      foto: imageBase64,
       isLate: telat,
     };
 
