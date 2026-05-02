@@ -104,6 +104,23 @@ async function updateWiFiStatus() {
   }
 }
 
+function getISODate(dateObj) {
+  const d = new Date(dateObj.getTime() - 5 * 60 * 60 * 1000);
+  return d.toISOString().split('T')[0];
+}
+
+function capturePhoto() {
+  const video = document.getElementById("video");
+  const canvas = document.getElementById("canvas");
+  if (!video || video.videoWidth === 0) return null;
+  
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  return canvas.toDataURL("image/webp", 0.4);
+}
+
 // --- ATTENDANCE PROCESS ---
 async function prosesAbsen(tipe) {
   const isDinas = (tipe === 'DINAS LUAR' || tipe === 'PULANG DINAS');
@@ -118,7 +135,7 @@ async function prosesAbsen(tipe) {
   let finalTipe = tipe;
   if (isDinas) {
     const lokasi = await showModernPrompt("Dinas Luar", `Masukkan lokasi/tujuan ${tipe} Anda:`, "text");
-    if (!lokasi || lokasi.trim() === "") return; // Cancelled
+    if (!lokasi || lokasi.trim() === "") return;
     finalTipe = `${tipe} - ${lokasi.trim().toUpperCase()}`;
   }
 
@@ -173,7 +190,7 @@ async function prosesAbsen(tipe) {
       nama: info.nama,
       dept: info.dept,
       waktu: sekarang.toISOString(),
-      status: tipe,
+      status: finalTipe,
       foto: imageBase64,
       isLate: telat,
     };
