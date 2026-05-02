@@ -105,6 +105,14 @@ function renderDashboard() {
   document.getElementById("statHadir").innerText = hadirCount;
   document.getElementById("statLate").innerText = lateCount;
 
+  // CALCULATE LIVE KPI
+  const liveKpi = calculateLiveKPI(hadirCount, lateCount);
+  const kpiValEl = document.getElementById("statKpiVal");
+  if (kpiValEl) {
+    kpiValEl.innerText = liveKpi.score.toFixed(1);
+    kpiValEl.style.color = liveKpi.color;
+  }
+
   let html = "";
   MY_LOGS.slice(0, 10).forEach(l => {
     const tgl = new Date(l.waktu);
@@ -263,6 +271,21 @@ function showLoading(show) {
 
 function getMonthName(idx) {
   return ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"][idx];
+}
+
+function calculateLiveKPI(hadir, telat) {
+  const totalHariKerja = 22;
+  const attendanceScore = (hadir / totalHariKerja) * 100;
+  const punctualityScore = hadir > 0 ? ((hadir - telat) / hadir) * 100 : 0;
+  
+  const finalScore = (attendanceScore * 0.6) + (punctualityScore * 0.4);
+  
+  let grade = "C";
+  let color = "#ef4444";
+  if (finalScore >= 85) { grade = "A"; color = "#10b981"; }
+  else if (finalScore >= 70) { grade = "B"; color = "#f59e0b"; }
+
+  return { score: finalScore > 100 ? 100 : finalScore, grade, color };
 }
 
 // Helper: hitungDetailGaji (Logic replicated from admin.js for offline calculation)

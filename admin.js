@@ -447,6 +447,12 @@ function renderKaryawanTable() {
           Rp ${Math.floor(d.thp).toLocaleString("id-ID")}
         </td>
         <td>
+          <div style="font-weight: 800; font-size: 1.1rem; color: ${calculateLiveKPI(d.hadir, d.telat).color}">
+            ${calculateLiveKPI(d.hadir, d.telat).score.toFixed(1)}
+          </div>
+          <div style="font-size: 0.7rem; font-weight: 700; color: #94a3b8;">GRADE: ${calculateLiveKPI(d.hadir, d.telat).grade}</div>
+        </td>
+        <td>
           <div style="display: flex; gap: 8px;">
             <button class="btn btn-outline btn-small" onclick="cetakSlip(${index})">
                 <i data-lucide="printer" style="width:14px;"></i> <span>Cetak</span>
@@ -582,6 +588,10 @@ function hitungDetailGaji(gapok, namaKaryawan, customStart = null, customEnd = n
   }
 
   // --- TOTAL SALARY ---
+  const hariHadir = [...new Set(periodLogs.map(l => new Date(l.waktu).toLocaleDateString()))].length;
+  const telatCount = periodLogs.filter(l => l.status === 'MASUK' && l.isLate).length;
+  
+  // --- TOTAL SALARY ---
   const uangHKE = hariHadir * hkeRate;
   const thp = g + uangHKE + incentive + incentiveLuar + uangLembur - pinjaman;
 
@@ -590,6 +600,7 @@ function hitungDetailGaji(gapok, namaKaryawan, customStart = null, customEnd = n
     hkeRate,
     uangHKE,
     hadir: hariHadir,
+    telat: telatCount,
     totalHariKerja,
     totalLembur: jamLemburBulat.toFixed(1),
     uangLembur,
@@ -598,6 +609,20 @@ function hitungDetailGaji(gapok, namaKaryawan, customStart = null, customEnd = n
     pinjaman,
     thp: thp > 0 ? thp : 0
   };
+}
+
+function calculateLiveKPI(hadir, telat) {
+  const totalHariKerja = 22;
+  const attendanceScore = (hadir / totalHariKerja) * 100;
+  const punctualityScore = hadir > 0 ? ((hadir - telat) / hadir) * 100 : 0;
+  const finalScore = (attendanceScore * 0.6) + (punctualityScore * 0.4);
+  
+  let grade = "C";
+  let color = "#ef4444";
+  if (finalScore >= 85) { grade = "A"; color = "#10b981"; }
+  else if (finalScore >= 70) { grade = "B"; color = "#f59e0b"; }
+
+  return { score: finalScore > 100 ? 100 : finalScore, grade, color };
 }
 
 function cetakSlip(index) {
