@@ -36,8 +36,11 @@ body {
   align-items: center;
   justify-content: flex-start; /* Ubah dari center agar bisa scroll ke bawah dengan baik */
   overflow-x: hidden;
-  overflow-y: auto; /* Izinkan scroll jika layar HP pendek */
-  padding: 20px 0; /* Jarak atas bawah */
+  overflow-y: auto;
+  padding: 20px 0;
+  overscroll-behavior-y: contain; /* Prevent pull-to-refresh */
+  user-select: none; /* Prevent accidental text selection */
+  -webkit-user-select: none;
 }
 
 .terminal-container {

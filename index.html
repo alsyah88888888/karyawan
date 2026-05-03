@@ -95,8 +95,10 @@
     <!-- Main Logic -->
     <script src="script.js?v=20260502_FINAL"></script>
 
-    <!-- PWA SERVICE WORKER REGISTRATION -->
+    <!-- PWA SERVICE WORKER & INSTALL LOGIC -->
     <script>
+      let deferredPrompt;
+      
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
           navigator.serviceWorker.register('./sw.js')
@@ -104,6 +106,44 @@
             .catch(err => console.error('Service Worker registration failed', err));
         });
       }
+
+      // Handle Install Prompt
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        // Tampilkan tombol instal jika belum terinstal
+        const installBtn = document.createElement('div');
+        installBtn.id = 'pwaInstallBtn';
+        installBtn.innerHTML = `
+          <div style="position:fixed; bottom:20px; left:20px; right:20px; background:var(--primary); color:white; padding:15px; border-radius:15px; display:flex; align-items:center; justify-content:space-between; z-index:9999; box-shadow:0 10px 30px rgba(0,0,0,0.5); animation:slideUp 0.5s ease;">
+            <div style="display:flex; align-items:center; gap:12px;">
+              <img src="logokoboi.png" style="width:40px; height:40px; border-radius:10px;">
+              <div>
+                <div style="font-weight:800; font-size:0.9rem;">Instal Aplikasi KOBOI</div>
+                <div style="font-size:0.7rem; opacity:0.8;">Akses lebih cepat & stabil</div>
+              </div>
+            </div>
+            <button onclick="triggerPwaInstall()" style="background:white; color:var(--primary); border:none; padding:8px 15px; border-radius:10px; font-weight:800; font-size:0.8rem; cursor:pointer;">INSTAL</button>
+          </div>
+        `;
+        document.body.appendChild(installBtn);
+      });
+
+      function triggerPwaInstall() {
+        const btn = document.getElementById('pwaInstallBtn');
+        if (btn) btn.remove();
+        if (!deferredPrompt) return;
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then((choiceResult) => {
+          deferredPrompt = null;
+        });
+      }
+
+      window.addEventListener('appinstalled', () => {
+        const btn = document.getElementById('pwaInstallBtn');
+        if (btn) btn.remove();
+        console.log('PWA was installed');
+      });
     </script>
 </body>
 </html>
