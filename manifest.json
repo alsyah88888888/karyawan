@@ -1,23 +1,34 @@
 {
-  "name": "KOBOI HRIS",
+  "name": "KOBOI HRIS - Intelligent Terminal",
   "short_name": "KOBOI",
-  "description": "Sistem Absensi dan ESS PT Kola Borasi Indonesia",
-  "start_url": "./index.html",
+  "description": "Sistem Manajemen Karyawan dan Absensi Pintar PT Kola Borasi Indonesia",
+  "start_url": "/index.html",
   "display": "standalone",
   "background_color": "#020617",
   "theme_color": "#4f46e5",
+  "orientation": "portrait",
+  "categories": ["business", "productivity", "utilities"],
+  "lang": "id-ID",
+  "dir": "ltr",
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "logokoboi.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
       "src": "logokoboi.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "logokoboi.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }
