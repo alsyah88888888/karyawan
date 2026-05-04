@@ -1,4 +1,4 @@
-const CACHE_NAME = 'koboi-hris-v2';
+const CACHE_NAME = 'koboi-hris-v3'; // Naikkan versi ke v3
 const urlsToCache = [
   './',
   './index.html',
@@ -29,8 +29,12 @@ self.addEventListener('activate', event => {
   );
 });
 
+// STRATEGI: Network First (Coba internet dulu, baru cache)
+// Agar setiap ada update IP di script.js, HP langsung tahu.
 self.addEventListener('fetch', event => {
   event.respondWith(
-    caches.match(event.request).then(response => response || fetch(event.request))
+    fetch(event.request).catch(() => {
+      return caches.match(event.request);
+    })
   );
 });
