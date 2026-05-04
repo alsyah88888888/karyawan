@@ -8,7 +8,8 @@ const SB_URL = "https://ulmwpmzcaiuyubgehptt.supabase.co";
 const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVsbXdwbXpjYWl1eXViZ2VocHR0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE4MzI2MjUsImV4cCI6MjA4NzQwODYyNX0._Y2MkIiRDM52CVMsZEp-lSRBQ93ZYGkwkFbmxfZ5tFo";
 const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
 
-const OFFICE_IP = "124.158.189.235";
+// Tambahkan IP baru ke dalam daftar (Array) agar lebih fleksibel
+const OFFICE_IPS = ["124.158.189.235", "114.124.238.252"]; 
 let KARYAWAN = [];
 let allLogs = [];
 let bypassWiFi = false;
@@ -77,7 +78,7 @@ async function updateWiFiStatus() {
 
     const res = await fetch("https://api.ipify.org?format=json");
     const data = await res.json();
-    const isOffice = (data.ip === OFFICE_IP) || bypassWiFi;
+    const isOffice = OFFICE_IPS.includes(data.ip) || bypassWiFi;
 
     if (isOffice) {
       badge.innerText = bypassWiFi ? "BYPASS MODE AKTIF ✅" : "WIFI KANTOR TERHUBUNG ✅";
@@ -86,6 +87,7 @@ async function updateWiFiStatus() {
     } else {
       badge.innerText = `Gunakan WiFi Kantor ❌ (${data.ip})`;
       badge.className = "wifi-badge disconnected";
+      isNetworkValid = false; // Reset ke false jika IP tidak cocok
 
       badge.onclick = async () => {
         const pass = await showModernPrompt("Admin Security", "Masukkan Password Admin untuk akses Bypass:", "password");
