@@ -1797,7 +1797,7 @@ async function generateAIWeeklyReport() {
 
   if (!modal || !content) return;
 
-  modal.style.display = "block";
+  modal.style.display = "flex";
   content.innerHTML = `
         <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 300px;">
             <div class="spinner"></div>
