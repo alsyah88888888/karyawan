@@ -214,6 +214,8 @@ function switchTab(tab) {
     if (tab === "tabDashboard") title.innerText = "Executive Dashboard";
     else if (tab === "tabLog") title.innerText = "Log Absensi Real-time";
     else if (tab === "tabCEO") title.innerText = "Direksi / CEO Panel";
+    else if (tab === "tabPerformance") title.innerText = "Penilaian Performa (KPI & OKR)";
+    else if (tab === "tabLeave") title.innerText = "Inbox Pengajuan Cuti";
     else title.innerText = "Manajemen Karyawan";
   }
 
