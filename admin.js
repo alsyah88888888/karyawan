@@ -1811,6 +1811,14 @@ async function fetchReviews() {
             <td><button class="btn btn-outline btn-small" onclick="deleteReview('${r.id}')"><i data-lucide="trash"></i></button></td>
         </tr>
     `).join("");
+  // Attach event listener for dynamic KPI metrics
+  const revKaryawan = document.getElementById("revKaryawan");
+  if (revKaryawan) {
+    revKaryawan.addEventListener("change", () => updateKpiMetrics());
+    // Trigger once to show metrics for the first selected employee
+    updateKpiMetrics();
+  }
+  
   lucide.createIcons();
 }
 
