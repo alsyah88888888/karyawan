@@ -216,6 +216,9 @@ function switchTab(tab) {
     else title.innerText = "Manajemen Karyawan";
   }
 
+  // FORCE RESIZE untuk mencegah tampilan "ketarik" atau grafik gepeng
+  setTimeout(() => { window.dispatchEvent(new Event('resize')); }, 50);
+
   if (typeof lucide !== 'undefined') lucide.createIcons();
 
   // Tutup sidebar di mobile setelah klik menu
@@ -538,8 +541,9 @@ function hitungDetailGaji(gapok, namaKaryawan, customStart = null, customEnd = n
   }
 
   const getShiftDateStr = (dateObj) => {
-    const d = new Date(dateObj.getTime() - 5 * 3600000);
-    return d.toLocaleDateString("en-CA"); // YYYY-MM-DD format
+    // Buffer 4 jam: Absen dini hari dianggap hari sebelumnya
+    const d = new Date(dateObj.getTime() - 4 * 3600000);
+    return d.toISOString().split('T')[0];
   };
   const hariHadir = [...new Set(dataLogKaryawan.map((l) => getShiftDateStr(new Date(l.waktu))))].length;
 
@@ -1332,10 +1336,16 @@ function exportData() {
 }
 
 async function hapusSemuaLog() {
-  if (confirm("Hapus SEMUA log?")) {
-    const { error } = await supabaseClient.from("logs").delete().neq("id", 0);
-    if (!error) syncData();
+  const konfirmasi = prompt("PERINGATAN: Ini akan menghapus SELURUH data absensi! Ketik 'KONFIRMASI' untuk melanjutkan:");
+  if (konfirmasi !== "KONFIRMASI") return;
+  
+  showLoading(true);
+  const { error } = await supabaseClient.from("logs").delete().neq("id", 0);
+  if (!error) {
+    showToast("Seluruh log berhasil dihapus", "success");
+    syncData();
   }
+  showLoading(false);
 }
 
 async function hapusSatuLog(id) {
@@ -1655,8 +1665,18 @@ async function processLeave(requestId, status, employeeId) {
     if (error) throw error;
 
     if (status === "APPROVED") {
+      // Ambil data cuti untuk tahu durasi (selisih hari)
+      const { data: lvData } = await supabaseClient.from("leave_requests").select("start_date, end_date").eq("id", requestId).single();
+      
+      let duration = 1;
+      if (lvData && lvData.start_date && lvData.end_date) {
+          const d1 = new Date(lvData.start_date);
+          const d2 = new Date(lvData.end_date);
+          duration = Math.round((d2 - d1) / (1000 * 60 * 60 * 24)) + 1;
+      }
+
       const { data: emp } = await supabaseClient.from("karyawan").select("sisa_cuti").eq("id", employeeId).single();
-      const newBalance = (emp.sisa_cuti || 0) - 1;
+      const newBalance = (emp.sisa_cuti || 0) - duration;
       await supabaseClient.from("karyawan").update({ sisa_cuti: newBalance > 0 ? newBalance : 0 }).eq("id", employeeId);
     }
 
@@ -1728,6 +1748,13 @@ function closeReviewModal() {
 }
 
 async function saveReview() {
+  const empId = document.getElementById("revKaryawan").value;
+  const emp = KARYAWAN.find(k => k.id === empId);
+  
+  // Hitung Real Attendance Score untuk periode ini
+  const attendanceData = hitungDetailGaji(emp.gaji, emp.nama);
+  const realAttendanceScore = (attendanceData.hadir / attendanceData.totalHariKerja) * 100;
+
   // Hitung rata-rata dari metrik yang diinput
   const metricInputs = document.querySelectorAll(".kpi-metric-input");
   let totalKpi = 0;
@@ -1735,12 +1762,12 @@ async function saveReview() {
   const finalKpiScore = metricInputs.length > 0 ? (totalKpi / metricInputs.length) : 0;
 
   const review = {
-    employee_id: document.getElementById("revKaryawan").value,
+    employee_id: empId,
     period: document.getElementById("revPeriod").value,
     kpi_score: finalKpiScore,
     okr_score: parseFloat(document.getElementById("revOkr").value) || 0,
     notes: document.getElementById("revNotes").value,
-    attendance_score: 100,
+    attendance_score: Math.round(realAttendanceScore > 100 ? 100 : realAttendanceScore),
   };
 
   const avg = (review.kpi_score + review.okr_score + review.attendance_score) / 3;
