@@ -23,18 +23,19 @@ let INCENTIVE_APPROVED = true; // Status Persetujuan CEO
 // KPI CONFIGURATION LIBRARY
 const KPI_LIBRARY = {
   "OFFICE": {
-    "ADMIN": ["Ketepatan Laporan", "Kecepatan Respon", "Kerapihan Administrasi"],
-    "DEFAULT": ["Kualitas Kerja", "Inisiatif", "Kedisiplinan"]
+    "ADMIN": ["Ketepatan Laporan (SLA)", "Akurasi Input Data", "Kerapihan Arsip", "Kecepatan Respon"],
+    "FINANCE": ["Ketelitian Rekonsiliasi", "Ketepatan Waktu Laporan", "Audit Compliance", "Manajemen Kas"],
+    "DEFAULT": ["Kualitas Kerja", "Inisiatif", "Kedisiplinan", "Teamwork"]
   },
   "OPERASIONAL": {
-    "DRIVER": ["Ketepatan Waktu Kirim", "Kondisi Kendaraan", "Keamanan Berkendara"],
-    "HELPER": ["Kecepatan Muat/Bongkar", "Kerapihan Gudang", "Kerjasama Tim"],
-    "DEFAULT": ["Kualitas Kerja", "Sikap/Attitude", "Kerjasama"]
+    "DRIVER": ["Ketepatan Waktu Kirim", "Safety & Eco-Driving", "Kebersihan Unit", "Efisiensi BBM"],
+    "HELPER": ["Kecepatan Bongkar Muat", "Keutuhan Barang", "Kerapihan Gudang", "Kerjasama Tim"],
+    "DEFAULT": ["Efisiensi Kerja", "Sikap/Attitude", "Tanggung Jawab", "Keamanan Kerja"]
   },
-  "FINANCE": {
-    "DEFAULT": ["Ketelitian Data", "Deadline Pembayaran", "Audit Compliance"]
+  "SALES": {
+    "DEFAULT": ["Pencapaian Target", "Jumlah Kunjungan", "Retensi Pelanggan", "Sikap/Pelayanan"]
   },
-  "DEFAULT": ["Kualitas Kerja", "Sikap", "Tanggung Jawab"]
+  "DEFAULT": ["Kualitas Kerja", "Inisiatif", "Sikap", "Tanggung Jawab"]
 };
 
 // Chart Instances
