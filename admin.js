@@ -22,19 +22,19 @@ let INCENTIVE_APPROVED = true; // Status Persetujuan CEO
 
 // KPI CONFIGURATION LIBRARY
 const KPI_LIBRARY = {
-    "OFFICE": {
-        "ADMIN": ["Ketepatan Laporan", "Kecepatan Respon", "Kerapihan Administrasi"],
-        "DEFAULT": ["Kualitas Kerja", "Inisiatif", "Kedisiplinan"]
-    },
-    "OPERASIONAL": {
-        "DRIVER": ["Ketepatan Waktu Kirim", "Kondisi Kendaraan", "Keamanan Berkendara"],
-        "HELPER": ["Kecepatan Muat/Bongkar", "Kerapihan Gudang", "Kerjasama Tim"],
-        "DEFAULT": ["Kualitas Kerja", "Sikap/Attitude", "Kerjasama"]
-    },
-    "FINANCE": {
-        "DEFAULT": ["Ketelitian Data", "Deadline Pembayaran", "Audit Compliance"]
-    },
-    "DEFAULT": ["Kualitas Kerja", "Sikap", "Tanggung Jawab"]
+  "OFFICE": {
+    "ADMIN": ["Ketepatan Laporan", "Kecepatan Respon", "Kerapihan Administrasi"],
+    "DEFAULT": ["Kualitas Kerja", "Inisiatif", "Kedisiplinan"]
+  },
+  "OPERASIONAL": {
+    "DRIVER": ["Ketepatan Waktu Kirim", "Kondisi Kendaraan", "Keamanan Berkendara"],
+    "HELPER": ["Kecepatan Muat/Bongkar", "Kerapihan Gudang", "Kerjasama Tim"],
+    "DEFAULT": ["Kualitas Kerja", "Sikap/Attitude", "Kerjasama"]
+  },
+  "FINANCE": {
+    "DEFAULT": ["Ketelitian Data", "Deadline Pembayaran", "Audit Compliance"]
+  },
+  "DEFAULT": ["Kualitas Kerja", "Sikap", "Tanggung Jawab"]
 };
 
 // Chart Instances
@@ -48,7 +48,7 @@ async function syncData() {
   if (!document.getElementById("logFilterTglMulai").value) setPeriodeLog('ini');
   // Set default tab to dashboard if none active
   if (!document.querySelector(".nav-link.active")) switchTab('tabDashboard');
-  
+
   showLoading(true);
   try {
     const { data: dataKar, error: errK } = await supabaseClient.from("karyawan").select("*").order("nama", { ascending: true });
@@ -148,11 +148,11 @@ function renderVisualStats() {
       d.setDate(d.getDate() - i);
       const dateStr = d.toLocaleDateString();
       days.push(d.toLocaleDateString('id-ID', { weekday: 'short' }));
-      
-      const uniqueAtDay = [...new Set(allLogs.filter(l => 
+
+      const uniqueAtDay = [...new Set(allLogs.filter(l =>
         new Date(l.waktu).toLocaleDateString() === dateStr && l.status === 'MASUK'
       ).map(l => l.nama))].length;
-      
+
       counts.push(uniqueAtDay);
     }
 
@@ -217,7 +217,7 @@ function switchTab(tab) {
   }
 
   if (typeof lucide !== 'undefined') lucide.createIcons();
-  
+
   // Tutup sidebar di mobile setelah klik menu
   const sidebar = document.getElementById("mainSidebar");
   if (sidebar) sidebar.classList.remove("active");
@@ -233,28 +233,28 @@ function renderKPITable() {
   let htmlRows = "";
   KARYAWAN.forEach(k => {
     const d = hitungDetailGaji(k.gaji, k.nama, customStart, customEnd);
-    
+
     // Perhitungan KPI
     const attendanceRate = ((d.hadir / d.totalHariKerja) * 100) || 0;
-    
+
     let logsKar = allLogs.filter(l => l.nama.trim().toLowerCase() === k.nama.trim().toLowerCase() && l.status === 'MASUK');
-    
+
     // Filter logs berdasarkan tanggal dashboard
     if (customStart && customEnd) {
-        const start = new Date(customStart + "T00:00:00");
-        const end = new Date(customEnd + "T23:59:59");
-        logsKar = logsKar.filter(l => {
-            const w = new Date(l.waktu);
-            return w >= start && w <= end;
-        });
+      const start = new Date(customStart + "T00:00:00");
+      const end = new Date(customEnd + "T23:59:59");
+      logsKar = logsKar.filter(l => {
+        const w = new Date(l.waktu);
+        return w >= start && w <= end;
+      });
     }
-    
+
     const lateCount = logsKar.filter(l => l.isLate).length;
 
     // Status Performa
     let statusLabel = "GOOD";
     let statusClass = "badge-success";
-    
+
     if (attendanceRate >= 95 && lateCount === 0) {
       statusLabel = "EXCELLENT";
       statusClass = "badge-success";
@@ -589,7 +589,7 @@ function hitungDetailGaji(gapok, namaKaryawan, customStart = null, customEnd = n
 
   // --- TOTAL SALARY ---
   const telatCount = dataLogKaryawan.filter(l => l.status === 'MASUK' && l.isLate).length;
-  
+
   // --- TOTAL SALARY ---
   const uangHKE = hariHadir * hkeRate;
   const thp = g + uangHKE + incentive + incentiveLuar + uangLembur - pinjaman;
@@ -615,7 +615,7 @@ function calculateLiveKPI(hadir, telat) {
   const attendanceScore = (hadir / totalHariKerja) * 100;
   const punctualityScore = hadir > 0 ? ((hadir - telat) / hadir) * 100 : 0;
   const finalScore = (attendanceScore * 0.6) + (punctualityScore * 0.4);
-  
+
   let grade = "C";
   let color = "#ef4444";
   if (finalScore >= 85) { grade = "A"; color = "#10b981"; }
@@ -629,7 +629,7 @@ function cetakSlip(index) {
   const d = hitungDetailGaji(k.gaji, k.nama);
   const tglMulai = document.getElementById("filterTglMulai")?.value;
   const tglSelesai = document.getElementById("filterTglSelesai")?.value;
-  
+
   const fmt = (d) => d ? d.split('-').reverse().join('/') : '-';
   const periodeTampil = (tglMulai && tglSelesai) ? `${fmt(tglMulai)} - ${fmt(tglSelesai)}` : "Bulan Berjalan";
 
@@ -1007,7 +1007,7 @@ function setPeriodeKPI(type) {
   const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
   const fmt = (d) => d.toISOString().split('T')[0];
-  
+
   const inpStart = document.getElementById("kpiFilterTglMulai");
   const inpEnd = document.getElementById("kpiFilterTglSelesai");
 
@@ -1023,7 +1023,7 @@ function exportKPIReport() {
   const customEnd = document.getElementById("kpiFilterTglSelesai")?.value;
   const fmtDate = (d) => d ? d.split('-').reverse().join('/') : '-';
   const periodeTampil = (customStart && customEnd) ? `${fmtDate(customStart)} - ${fmtDate(customEnd)}` : "Bulan Berjalan";
-  
+
   if (!KARYAWAN.length) return alert("Tidak ada data untuk laporan!");
 
   showLoading(true);
@@ -1189,7 +1189,7 @@ function exportData() {
   let tglSelesai = document.getElementById("filterTglSelesai")?.value;
 
   const activeTab = document.querySelector('section:not([style*="display: none"])')?.id;
-  
+
   if (activeTab === 'tabLog') {
     tglMulai = document.getElementById("logFilterTglMulai")?.value;
     tglSelesai = document.getElementById("logFilterTglSelesai")?.value;
@@ -1324,9 +1324,9 @@ function exportData() {
   if (tglMulai && tglSelesai) {
     fileName = `Payroll_Report_${tglMulai}_to_${tglSelesai}.xlsx`;
   }
-  
+
   XLSX.writeFile(wb, fileName);
-  
+
   showLoading(false);
   showToast("Payroll Report Berhasil Diunduh", "success");
 }
@@ -1581,7 +1581,7 @@ async function cetakSemuaSlipJPG() {
       renderContainer.innerHTML = slipHtml;
 
       // Beri sedikit waktu agar browser sempat merender DOM
-      await new Promise(r => setTimeout(r, i === 0 ? 300 : 50)); 
+      await new Promise(r => setTimeout(r, i === 0 ? 300 : 50));
 
       const canvas = await html2canvas(renderContainer, {
         scale: 2,
@@ -1599,7 +1599,7 @@ async function cetakSemuaSlipJPG() {
       // Jeda antrean agar browser tidak membeku (freeze)
       await new Promise(r => setTimeout(r, 400));
     }
-    
+
     if (typeof showToast === 'function') showToast("Berhasil mencetak slip JPG untuk semua karyawan.", "success");
   } catch (err) {
     console.error("Error generating JPGs:", err);
@@ -1612,23 +1612,23 @@ async function cetakSemuaSlipJPG() {
 
 // --- MANAJEMEN CUTI (ADMIN) ---
 async function fetchLeaveRequests() {
-    const { data: leaves, error } = await supabaseClient
-        .from("leave_requests")
-        .select("*, karyawan(nama, sisa_cuti)")
-        .order("created_at", { ascending: false });
+  const { data: leaves, error } = await supabaseClient
+    .from("leave_requests")
+    .select("*, karyawan(nama, sisa_cuti)")
+    .order("created_at", { ascending: false });
 
-    if (error) return console.error(error);
+  if (error) return console.error(error);
 
-    const body = document.getElementById("adminLeaveBody");
-    let html = "";
-    leaves.forEach(lv => {
-        const statusClass = lv.status === "APPROVED" ? "badge-success" : (lv.status === "REJECTED" ? "badge-danger" : "badge-warning");
-        const actions = lv.status === "PENDING" ? `
+  const body = document.getElementById("adminLeaveBody");
+  let html = "";
+  leaves.forEach(lv => {
+    const statusClass = lv.status === "APPROVED" ? "badge-success" : (lv.status === "REJECTED" ? "badge-danger" : "badge-warning");
+    const actions = lv.status === "PENDING" ? `
             <button class="btn btn-primary btn-small" onclick="processLeave('${lv.id}', 'APPROVED', '${lv.employee_id}')">Setujui</button>
             <button class="btn btn-danger btn-small" onclick="processLeave('${lv.id}', 'REJECTED')">Tolak</button>
         ` : "-";
 
-        html += `
+    html += `
             <tr>
                 <td><strong>${lv.karyawan.nama}</strong></td>
                 <td>${lv.type}</td>
@@ -1638,139 +1638,139 @@ async function fetchLeaveRequests() {
                 <td>${actions}</td>
             </tr>
         `;
-    });
-    body.innerHTML = html;
+  });
+  body.innerHTML = html;
 }
 
 async function processLeave(requestId, status, employeeId) {
-    if (!confirm(`Konfirmasi ${status} pengajuan cuti ini?`)) return;
+  if (!confirm(`Konfirmasi ${status} pengajuan cuti ini?`)) return;
 
-    showLoading(true);
-    try {
-        const { error } = await supabaseClient
-            .from("leave_requests")
-            .update({ status: status })
-            .eq("id", requestId);
+  showLoading(true);
+  try {
+    const { error } = await supabaseClient
+      .from("leave_requests")
+      .update({ status: status })
+      .eq("id", requestId);
 
-        if (error) throw error;
+    if (error) throw error;
 
-        if (status === "APPROVED") {
-            const { data: emp } = await supabaseClient.from("karyawan").select("sisa_cuti").eq("id", employeeId).single();
-            const newBalance = (emp.sisa_cuti || 0) - 1; 
-            await supabaseClient.from("karyawan").update({ sisa_cuti: newBalance > 0 ? newBalance : 0 }).eq("id", employeeId);
-        }
-
-        showToast(`Cuti berhasil di-${status.toLowerCase()}`, "success");
-        fetchLeaveRequests();
-    } catch (e) {
-        showToast(e.message, "error");
-    } finally {
-        showLoading(false);
+    if (status === "APPROVED") {
+      const { data: emp } = await supabaseClient.from("karyawan").select("sisa_cuti").eq("id", employeeId).single();
+      const newBalance = (emp.sisa_cuti || 0) - 1;
+      await supabaseClient.from("karyawan").update({ sisa_cuti: newBalance > 0 ? newBalance : 0 }).eq("id", employeeId);
     }
+
+    showToast(`Cuti berhasil di-${status.toLowerCase()}`, "success");
+    fetchLeaveRequests();
+  } catch (e) {
+    showToast(e.message, "error");
+  } finally {
+    showLoading(false);
+  }
 }
 
 // --- PENILAIAN PERFORMA (ADMIN) ---
 function showReviewModal() {
-    const sel = document.getElementById("revKaryawan");
-    sel.innerHTML = KARYAWAN.map(k => `<option value="${k.id}">${k.nama}</option>`).join("");
-    
-    // Trigger metrik update saat ganti karyawan
-    sel.onchange = () => updateKpiMetrics();
-    
-    document.getElementById("modalReview").style.display = "flex";
-    updateKpiMetrics();
+  const sel = document.getElementById("revKaryawan");
+  sel.innerHTML = KARYAWAN.map(k => `<option value="${k.id}">${k.nama}</option>`).join("");
+
+  // Trigger metrik update saat ganti karyawan
+  sel.onchange = () => updateKpiMetrics();
+
+  document.getElementById("modalReview").style.display = "flex";
+  updateKpiMetrics();
 }
 
 function updateKpiMetrics() {
-    const empId = document.getElementById("revKaryawan").value;
-    const emp = KARYAWAN.find(k => k.id === empId);
-    if (!emp) return;
+  const empId = document.getElementById("revKaryawan").value;
+  const emp = KARYAWAN.find(k => k.id === empId);
+  if (!emp) return;
 
-    const dept = (emp.dept || "DEFAULT").toUpperCase();
-    const pos = (emp.jabatan || "DEFAULT").toUpperCase();
-    
-    // Ambil metrik dari library
-    let metrics = [];
-    if (KPI_LIBRARY[dept]) {
-        metrics = KPI_LIBRARY[dept][pos] || KPI_LIBRARY[dept]["DEFAULT"] || KPI_LIBRARY["DEFAULT"];
-    } else {
-        metrics = KPI_LIBRARY["DEFAULT"];
-    }
+  const dept = (emp.dept || "DEFAULT").toUpperCase();
+  const pos = (emp.jabatan || "DEFAULT").toUpperCase();
 
-    const container = document.getElementById("revKpiContainer");
-    if (!container) {
-        // Create container if not exists in modal-body
-        const target = document.querySelector("#modalReview .modal-body");
-        const kpiGroup = document.createElement("div");
-        kpiGroup.id = "revKpiContainer";
-        kpiGroup.style.marginTop = "20px";
-        kpiGroup.style.padding = "15px";
-        kpiGroup.style.background = "#f8fafc";
-        kpiGroup.style.borderRadius = "12px";
-        target.insertBefore(kpiGroup, target.querySelector(".form-group[style*='margin-top:15px']"));
-    }
+  // Ambil metrik dari library
+  let metrics = [];
+  if (KPI_LIBRARY[dept]) {
+    metrics = KPI_LIBRARY[dept][pos] || KPI_LIBRARY[dept]["DEFAULT"] || KPI_LIBRARY["DEFAULT"];
+  } else {
+    metrics = KPI_LIBRARY["DEFAULT"];
+  }
 
-    const kpiCont = document.getElementById("revKpiContainer");
-    kpiCont.innerHTML = `<h4 style="font-size:0.8rem; color:var(--primary); margin-bottom:10px;">Metrik KPI (${dept} - ${pos})</h4>`;
-    
-    metrics.forEach((m, i) => {
-        kpiCont.innerHTML += `
+  const container = document.getElementById("revKpiContainer");
+  if (!container) {
+    // Create container if not exists in modal-body
+    const target = document.querySelector("#modalReview .modal-body");
+    const kpiGroup = document.createElement("div");
+    kpiGroup.id = "revKpiContainer";
+    kpiGroup.style.marginTop = "20px";
+    kpiGroup.style.padding = "15px";
+    kpiGroup.style.background = "#f8fafc";
+    kpiGroup.style.borderRadius = "12px";
+    target.insertBefore(kpiGroup, target.querySelector(".form-group[style*='margin-top:15px']"));
+  }
+
+  const kpiCont = document.getElementById("revKpiContainer");
+  kpiCont.innerHTML = `<h4 style="font-size:0.8rem; color:var(--primary); margin-bottom:10px;">Metrik KPI (${dept} - ${pos})</h4>`;
+
+  metrics.forEach((m, i) => {
+    kpiCont.innerHTML += `
             <div class="form-group" style="margin-bottom:10px;">
                 <label style="font-size:0.75rem;">${m} (0-100)</label>
                 <input type="number" class="form-input kpi-metric-input" data-metric="${m}" value="0" min="0" max="100">
             </div>
         `;
-    });
+  });
 }
 
 function closeReviewModal() {
-    document.getElementById("modalReview").style.display = "none";
+  document.getElementById("modalReview").style.display = "none";
 }
 
 async function saveReview() {
-    // Hitung rata-rata dari metrik yang diinput
-    const metricInputs = document.querySelectorAll(".kpi-metric-input");
-    let totalKpi = 0;
-    metricInputs.forEach(input => totalKpi += parseFloat(input.value) || 0);
-    const finalKpiScore = metricInputs.length > 0 ? (totalKpi / metricInputs.length) : 0;
+  // Hitung rata-rata dari metrik yang diinput
+  const metricInputs = document.querySelectorAll(".kpi-metric-input");
+  let totalKpi = 0;
+  metricInputs.forEach(input => totalKpi += parseFloat(input.value) || 0);
+  const finalKpiScore = metricInputs.length > 0 ? (totalKpi / metricInputs.length) : 0;
 
-    const review = {
-        employee_id: document.getElementById("revKaryawan").value,
-        period: document.getElementById("revPeriod").value,
-        kpi_score: finalKpiScore,
-        okr_score: parseFloat(document.getElementById("revOkr").value) || 0,
-        notes: document.getElementById("revNotes").value,
-        attendance_score: 100, 
-    };
+  const review = {
+    employee_id: document.getElementById("revKaryawan").value,
+    period: document.getElementById("revPeriod").value,
+    kpi_score: finalKpiScore,
+    okr_score: parseFloat(document.getElementById("revOkr").value) || 0,
+    notes: document.getElementById("revNotes").value,
+    attendance_score: 100,
+  };
 
-    const avg = (review.kpi_score + review.okr_score + review.attendance_score) / 3;
-    review.final_grade = avg >= 85 ? "A" : (avg >= 70 ? "B" : "C");
+  const avg = (review.kpi_score + review.okr_score + review.attendance_score) / 3;
+  review.final_grade = avg >= 85 ? "A" : (avg >= 70 ? "B" : "C");
 
-    showLoading(true);
-    try {
-        const { error } = await supabaseClient.from("performance_reviews").insert([review]);
-        if (error) throw error;
+  showLoading(true);
+  try {
+    const { error } = await supabaseClient.from("performance_reviews").insert([review]);
+    if (error) throw error;
 
-        showToast("Penilaian Berhasil Disimpan", "success");
-        closeReviewModal();
-        fetchReviews();
-    } catch (e) {
-        showToast(e.message, "error");
-    } finally {
-        showLoading(false);
-    }
+    showToast("Penilaian Berhasil Disimpan", "success");
+    closeReviewModal();
+    fetchReviews();
+  } catch (e) {
+    showToast(e.message, "error");
+  } finally {
+    showLoading(false);
+  }
 }
 
 async function fetchReviews() {
-    const { data: reviews, error } = await supabaseClient
-        .from("performance_reviews")
-        .select("*, karyawan(nama)")
-        .order("id", { ascending: false });
+  const { data: reviews, error } = await supabaseClient
+    .from("performance_reviews")
+    .select("*, karyawan(nama)")
+    .order("id", { ascending: false });
 
-    if (error) return;
+  if (error) return;
 
-    const body = document.getElementById("adminPerformanceBody");
-    body.innerHTML = reviews.map(r => `
+  const body = document.getElementById("adminPerformanceBody");
+  body.innerHTML = reviews.map(r => `
         <tr>
             <td>${r.karyawan.nama}</td>
             <td>${r.period}</td>
@@ -1781,11 +1781,128 @@ async function fetchReviews() {
             <td><button class="btn btn-outline btn-small" onclick="deleteReview('${r.id}')"><i data-lucide="trash"></i></button></td>
         </tr>
     `).join("");
-    lucide.createIcons();
+  lucide.createIcons();
 }
 
 async function deleteReview(id) {
-    if (!confirm("Hapus penilaian ini?")) return;
-    await supabaseClient.from("performance_reviews").delete().eq("id", id);
-    fetchReviews();
+  if (!confirm("Hapus penilaian ini?")) return;
+  await supabaseClient.from("performance_reviews").delete().eq("id", id);
+  fetchReviews();
 }
+
+// --- AI WEEKLY REPORT LOGIC ---
+async function generateAIWeeklyReport() {
+  const modal = document.getElementById("modalAIReport");
+  const content = document.getElementById("aiReportContent");
+
+  if (!modal || !content) return;
+
+  modal.style.display = "block";
+  content.innerHTML = `
+        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 300px;">
+            <div class="spinner"></div>
+            <p style="margin-top: 20px; font-weight: 600; color: #6366f1;">AI sedang menganalisis data gaji mingguan...</p>
+        </div>
+    `;
+
+  // 1. Collect Data from UI & Current State
+  let reportData = [];
+  KARYAWAN.forEach(k => {
+    const d = hitungDetailGaji(k.gaji, k.nama);
+    reportData.push({
+      nama: k.nama,
+      dept: k.dept,
+      hadir: d.hadir,
+      lembur_jam: d.jamLembur,
+      gaji_bersih: d.thp
+    });
+  });
+
+  const totalCost = reportData.reduce((acc, curr) => acc + curr.gaji_bersih, 0);
+
+  // 2. Prepare Prompt for Gemini
+  const prompt = `
+        Anda adalah Analis HR Senior AI untuk PT. Kola Borasi Indonesia (KOBOI).
+        Data Penggajian Mingguan: ${JSON.stringify(reportData)}
+        Total Biaya: Rp ${totalCost.toLocaleString('id-ID')}
+        
+        Tugas: Buat laporan eksekutif tajam dalam Bahasa Indonesia.
+        Format:
+        ### 📊 RINGKASAN EKSEKUTIF
+        (Status umum biaya & efisiensi)
+        
+        ### 💰 ANALISIS BIAYA & TOP EARNERS
+        (Sebutkan 3 orang dengan gaji tertinggi dan alasannya)
+        
+        ### ⚠️ ANALISIS LEMBUR & RISIKO
+        (Identifikasi siapa yang lembur berlebihan dan dampaknya)
+        
+        ### 💡 REKOMENDASI MANAJEMEN
+        (3 poin tindakan konkret)
+    `;
+
+  // 3. Call Gemini API (Free Tier 1.5 Flash)
+  // NOTE: Ganti 'YOUR_API_KEY' dengan API Key Google AI Studio Anda
+  const API_KEY = "AIzaSyDvBerE_xzwKRllhdCNzdoNvek_MhSCahU";
+
+  try {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+    });
+
+    if (!response.ok) throw new Error("API Limit reached or Invalid Key");
+
+    const result = await response.json();
+    let aiMarkdown = result.candidates[0].content.parts[0].text;
+
+    // Simple Markdown to HTML Conversion
+    const htmlContent = aiMarkdown
+      .replace(/### (.*)/g, '<h4 style="color:#4f46e5; margin-top:20px; font-weight:800; border-bottom: 2px solid #eef2ff; padding-bottom:5px;">$1</h4>')
+      .replace(/\*\*(.*?)\*\*/g, '<strong style="color:#1e293b;">$1</strong>')
+      .replace(/\n/g, '<br>');
+
+    content.innerHTML = `
+            <div style="background: white; padding: 25px; border-radius: 15px; border: 1px solid #e2e8f0; box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.05);">
+                <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <span style="font-size: 0.7rem; font-weight: 800; color: #94a3b8; letter-spacing: 0.1em; text-transform: uppercase;">Generated by Gemini 1.5 Flash</span>
+                    <span style="font-size: 0.7rem; color: #94a3b8;">${new Date().toLocaleString('id-ID')}</span>
+                </div>
+                ${htmlContent}
+            </div>
+        `;
+    lucide.createIcons();
+  } catch (e) {
+    content.innerHTML = `
+            <div style="text-align: center; padding: 40px;">
+                <i data-lucide="alert-triangle" style="width: 48px; height: 48px; color: #f59e0b; margin-bottom: 20px;"></i>
+                <h4 style="font-weight: 800; color: #1e293b;">Konfigurasi API Diperlukan</h4>
+                <p style="color: #64748b; font-size: 0.9rem; margin-top: 10px;">
+                    Untuk mengaktifkan laporan AI, silakan masukkan **Gemini API Key** Anda di file admin.js (variabel API_KEY).
+                    <br><br>
+                    <code style="background: #f1f5f9; padding: 5px 10px; border-radius: 5px; font-size: 0.8rem;">const API_KEY = "Masukan_Key_Disini";</code>
+                </p>
+                <button class="btn btn-primary" style="margin-top: 20px;" onclick="window.open('https://aistudio.google.com/app/apikey')">Dapatkan API Key Gratis</button>
+            </div>
+        `;
+    lucide.createIcons();
+  }
+}
+
+function closeAIModal() {
+  document.getElementById("modalAIReport").style.display = "none";
+}
+
+function exportAIReportPDF() {
+  const element = document.getElementById('aiReportContent');
+  const opt = {
+    margin: 1,
+    filename: 'AI_Weekly_Payroll_Report_KOBOI.pdf',
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2 },
+    jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+  };
+  html2pdf().set(opt).from(element).save();
+}
+
