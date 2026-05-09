@@ -1706,43 +1706,31 @@ function showReviewModal() {
 
 function updateKpiMetrics() {
   const empId = document.getElementById("revKaryawan").value;
-  const emp = KARYAWAN.find(k => k.id === empId);
+  // Gunakan == agar ID string "62" cocok dengan ID number 62
+  const emp = KARYAWAN.find(k => k.id == empId);
   if (!emp) return;
 
   const dept = (emp.dept || "DEFAULT").toUpperCase();
   const pos = (emp.jabatan || "DEFAULT").toUpperCase();
-
-  // Ambil metrik dari library
-  let metrics = [];
-  if (KPI_LIBRARY[dept]) {
-    metrics = KPI_LIBRARY[dept][pos] || KPI_LIBRARY[dept]["DEFAULT"] || KPI_LIBRARY["DEFAULT"];
-  } else {
-    metrics = KPI_LIBRARY["DEFAULT"];
-  }
+  const metrics = KPI_LIBRARY[dept]?.[pos] || KPI_LIBRARY[dept]?.["DEFAULT"] || KPI_LIBRARY["DEFAULT"];
 
   const container = document.getElementById("revKpiContainer");
-  if (!container) {
-    // Create container if not exists in modal-body
-    const target = document.querySelector("#modalReview .modal-body");
-    const kpiGroup = document.createElement("div");
-    kpiGroup.id = "revKpiContainer";
-    kpiGroup.style.marginTop = "20px";
-    kpiGroup.style.padding = "15px";
-    kpiGroup.style.background = "#f8fafc";
-    kpiGroup.style.borderRadius = "12px";
-    target.insertBefore(kpiGroup, target.querySelector(".form-group[style*='margin-top:15px']"));
-  }
+  if (!container) return;
 
-  const kpiCont = document.getElementById("revKpiContainer");
-  kpiCont.innerHTML = `<h4 style="font-size:0.8rem; color:var(--primary); margin-bottom:10px;">Metrik KPI (${dept} - ${pos})</h4>`;
+  container.style.display = "block";
+  container.innerHTML = `
+    <h4 style="font-size:0.75rem; color:#4f46e5; margin-bottom:12px; font-weight:800; text-transform:uppercase;">
+        📌 Indikator KPI: ${dept} - ${pos}
+    </h4>
+  `;
 
-  metrics.forEach((m, i) => {
-    kpiCont.innerHTML += `
-            <div class="form-group" style="margin-bottom:10px;">
-                <label style="font-size:0.75rem;">${m} (0-100)</label>
-                <input type="number" class="form-input kpi-metric-input" data-metric="${m}" value="0" min="0" max="100">
-            </div>
-        `;
+  metrics.forEach(m => {
+    container.innerHTML += `
+      <div class="form-group" style="margin-bottom:10px;">
+        <label style="font-size:0.7rem; color:#64748b; font-weight:600; display:block; margin-bottom:4px;">${m} (0-100)</label>
+        <input type="number" class="form-input kpi-metric-input" data-metric="${m}" value="0" min="0" max="100" style="padding:6px;">
+      </div>
+    `;
   });
 }
 
