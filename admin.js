@@ -1874,18 +1874,34 @@ async function generateAIWeeklyReport() {
         `;
     lucide.createIcons();
   } catch (e) {
-    content.innerHTML = `
+    console.error("AI Error:", e);
+    const isPlaceholder = (API_KEY === "YOUR_GEMINI_API_KEY" || API_KEY === "" || API_KEY.length < 10);
+    
+    if (isPlaceholder) {
+        content.innerHTML = `
             <div style="text-align: center; padding: 40px;">
                 <i data-lucide="alert-triangle" style="width: 48px; height: 48px; color: #f59e0b; margin-bottom: 20px;"></i>
                 <h4 style="font-weight: 800; color: #1e293b;">Konfigurasi API Diperlukan</h4>
                 <p style="color: #64748b; font-size: 0.9rem; margin-top: 10px;">
-                    Untuk mengaktifkan laporan AI, silakan masukkan **Gemini API Key** Anda di file admin.js (variabel API_KEY).
-                    <br><br>
-                    <code style="background: #f1f5f9; padding: 5px 10px; border-radius: 5px; font-size: 0.8rem;">const API_KEY = "Masukan_Key_Disini";</code>
+                    Silakan masukkan **Gemini API Key** Anda di file admin.js.
                 </p>
                 <button class="btn btn-primary" style="margin-top: 20px;" onclick="window.open('https://aistudio.google.com/app/apikey')">Dapatkan API Key Gratis</button>
             </div>
         `;
+    } else {
+        content.innerHTML = `
+            <div style="text-align: center; padding: 40px;">
+                <i data-lucide="x-circle" style="width: 48px; height: 48px; color: #ef4444; margin-bottom: 20px;"></i>
+                <h4 style="font-weight: 800; color: #1e293b;">AI Gagal Merespon</h4>
+                <p style="color: #64748b; font-size: 0.8rem; margin-top: 10px; background: #fee2e2; padding: 10px; border-radius: 8px; font-family: monospace;">
+                    Error: ${e.message}
+                </p>
+                <p style="margin-top: 15px; font-size: 0.75rem; color: #94a3b8;">
+                    Tips: Pastikan API Key Anda valid dan tidak ada batasan domain (Referrer Restriction) di Google Cloud Console.
+                </p>
+            </div>
+        `;
+    }
     lucide.createIcons();
   }
 }
