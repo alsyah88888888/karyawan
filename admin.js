@@ -1852,7 +1852,11 @@ async function generateAIWeeklyReport() {
       body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
     });
 
-    if (!response.ok) throw new Error("API Limit reached or Invalid Key");
+    if (!response.ok) {
+        const errorData = await response.json();
+        const detail = errorData.error ? errorData.error.message : "Unknown Error";
+        throw new Error(`Google API Error: ${detail}`);
+    }
 
     const result = await response.json();
     let aiMarkdown = result.candidates[0].content.parts[0].text;
