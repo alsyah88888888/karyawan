@@ -101,7 +101,10 @@ function renderDashboard() {
 
   const hadirCount = [...new Set(
     monthLogs
-      .filter(l => l.status.toUpperCase() === 'MASUK' || l.status.toUpperCase() === 'BERANGKAT')
+      .filter(l => {
+        const s = l.status.toUpperCase();
+        return s.startsWith('MASUK') || s.startsWith('BERANGKAT') || s.startsWith('DINAS LUAR');
+      })
       .map(l => {
         const d = new Date(new Date(l.waktu).getTime() - 4 * 3600000);
         return d.getDay() !== 0 ? d.toISOString().split('T')[0] : null;
@@ -341,7 +344,10 @@ function hitungDetailGaji(gapok, namaKaryawan, customStart, customEnd) {
 
   const hariHadir = [...new Set(
     periodLogs
-      .filter(l => l.status.toUpperCase() === 'MASUK' || l.status.toUpperCase() === 'BERANGKAT')
+      .filter(l => {
+        const s = l.status.toUpperCase();
+        return s.startsWith('MASUK') || s.startsWith('BERANGKAT') || s.startsWith('DINAS LUAR');
+      })
       .map(l => {
         const d = new Date(new Date(l.waktu).getTime() - 4 * 3600000);
         return d.getDay() !== 0 ? d.toISOString().split('T')[0] : null;
