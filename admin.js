@@ -1821,7 +1821,14 @@ async function fetchLeaveRequests() {
     .select("*, karyawan(nama, sisa_cuti)")
     .order("created_at", { ascending: false });
 
-  if (error) return console.error(error);
+  if (error) {
+    console.error(error);
+    const body = document.getElementById("adminLeaveBody");
+    if (body && error.code === 'PGRST205') {
+        body.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:2rem; color:var(--danger);"><b>Error:</b> Tabel "leave_requests" tidak ditemukan di Supabase. Mohon jalankan SQL script untuk membuat tabel ini.</td></tr>';
+    }
+    return;
+  }
 
   const body = document.getElementById("adminLeaveBody");
   let html = "";
