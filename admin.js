@@ -414,7 +414,15 @@ function renderLogTable() {
   // Filter logs berdasarkan input pencarian
   const filteredLogs = logs.filter(l => l.nama.toLowerCase().includes(searchInput));
 
+  let total = 0;
+  let tepat = 0;
+  let telat = 0;
+
   filteredLogs.forEach((l) => {
+    total++;
+    const isLate = l.isLate === true || l.isLate === "true";
+    if (isLate) telat++; else tepat++;
+
     const s = l.status.toUpperCase();
     let badgeClass = "badge-masuk";
     let icon = "log-in";
@@ -431,7 +439,7 @@ function renderLogTable() {
     const initials = l.nama.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase();
 
     htmlRows += `
-      <tr>
+      <tr class="${isLate ? 'row-late' : ''}">
         <td>
           <div class="emp-info">
             <div class="emp-avatar">${initials}</div>
@@ -454,7 +462,7 @@ function renderLogTable() {
           <div class="log-date">${tgl.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</div>
         </td>
         <td>
-          ${l.isLate ?
+          ${isLate ?
         '<div style="display:flex; align-items:center; gap:6px; color:var(--danger); font-size:0.75rem; font-weight:800;"><i data-lucide="alert-circle" style="width:14px;"></i> TERLAMBAT</div>' :
         '<div style="display:flex; align-items:center; gap:6px; color:var(--success); font-size:0.75rem; font-weight:700;"><i data-lucide="check-circle" style="width:14px;"></i> TEPAT WAKTU</div>'}
         </td>
@@ -471,7 +479,15 @@ function renderLogTable() {
       </tr>`;
   });
 
-  if (logs.length === 0) {
+  // Update Summary Cards
+  const totalEl = document.getElementById("logStatTotal");
+  const tepatEl = document.getElementById("logStatTepat");
+  const telatEl = document.getElementById("logStatTelat");
+  if (totalEl) totalEl.innerText = total;
+  if (tepatEl) tepatEl.innerText = tepat;
+  if (telatEl) telatEl.innerText = telat;
+
+  if (filteredLogs.length === 0) {
     body.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:3rem; color:var(--text-muted);">Tidak ada log absensi dalam periode ini.</td></tr>';
   } else {
     body.innerHTML = htmlRows;
