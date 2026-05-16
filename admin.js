@@ -633,8 +633,12 @@ function hitungDetailGaji(gapok, namaKaryawan, customStart = null, customEnd = n
         shiftEnd = new Date(dataLogKaryawan[j].waktu);
         j++;
       }
+      // Penentuan Standar Pulang Dinamis Berdasarkan Departemen
+      const isOffice = k && k.dept && k.dept.toUpperCase().includes("OFFICE");
+      const currentStdPulang = isOffice ? 18 : 17; // Office 9 jam (18:00), Operasional 8 jam (17:00)
+
       if (shiftEnd) {
-        const thresholdPulang = getWIBThreshold(actualMasuk, STANDAR_PULANG);
+        const thresholdPulang = getWIBThreshold(actualMasuk, currentStdPulang);
         let jamSore = (shiftEnd - thresholdPulang) / (1000 * 60 * 60);
         if (jamSore > 0) totalLembur += jamSore;
         i = j;
