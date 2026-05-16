@@ -41,6 +41,8 @@ const KPI_LIBRARY = {
 // Chart Instances
 let punctualityChartInstance = null;
 let attendanceChartInstance = null;
+let gaTrafficChartInstance = null;
+let gaProductsChartInstance = null;
 
 // --- CORE SYNC ---
 async function syncData() {
@@ -80,6 +82,7 @@ function refreshUI() {
   renderCEOTable();
   renderVisualStats();
   renderKPITable();
+  renderWebAnalytics();
 }
 
 // --- DASHBOARD UI ---
@@ -189,14 +192,14 @@ function renderVisualStats() {
 }
 
 function switchTab(tab) {
-  const tabs = ["tabDashboard", "tabLog", "tabKaryawan", "tabLeave", "tabPerformance", "tabCEO"];
+  const tabs = ["tabDashboard", "tabLog", "tabKaryawan", "tabLeave", "tabPerformance", "tabCEO", "tabAnalytics"];
   tabs.forEach((t) => {
     const el = document.getElementById(t);
     if (el) el.style.display = t === tab ? "block" : "none";
   });
 
   // Update Sidebar Active States
-  const links = ["linkTabDashboard", "linkTabLog", "linkTabKaryawan", "linkTabLeave", "linkTabPerformance", "linkTabCEO"];
+  const links = ["linkTabDashboard", "linkTabLog", "linkTabKaryawan", "linkTabLeave", "linkTabPerformance", "linkTabCEO", "linkTabAnalytics"];
   links.forEach(l => {
     const el = document.getElementById(l);
     if (el) el.classList.toggle("active", l.includes(tab.replace('tab', '')));
@@ -205,7 +208,7 @@ function switchTab(tab) {
   if (tab === "tabLeave") fetchLeaveRequests();
   if (tab === "tabPerformance") fetchReviews();
 
-  // Sembunyikan Header Actions (Tambah/Export) jika di Dashboard atau CEO
+  // Sembunyikan Header Actions (Tambah/Export) jika di Dashboard atau CEO atau Analytics
   const headerActions = document.querySelector(".header-actions");
   if (headerActions) headerActions.style.display = (tab === "tabKaryawan") ? "flex" : "none";
 
@@ -214,19 +217,89 @@ function switchTab(tab) {
     if (tab === "tabDashboard") title.innerText = "Executive Dashboard";
     else if (tab === "tabLog") title.innerText = "Log Absensi Real-time";
     else if (tab === "tabCEO") title.innerText = "Direksi / CEO Panel";
+    else if (tab === "tabAnalytics") title.innerText = "Website Web Analytics (Google)";
     else if (tab === "tabPerformance") title.innerText = "Penilaian Performa (KPI & OKR)";
     else if (tab === "tabLeave") title.innerText = "Inbox Pengajuan Cuti";
     else title.innerText = "Manajemen Karyawan";
   }
 
-  // FORCE RESIZE untuk mencegah tampilan "ketarik" atau grafik gepeng
+  // FORCE RESIZE
   setTimeout(() => { window.dispatchEvent(new Event('resize')); }, 50);
 
   if (typeof lucide !== 'undefined') lucide.createIcons();
 
-  // Tutup sidebar di mobile setelah klik menu
   const sidebar = document.getElementById("mainSidebar");
   if (sidebar) sidebar.classList.remove("active");
+}
+
+// --- WEB ANALYTICS LOGIC (CEO ONLY) ---
+function renderWebAnalytics() {
+  const trafficCtx = document.getElementById('gaTrafficChart')?.getContext('2d');
+  if (trafficCtx) {
+    if (gaTrafficChartInstance) gaTrafficChartInstance.destroy();
+    gaTrafficChartInstance = new Chart(trafficCtx, {
+      type: 'line',
+      data: {
+        labels: ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'],
+        datasets: [{
+          label: 'Pengunjung',
+          data: [1200, 1900, 1500, 2100, 2400, 1800, 1300],
+          borderColor: '#818cf8',
+          backgroundColor: 'rgba(129, 140, 248, 0.1)',
+          fill: true,
+          tension: 0.4
+        }, {
+          label: 'Sesi',
+          data: [3100, 3900, 3200, 4100, 4800, 3800, 3400],
+          borderColor: '#10b981',
+          backgroundColor: 'transparent',
+          borderDash: [5, 5],
+          tension: 0.4
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { position: 'bottom' } }
+      }
+    });
+  }
+
+  const productsCtx = document.getElementById('gaProductsChart')?.getContext('2d');
+  if (productsCtx) {
+    if (gaProductsChartInstance) gaProductsChartInstance.destroy();
+    gaProductsChartInstance = new Chart(productsCtx, {
+      type: 'bar',
+      data: {
+        labels: ['Abc Extra Pedas', 'Nu Green Tea', 'Chocolatos', 'Oreo', 'Indomie'],
+        datasets: [{
+          label: 'Views',
+          data: [420, 380, 310, 290, 250],
+          backgroundColor: ['#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#06b6d4'],
+          borderRadius: 8
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        indexAxis: 'y',
+        plugins: { legend: { display: false } }
+      }
+    });
+  }
+}
+
+// Secret Function to enable Analytics Tab
+let clickCount = 0;
+function enableCEOAnalytics() {
+    clickCount++;
+    if (clickCount >= 5) {
+        const link = document.getElementById('linkTabAnalytics');
+        if (link) {
+            link.parentElement.style.display = 'block';
+            showToast("CEO Web Analytics Mode Enabled", "success");
+        }
+    }
 }
 
 function renderKPITable() {

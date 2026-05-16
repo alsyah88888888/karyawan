@@ -22,7 +22,7 @@
     <div class="app-container">
         <!-- SIDEBAR -->
         <aside class="sidebar" id="mainSidebar">
-            <div class="brand">
+            <div class="brand" onclick="enableCEOAnalytics()" style="cursor: pointer;">
                 <img src="logokoboi.png" alt="Logo">
                 <h1>KOBOI</h1>
             </div>
@@ -53,6 +53,12 @@
                     <a href="#" class="nav-link" id="linkTabCEO" onclick="switchTab('tabCEO')">
                         <i data-lucide="shield-check"></i>
                         <span>CEO Access</span>
+                    </a>
+                </li>
+                <li class="nav-item" style="display: none;">
+                    <a href="#" class="nav-link" id="linkTabAnalytics" onclick="switchTab('tabAnalytics')">
+                        <i data-lucide="line-chart"></i>
+                        <span>Web Analytics</span>
                     </a>
                 </li>
             </ul>
@@ -316,6 +322,133 @@
                             </thead>
                             <tbody id="ceoTableBody"></tbody>
                         </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB: WEB ANALYTICS (CEO ONLY) -->
+            <section id="tabAnalytics" style="display: none;">
+                <div class="data-section">
+                    <div class="section-header" style="background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%); color: white; padding: 2rem; border-radius: 16px 16px 0 0;">
+                        <div style="display: flex; align-items: center; gap: 15px;">
+                            <div style="background: rgba(255,255,255,0.1); padding: 12px; border-radius: 12px;">
+                                <i data-lucide="globe" style="width: 32px; height: 32px; color: #818cf8;"></i>
+                            </div>
+                            <div>
+                                <h2 style="font-size: 1.5rem; font-weight: 800;">Google Analytics - KOBOI Website</h2>
+                                <p style="color: #94a3b8; font-size: 0.9rem;">Laporan performa harian eksklusif untuk Direksi.</p>
+                            </div>
+                        </div>
+                        <div style="text-align: right;">
+                            <button class="btn btn-primary" style="background: #4f46e5; border: none;" onclick="showToast('Mengambil data real-time...', 'success')">
+                                <i data-lucide="refresh-cw"></i> <span>Sync Google Data</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- ANALYTICS CARDS -->
+                    <div class="stats-grid" style="margin-top: 25px; padding: 0 20px;">
+                        <div class="stat-card" style="border-bottom: 4px solid #4f46e5;">
+                            <div class="stat-icon" style="background: #eef2ff; color: #4f46e5;">
+                                <i data-lucide="users"></i>
+                            </div>
+                            <div>
+                                <div class="stat-val" id="gaUsers">1,284</div>
+                                <div class="stat-label">Total Pengunjung (24j)</div>
+                            </div>
+                        </div>
+                        <div class="stat-card" style="border-bottom: 4px solid #10b981;">
+                            <div class="stat-icon" style="background: #ecfdf5; color: #10b981;">
+                                <i data-lucide="mouse-pointer-2"></i>
+                            </div>
+                            <div>
+                                <div class="stat-val" id="gaSessions">3,492</div>
+                                <div class="stat-label">Total Sesi Website</div>
+                            </div>
+                        </div>
+                        <div class="stat-card" style="border-bottom: 4px solid #f59e0b;">
+                            <div class="stat-icon" style="background: #fff7ed; color: #f59e0b;">
+                                <i data-lucide="message-square"></i>
+                            </div>
+                            <div>
+                                <div class="stat-val" id="gaConversions">42</div>
+                                <div class="stat-label">Konversi WhatsApp (Leads)</div>
+                            </div>
+                        </div>
+                        <div class="stat-card" style="border-bottom: 4px solid #ef4444;">
+                            <div class="stat-icon" style="background: #fef2f2; color: #ef4444;">
+                                <i data-lucide="clock"></i>
+                            </div>
+                            <div>
+                                <div class="stat-val" id="gaDuration">02:45</div>
+                                <div class="stat-label">Rata-rata Durasi Sesi</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ANALYTICS CHARTS -->
+                    <div class="stats-visuals" style="margin-top: 25px; padding: 0 20px;">
+                        <div class="chart-card">
+                            <div class="chart-header">
+                                <h3>Tren Pengunjung Harian</h3>
+                                <p>Data 7 hari terakhir (Google Analytics)</p>
+                            </div>
+                            <div class="chart-body" style="height: 300px;">
+                                <canvas id="gaTrafficChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-header">
+                                <h3>Produk Paling Sering Dilihat</h3>
+                                <p>Top 5 Produk Katalog</p>
+                            </div>
+                            <div class="chart-body" style="height: 300px;">
+                                <canvas id="gaProductsChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TOP PRODUCTS LIST -->
+                    <div class="data-section" style="margin-top: 25px;">
+                        <div class="section-header">
+                            <h3>Detail Konversi & Performa Katalog</h3>
+                        </div>
+                        <div class="table-wrapper">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Halaman / Produk</th>
+                                        <th>Views</th>
+                                        <th>Cek Stok (WA)</th>
+                                        <th>Konversi (%)</th>
+                                        <th>Trend</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><strong>Abc Extra Pedas Botol 335ML</strong></td>
+                                        <td>420</td>
+                                        <td>12</td>
+                                        <td>2.8%</td>
+                                        <td><span style="color: #10b981;"><i data-lucide="trending-up"></i> +12%</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Nu Green Tea Honey 450ML</strong></td>
+                                        <td>380</td>
+                                        <td>8</td>
+                                        <td>2.1%</td>
+                                        <td><span style="color: #10b981;"><i data-lucide="trending-up"></i> +5%</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Chocolatos Drink Creamy 24G</strong></td>
+                                        <td>310</td>
+                                        <td>15</td>
+                                        <td>4.8%</td>
+                                        <td><span style="color: #10b981;"><i data-lucide="trending-up"></i> +18%</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </section>
