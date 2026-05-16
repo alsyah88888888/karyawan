@@ -44,9 +44,16 @@ let attendanceChartInstance = null;
 
 // --- CORE SYNC ---
 async function syncData() {
-  if (!document.getElementById("filterTglMulai").value) setPeriodeIni();
+  // Set Default Periode: Seminggu Terakhir (H-7 s/d H-1)
+  if (!document.getElementById("filterTglMulai").value) setPeriodeSemingguTerakhir();
   if (!document.getElementById("kpiFilterTglMulai").value) setPeriodeKPI('ini');
-  if (!document.getElementById("logFilterTglMulai").value) setPeriodeLog('ini');
+  if (!document.getElementById("logFilterTglMulai").value) {
+     const now = new Date();
+     const start = new Date(now); start.setDate(now.getDate() - 7);
+     const end = new Date(now); end.setDate(now.getDate() - 1);
+     document.getElementById("logFilterTglMulai").value = start.toISOString().split('T')[0];
+     document.getElementById("logFilterTglSelesai").value = end.toISOString().split('T')[0];
+  }
   // Set default tab to dashboard if none active
   if (!document.querySelector(".nav-link.active")) switchTab('tabDashboard');
 
@@ -1410,6 +1417,17 @@ function setPeriodeIni() {
   document.getElementById("filterTglMulai").value = firstDay.toISOString().split('T')[0];
   document.getElementById("filterTglSelesai").value = lastDay.toISOString().split('T')[0];
   refreshUI();
+}
+
+function setPeriodeSemingguTerakhir() {
+  const now = new Date();
+  const endDate = new Date(now);
+  endDate.setDate(now.getDate() - 1);
+  const startDate = new Date(endDate);
+  startDate.setDate(endDate.getDate() - 6);
+
+  document.getElementById("filterTglMulai").value = startDate.toISOString().split('T')[0];
+  document.getElementById("filterTglSelesai").value = endDate.toISOString().split('T')[0];
 }
 
 function setPeriodeLog() {
