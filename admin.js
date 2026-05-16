@@ -573,6 +573,20 @@ function renderKaryawanTable() {
 
 // --- PAYROLL & OVERTIME LOGIC ---
 // --- UTILS: TIMEZONE-SAFE ---
+function toLocalISO(date) {
+  const tzo = -date.getTimezoneOffset();
+  const dif = tzo >= 0 ? '+' : '-';
+  const pad = num => (num < 10 ? '0' : '') + num;
+  return date.getFullYear() +
+    '-' + pad(date.getMonth() + 1) +
+    '-' + pad(date.getDate()) +
+    'T' + pad(date.getHours()) +
+    ':' + pad(date.getMinutes()) +
+    ':' + pad(date.getSeconds()) +
+    dif + pad(Math.floor(Math.abs(tzo) / 60)) +
+    ':' + pad(Math.abs(tzo) % 60);
+}
+
 function getWIBThreshold(dateObj, targetHour) {
   // Paksa pengambilan tanggal di zona waktu Asia/Jakarta (WIB)
   const formatter = new Intl.DateTimeFormat('en-GB', {
@@ -2244,7 +2258,8 @@ async function saveManualLog() {
 
   if (!nama || !tgl || !jam) return alert("Harap isi semua data!");
 
-  const isoWaktu = new Date(`${tgl}T${jam}:00`).toISOString();
+  const localDate = new Date(`${tgl}T${jam}:00`);
+  const isoWaktu = toLocalISO(localDate);
   const info = KARYAWAN.find(k => k.nama === nama);
 
   showLoading(true);

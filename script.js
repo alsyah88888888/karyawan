@@ -106,9 +106,25 @@ async function updateWiFiStatus() {
   }
 }
 
+function toLocalISO(date) {
+  const tzo = -date.getTimezoneOffset();
+  const dif = tzo >= 0 ? '+' : '-';
+  const pad = num => (num < 10 ? '0' : '') + num;
+  return date.getFullYear() +
+    '-' + pad(date.getMonth() + 1) +
+    '-' + pad(date.getDate()) +
+    'T' + pad(date.getHours()) +
+    ':' + pad(date.getMinutes()) +
+    ':' + pad(date.getSeconds()) +
+    dif + pad(Math.floor(Math.abs(tzo) / 60)) +
+    ':' + pad(Math.abs(tzo) % 60);
+}
+
 function getISODate(dateObj) {
+  // Geser 5 jam ke belakang untuk menentukan "Hari Kerja" (Mendukung Shift Malam)
   const d = new Date(dateObj.getTime() - 5 * 60 * 60 * 1000);
-  return d.toISOString().split('T')[0];
+  const pad = num => (num < 10 ? '0' : '') + num;
+  return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
 }
 
 function capturePhoto() {
@@ -191,7 +207,7 @@ async function prosesAbsen(tipe) {
     const newLog = {
       nama: info.nama,
       dept: info.dept,
-      waktu: sekarang.toISOString(),
+      waktu: toLocalISO(sekarang),
       status: finalTipe,
       foto: imageBase64,
       isLate: telat,
