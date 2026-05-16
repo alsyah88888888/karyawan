@@ -422,62 +422,72 @@ function renderKaryawanTable() {
   let htmlRows = "";
   KARYAWAN.forEach((k, index) => {
     const d = hitungDetailGaji(k.gaji || 0, k.nama);
+    const kpi = calculateLiveKPI(d.hadir, d.telat);
+    
     htmlRows += `
       <tr>
         <td>
-          <div style="display: flex; align-items: center; gap: 12px;">
-            <div style="width: 45px; height: 45px; border-radius: 50%; overflow: hidden; border: 2px solid var(--border); background: #f1f5f9;">
+          <div style="display: flex; align-items: center; gap: 15px;">
+            <div style="width: 48px; height: 48px; border-radius: 14px; overflow: hidden; border: 2.5px solid #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.1); background: #f1f5f9;">
               <img src="image/NAME CARD KOLA BORASI INDONESIA/${k.nik}.jpg" 
-                   onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(k.nama)}&background=random'"
+                   onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(k.nama)}&background=4f46e5&color=fff&bold=true'"
                    style="width: 100%; height: 100%; object-fit: cover;">
             </div>
             <div>
-              <div style="font-weight: 700; color: var(--primary); font-size: 1rem;">${k.nama}</div>
-              <div style="font-size: 0.7rem; color: #64748b; letter-spacing: 1px;">ID: ${k.nik}</div>
+              <div style="font-weight: 800; color: var(--sidebar-bg); font-size: 0.95rem;">${k.nama}</div>
+              <div style="font-size: 0.7rem; color: var(--text-muted); font-weight: 600;">ID: ${k.nik}</div>
             </div>
           </div>
         </td>
         <td>
-          <div style="font-weight: 600;">${k.jabatan || k.dept}</div>
-          <div style="font-size: 0.75rem; color: #64748b;">Hadir: ${d.hadir}/${d.totalHariKerja}</div>
+          <div style="display: flex; flex-direction: column;">
+            <span style="font-weight: 700; color: var(--text-main); font-size: 0.85rem;">${k.jabatan || k.dept}</span>
+            <div style="display: flex; align-items: center; gap: 6px; margin-top: 4px;">
+              <div style="width: 6px; height: 6px; border-radius: 50%; background: ${d.hadir >= d.totalHariKerja ? 'var(--success)' : 'var(--warning)'}"></div>
+              <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">Hadir: <strong>${d.hadir}</strong> / ${d.totalHariKerja}</span>
+            </div>
+          </div>
         </td>
         <td>
-          <div style="font-weight: 700;">${d.totalLembur} Jam</div>
-          <div style="font-size: 0.75rem; color: var(--success);">+ Rp ${d.uangLembur.toLocaleString("id-ID")}</div>
+          <div style="font-weight: 700; color: var(--sidebar-bg);">${d.totalLembur} <small>Hrs</small></div>
+          <div style="font-size: 0.7rem; color: var(--success); font-weight: 700;">+Rp ${Math.floor(d.uangLembur).toLocaleString("id-ID")}</div>
         </td>
         <td>
-          <div style="font-weight: 700;">Rp ${(k.gaji || 0).toLocaleString("id-ID")}</div>
-          <div style="font-size: 0.7rem; color: #94a3b8;">${k.rekening || "-"}</div>
+          <div style="font-weight: 800; color: var(--sidebar-bg);">Rp ${(k.gaji || 0).toLocaleString("id-ID")}</div>
+          <div style="font-size: 0.65rem; color: var(--text-muted);">${k.rekening || "No Acc"}</div>
         </td>
-        <td style="color: var(--success); font-weight: 800; font-size: 1rem;">
+        <td style="color: var(--success); font-weight: 900; font-size: 1rem; letter-spacing: -0.5px;">
           Rp ${Math.floor(d.thp).toLocaleString("id-ID")}
         </td>
         <td>
-          <div style="font-weight: 800; font-size: 1.1rem; color: ${calculateLiveKPI(d.hadir, d.telat).color}">
-            ${calculateLiveKPI(d.hadir, d.telat).score.toFixed(1)}
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <div style="text-align: right;">
+              <div style="font-weight: 900; font-size: 1.1rem; color: ${kpi.color}; line-height: 1;">${kpi.score.toFixed(1)}</div>
+              <div style="font-size: 0.65rem; font-weight: 800; color: #94a3b8;">GRADE ${kpi.grade}</div>
+            </div>
+            <div style="width: 4px; height: 24px; background: ${kpi.color}; border-radius: 2px;"></div>
           </div>
-          <div style="font-size: 0.7rem; font-weight: 700; color: #94a3b8;">GRADE: ${calculateLiveKPI(d.hadir, d.telat).grade}</div>
         </td>
         <td>
-          <div style="display: flex; gap: 8px;">
-            <button class="btn btn-outline btn-small" onclick="cetakSlip(${index})">
-                <i data-lucide="printer" style="width:14px;"></i> <span>Cetak</span>
+          <div style="display: flex; gap: 6px; flex-wrap: nowrap;">
+            <button class="btn btn-outline btn-small" style="padding: 6px;" onclick="cetakSlip(${index})" title="Cetak Slip">
+                <i data-lucide="printer" style="width:14px;"></i>
             </button>
-            <button class="btn btn-primary btn-small" style="background:#25d366; border:none;" onclick="kirimSlipWA(${index})">
-                <i data-lucide="message-circle" style="width:14px;"></i> <span>WhatsApp</span>
+            <button class="btn btn-primary btn-small" style="background:#25d366; border:none; padding: 6px;" onclick="kirimSlipWA(${index})" title="WhatsApp">
+                <i data-lucide="message-circle" style="width:14px;"></i>
             </button>
-            <button class="btn btn-outline btn-small" onclick="bukaModalEditKaryawan(${index})">
-                <i data-lucide="edit-3" style="width:14px;"></i> <span>Edit</span>
+            <button class="btn btn-outline btn-small" style="padding: 6px;" onclick="bukaModalEditKaryawan(${index})" title="Edit Data">
+                <i data-lucide="edit-3" style="width:14px;"></i>
             </button>
-            <button class="btn btn-danger btn-small" onclick="hapusKaryawan('${k.id}')">
-                <i data-lucide="trash-2" style="width:14px;"></i> <span>Hapus</span>
+            <button class="btn btn-danger btn-small" style="padding: 6px;" onclick="hapusKaryawan('${k.id}')" title="Hapus">
+                <i data-lucide="trash-2" style="width:14px;"></i>
             </button>
           </div>
         </td>
       </tr>`;
   });
   body.innerHTML = htmlRows;
-  lucide.createIcons(); // Initialize icons in the table
+  if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
 // --- PAYROLL & OVERTIME LOGIC ---
