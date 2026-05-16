@@ -906,24 +906,49 @@ async function kirimSlipWA(index) {
     const fileName = `Slip_Gaji_${k.nama.replace(/\s+/g, '_')}_${periodeTampil.replace(/\//g, '-')}.png`;
     const imageFile = new File([imageBlob], fileName, { type: 'image/png' });
 
-    // 3. Format Message
+    // 3. Format WhatsApp Link
     let noWa = k.nomor_wa.trim();
     if (noWa.startsWith("0")) noWa = "62" + noWa.slice(1);
     else if (!noWa.startsWith("62")) noWa = "62" + noWa;
 
-    const pesan = `Halo *${k.nama}*,\n\nBerikut adalah *Slip Gaji Digital* Anda untuk periode *${periodeTampil}*.\n\nTotal THP: *Rp ${Math.floor(d.thp).toLocaleString('id-ID')}*\n\n_(Mohon lampirkan gambar slip gaji yang baru saja terunduh otomatis ke chat ini)_`;
+    const pesan = `Halo *${k.nama}*,\n\nBerikut adalah *Slip Gaji Digital* Anda untuk periode *${periodeTampil}*.\n\nTotal THP: *Rp ${Math.floor(d.thp).toLocaleString('id-ID')}*\n\n_(Mohon tempel/paste gambar slip gaji yang sudah tersalin otomatis ke chat ini)_`;
+    const waUrl = `https://wa.me/${noWa}?text=${encodeURIComponent(pesan)}`;
 
-    // 4. Always Download for Reliability
+    // 4. STEP 1: Try Native Share (Best for Mobile)
+    if (navigator.share && navigator.canShare && navigator.canShare({ files: [imageFile] })) {
+      try {
+        await navigator.share({
+          files: [imageFile],
+          title: 'Slip Gaji Digital',
+          text: pesan
+        });
+        showToast("Slip Gambar dikirim via Share!", "success");
+        return; // Success
+      } catch (sErr) {
+        console.log("Share failed or canceled, falling back...");
+      }
+    }
+
+    // 5. STEP 2: Copy to Clipboard (Best for Desktop/PC)
+    // Most modern browsers support copying images to clipboard
+    try {
+      if (navigator.clipboard && window.ClipboardItem) {
+        const item = new ClipboardItem({ "image/png": imageBlob });
+        await navigator.clipboard.write([item]);
+        showToast("Gambar Tersalin ke Clipboard!", "success");
+      }
+    } catch (cErr) {
+      console.log("Clipboard copy failed, falling back to download...");
+    }
+
+    // 6. STEP 3: Fallback Download & Open WA
     const link = document.createElement('a');
     link.href = URL.createObjectURL(imageBlob);
     link.download = fileName;
     link.click();
     
-    // 5. Open WA Chat with Pre-filled Text
-    const waUrl = `https://wa.me/${noWa}?text=${encodeURIComponent(pesan)}`;
     window.open(waUrl, '_blank');
-    
-    showToast("Slip terunduh & WA Terbuka!", "success");
+    showToast("Gambar terunduh! Silakan tempel/lampirkan di WA.", "info");
 
   } catch (err) {
     console.error(err);
