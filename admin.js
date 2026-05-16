@@ -206,8 +206,7 @@ function switchTab(tab) {
   if (tab === "tabPerformance") fetchReviews();
 
   // Sembunyikan Header Actions (Tambah/Export) jika di Dashboard atau CEO
-  const headerActions = document.querySelector(".header-actions");
-  if (headerActions) headerActions.style.display = (tab === "tabKaryawan") ? "flex" : "none";
+
 
   const title = document.getElementById("pageTitle");
   if (title) {
