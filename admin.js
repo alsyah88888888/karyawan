@@ -72,13 +72,13 @@ async function syncData() {
     // Jika ada filter tanggal, gunakan filter di level Database (Supabase)
     if (tglMulai && tglSelesai) {
       queryAllLog = queryAllLog
-        .gte("waktu", `${tglMulai}T00:00:00Z`)
-        .lte("waktu", `${tglSelesai}T23:59:59Z`);
+        .gte("waktu", `${tglMulai}T00:00:00`)
+        .lte("waktu", `${tglSelesai}T23:59:59`);
     } else {
-      // Fallback: Ambil data 30 hari terakhir saja jika filter kosong
-      const defaultStart = new Date();
-      defaultStart.setDate(defaultStart.getDate() - 30);
-      queryAllLog = queryAllLog.gte("waktu", defaultStart.toISOString());
+      // Fallback: Ambil data 30 hari terakhir
+      const now = new Date();
+      const thirtyDaysAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
+      queryAllLog = queryAllLog.gte("waktu", toLocalISO(thirtyDaysAgo));
     }
 
     const { data: dataAllLog, error: errA } = await queryAllLog.order("id", { ascending: false });
