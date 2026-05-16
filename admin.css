@@ -590,3 +590,88 @@ tr:hover { background: #fbfcfe; }
     position: relative;
     min-height: 250px;
 }
+/* LOG ABSENSI PREMIUM STYLES */
+.badge {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.badge-masuk { 
+    background: #ecfdf5; 
+    color: #059669; 
+    border: 1px solid #10b98133;
+}
+.badge-pulang { 
+    background: #f0f9ff; 
+    color: #0284c7; 
+    border: 1px solid #0ea5e933;
+}
+.badge-dinas { 
+    background: #fdf4ff; 
+    color: #9333ea; 
+    border: 1px solid #d946ef33;
+}
+.badge-danger { 
+    background: #fef2f2; 
+    color: #dc2626; 
+    border: 1px solid #ef444433;
+}
+.badge-warning {
+    background: #fffbeb;
+    color: #d97706;
+    border: 1px solid #f59e0b33;
+}
+
+.log-time {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    color: var(--sidebar-bg);
+    font-weight: 600;
+}
+
+.log-date {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.emp-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.emp-avatar {
+    width: 36px;
+    height: 36px;
+    background: linear-gradient(135deg, #6366f1, #4f46e5);
+    color: white;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 0.8rem;
+    box-shadow: 0 4px 10px rgba(79, 70, 229, 0.2);
+}
+
+.log-status-cell {
+    display: flex;
+    align-items: center;
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+#logTableBody tr {
+    animation: fadeIn 0.4s ease forwards;
+}

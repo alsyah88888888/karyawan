@@ -392,32 +392,68 @@ function renderLogTable() {
 
   let htmlRows = "";
   logs.forEach((l) => {
-    const sClass = l.status === "MASUK" ? "badge-success" : "badge-warning";
+    const s = l.status.toUpperCase();
+    let badgeClass = "badge-masuk";
+    let icon = "login";
+
+    if (s.includes("PULANG")) {
+      badgeClass = "badge-pulang";
+      icon = "logout";
+    } else if (s.includes("DINAS")) {
+      badgeClass = "badge-dinas";
+      icon = "briefcase";
+    }
+
     const tgl = new Date(l.waktu);
+    const initials = l.nama.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase();
 
     htmlRows += `
       <tr>
         <td>
-          <div style="font-weight: 700; color: var(--sidebar-bg);">${l.nama}</div>
-          <div style="font-size: 0.75rem; color: var(--text-muted);">${l.dept || "GENERAL"}</div>
+          <div class="emp-info">
+            <div class="emp-avatar">${initials}</div>
+            <div>
+              <div style="font-weight: 700; color: var(--sidebar-bg); font-size: 0.9rem;">${l.nama}</div>
+              <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500;">${l.dept || "GENERAL"}</div>
+            </div>
+          </div>
         </td>
-        <td><span class="badge ${sClass}">${l.status}</span></td>
         <td>
-          <div style="font-weight: 600;">${tgl.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</div>
-          <div style="font-size: 0.75rem; color: var(--text-muted);">${tgl.toLocaleDateString('id-ID')}</div>
+          <div class="log-status-cell">
+            <span class="badge ${badgeClass}">
+              <i data-lucide="${icon}" style="width:12px; height:12px;"></i>
+              ${l.status}
+            </span>
+          </div>
         </td>
         <td>
-          ${l.isLate ? '<span style="color:var(--danger); font-size:0.75rem; font-weight:800;">⚠️ TERLAMBAT</span>' : '<span style="color:var(--success); font-size:0.75rem;">✅ TEPAT WAKTU</span>'}
+          <div class="log-time">${tgl.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</div>
+          <div class="log-date">${tgl.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</div>
+        </td>
+        <td>
+          ${l.isLate ? 
+            '<div style="display:flex; align-items:center; gap:6px; color:var(--danger); font-size:0.75rem; font-weight:800;"><i data-lucide="alert-circle" style="width:14px;"></i> TERLAMBAT</div>' : 
+            '<div style="display:flex; align-items:center; gap:6px; color:var(--success); font-size:0.75rem; font-weight:700;"><i data-lucide="check-circle" style="width:14px;"></i> TEPAT WAKTU</div>'}
         </td>
         <td>
           <div style="display: flex; gap: 8px;">
-            <button class="btn btn-outline btn-small" onclick="bukaModalEdit(${l.id})">Edit</button>
-            <button class="btn btn-danger btn-small" onclick="hapusSatuLog(${l.id})">Hapus</button>
+            <button class="btn btn-outline btn-small" style="padding: 6px 10px;" onclick="bukaModalEdit(${l.id})">
+              <i data-lucide="edit-3" style="width:14px;"></i>
+            </button>
+            <button class="btn btn-danger btn-small" style="padding: 6px 10px;" onclick="hapusSatuLog(${l.id})">
+              <i data-lucide="trash-2" style="width:14px;"></i>
+            </button>
           </div>
         </td>
       </tr>`;
   });
-  body.innerHTML = htmlRows;
+  
+  if (logs.length === 0) {
+    body.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:3rem; color:var(--text-muted);">Tidak ada log absensi dalam periode ini.</td></tr>';
+  } else {
+    body.innerHTML = htmlRows;
+  }
+  
   if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
