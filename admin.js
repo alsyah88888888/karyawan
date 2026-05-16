@@ -2422,28 +2422,31 @@ function renderCalendar() {
   }
 
   // Days
-  const today = new Date();
+  const todayObj = new Date();
+  const todayStr = `${todayObj.getFullYear()}-${String(todayObj.getMonth() + 1).padStart(2, '0')}-${String(todayObj.getDate()).padStart(2, '0')}`;
+
   for (let d = 1; d <= daysInMonth; d++) {
     const dateObj = new Date(year, month, d);
-    const dateStr = dateObj.toISOString().split('T')[0];
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
     const isSunday = dateObj.getDay() === 0;
-    const isToday = dateStr === today.toISOString().split('T')[0];
+    const isToday = dateStr === todayStr;
     const holiday = DAFTAR_LIBUR.find(h => h.tgl === dateStr);
 
     const div = document.createElement("div");
     div.className = `calendar-day ${isSunday ? 'sunday' : ''} ${isToday ? 'today' : ''} ${holiday ? 'holiday' : ''}`;
     
-    // Hitung Kehadiran Real-time untuk tanggal ini
+    // Hitung Kehadiran Real-time untuk tanggal ini (Gunakan allLogs)
     const hadirCount = KARYAWAN.filter(k => {
       return allLogs.some(l => {
-        const logDate = new Date(new Date(l.waktu).getTime() - 4 * 3600000).toISOString().split('T')[0];
+        const lDate = new Date(l.waktu);
+        const logDateStr = `${lDate.getFullYear()}-${String(lDate.getMonth() + 1).padStart(2, '0')}-${String(lDate.getDate()).padStart(2, '0')}`;
         const s = l.status.toUpperCase();
-        return l.nama === k.nama && logDate === dateStr && (s.includes("MASUK") || s.includes("DINAS"));
+        return l.nama === k.nama && logDateStr === dateStr && (s.includes("MASUK") || s.includes("DINAS"));
       });
     }).length;
 
     const totalKar = KARYAWAN.length;
-    const isFuture = dateStr > today.toISOString().split('T')[0];
+    const isFuture = dateStr > todayStr;
     
     let attendanceHtml = "";
     if (!isSunday && !isFuture && totalKar > 0) {
