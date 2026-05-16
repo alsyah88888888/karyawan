@@ -63,13 +63,30 @@ async function syncData() {
     if (errK) throw errK;
     KARYAWAN = dataKar || [];
 
-    const { data: dataAllLog, error: errA } = await supabaseClient.from("logs").select("id, nama, dept, waktu, status, isLate").order("id", { ascending: false });
+    // OPTIMASI: Ambil data berdasarkan range tanggal di filter untuk efisiensi skalabilitas
+    const tglMulai = document.getElementById("filterTglMulai")?.value;
+    const tglSelesai = document.getElementById("filterTglSelesai")?.value;
+    
+    let queryAllLog = supabaseClient.from("logs").select("id, nama, dept, waktu, status, isLate");
+    
+    // Jika ada filter tanggal, gunakan filter di level Database (Supabase)
+    if (tglMulai && tglSelesai) {
+      queryAllLog = queryAllLog
+        .gte("waktu", `${tglMulai}T00:00:00Z`)
+        .lte("waktu", `${tglSelesai}T23:59:59Z`);
+    } else {
+      // Fallback: Ambil data 30 hari terakhir saja jika filter kosong
+      const defaultStart = new Date();
+      defaultStart.setDate(defaultStart.getDate() - 30);
+      queryAllLog = queryAllLog.gte("waktu", defaultStart.toISOString());
+    }
+
+    const { data: dataAllLog, error: errA } = await queryAllLog.order("id", { ascending: false });
     if (errA) throw errA;
     allLogs = dataAllLog || [];
 
-    const { data: dataLog, error: errL } = await supabaseClient.from("logs").select("*").order("id", { ascending: false }).limit(200);
-    if (errL) throw errL;
-    logs = dataLog || [];
+    // logs untuk tampilan tabel log (limit 200 untuk kecepatan render)
+    logs = allLogs.slice(0, 200);
 
     refreshUI();
     showToast("Data berhasil disinkronkan", "success");
