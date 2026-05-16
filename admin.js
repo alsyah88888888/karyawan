@@ -48,11 +48,11 @@ async function syncData() {
   if (!document.getElementById("filterTglMulai").value) setPeriodeSemingguTerakhir();
   if (!document.getElementById("kpiFilterTglMulai").value) setPeriodeKPI('ini');
   if (!document.getElementById("logFilterTglMulai").value) {
-     const now = new Date();
-     const start = new Date(now); start.setDate(now.getDate() - 7);
-     const end = new Date(now); end.setDate(now.getDate() - 1);
-     document.getElementById("logFilterTglMulai").value = start.toISOString().split('T')[0];
-     document.getElementById("logFilterTglSelesai").value = end.toISOString().split('T')[0];
+    const now = new Date();
+    const start = new Date(now); start.setDate(now.getDate() - 7);
+    const end = new Date(now); end.setDate(now.getDate() - 1);
+    document.getElementById("logFilterTglMulai").value = start.toISOString().split('T')[0];
+    document.getElementById("logFilterTglSelesai").value = end.toISOString().split('T')[0];
   }
   // Set default tab to dashboard if none active
   if (!document.querySelector(".nav-link.active")) switchTab('tabDashboard');
@@ -431,9 +431,9 @@ function renderLogTable() {
           <div class="log-date">${tgl.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</div>
         </td>
         <td>
-          ${l.isLate ? 
-            '<div style="display:flex; align-items:center; gap:6px; color:var(--danger); font-size:0.75rem; font-weight:800;"><i data-lucide="alert-circle" style="width:14px;"></i> TERLAMBAT</div>' : 
-            '<div style="display:flex; align-items:center; gap:6px; color:var(--success); font-size:0.75rem; font-weight:700;"><i data-lucide="check-circle" style="width:14px;"></i> TEPAT WAKTU</div>'}
+          ${l.isLate ?
+        '<div style="display:flex; align-items:center; gap:6px; color:var(--danger); font-size:0.75rem; font-weight:800;"><i data-lucide="alert-circle" style="width:14px;"></i> TERLAMBAT</div>' :
+        '<div style="display:flex; align-items:center; gap:6px; color:var(--success); font-size:0.75rem; font-weight:700;"><i data-lucide="check-circle" style="width:14px;"></i> TEPAT WAKTU</div>'}
         </td>
         <td>
           <div style="display: flex; gap: 8px;">
@@ -447,13 +447,13 @@ function renderLogTable() {
         </td>
       </tr>`;
   });
-  
+
   if (logs.length === 0) {
     body.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:3rem; color:var(--text-muted);">Tidak ada log absensi dalam periode ini.</td></tr>';
   } else {
     body.innerHTML = htmlRows;
   }
-  
+
   if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
@@ -465,7 +465,7 @@ function renderKaryawanTable() {
   KARYAWAN.forEach((k, index) => {
     const d = hitungDetailGaji(k.gaji || 0, k.nama);
     const kpi = calculateLiveKPI(d.hadir, d.telat);
-    
+
     htmlRows += `
       <tr>
         <td>
@@ -847,11 +847,11 @@ function cetakSlip(index) {
 async function kirimSlipWA(index) {
   const k = KARYAWAN[index];
   const d = hitungDetailGaji(k.gaji, k.nama);
-  
+
   if (!k.nomor_wa) return alert("Nomor WhatsApp tidak ditemukan!");
 
   showLoading(true);
-  
+
   try {
     const tglMulai = document.getElementById("filterTglMulai")?.value;
     const tglSelesai = document.getElementById("filterTglSelesai")?.value;
@@ -935,9 +935,9 @@ async function kirimSlipWA(index) {
       logging: false, // Disable logging to save resources
       removeContainer: true // Faster cleanup
     });
-    
+
     document.body.removeChild(renderContainer);
-    
+
     const imageBlob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
     const fileName = `Slip_Gaji_${k.nama.replace(/\s+/g, '_')}_${periodeTampil.replace(/\//g, '-')}.png`;
     const imageFile = new File([imageBlob], fileName, { type: 'image/png' });
@@ -982,7 +982,7 @@ async function kirimSlipWA(index) {
     link.href = URL.createObjectURL(imageBlob);
     link.download = fileName;
     link.click();
-    
+
     window.open(waUrl, '_blank');
     showToast("Gambar terunduh! Silakan tempel/lampirkan di WA.", "info");
 
@@ -1521,7 +1521,7 @@ function exportData() {
 async function hapusSemuaLog() {
   const konfirmasi = prompt("PERINGATAN: Ini akan menghapus SELURUH data absensi! Ketik 'KONFIRMASI' untuk melanjutkan:");
   if (konfirmasi !== "KONFIRMASI") return;
-  
+
   showLoading(true);
   const { error } = await supabaseClient.from("logs").delete().neq("id", 0);
   if (!error) {
@@ -1825,7 +1825,7 @@ async function fetchLeaveRequests() {
     console.error(error);
     const body = document.getElementById("adminLeaveBody");
     if (body && error.code === 'PGRST205') {
-        body.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:2rem; color:var(--danger);"><b>Error:</b> Tabel "leave_requests" tidak ditemukan di Supabase. Mohon jalankan SQL script untuk membuat tabel ini.</td></tr>';
+      body.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:2rem; color:var(--danger);"><b>Error:</b> Tabel "leave_requests" tidak ditemukan di Supabase. Mohon jalankan SQL script untuk membuat tabel ini.</td></tr>';
     }
     return;
   }
@@ -1868,12 +1868,12 @@ async function processLeave(requestId, status, employeeId) {
     if (status === "APPROVED") {
       // Ambil data cuti untuk tahu durasi (selisih hari)
       const { data: lvData } = await supabaseClient.from("leave_requests").select("start_date, end_date").eq("id", requestId).single();
-      
+
       let duration = 1;
       if (lvData && lvData.start_date && lvData.end_date) {
-          const d1 = new Date(lvData.start_date);
-          const d2 = new Date(lvData.end_date);
-          duration = Math.round((d2 - d1) / (1000 * 60 * 60 * 24)) + 1;
+        const d1 = new Date(lvData.start_date);
+        const d2 = new Date(lvData.end_date);
+        duration = Math.round((d2 - d1) / (1000 * 60 * 60 * 24)) + 1;
       }
 
       const { data: emp } = await supabaseClient.from("karyawan").select("sisa_cuti").eq("id", employeeId).single();
@@ -1939,7 +1939,7 @@ function closeReviewModal() {
 async function saveReview() {
   const empId = document.getElementById("revKaryawan").value;
   const emp = KARYAWAN.find(k => k.id === empId);
-  
+
   // Hitung Real Attendance Score untuk periode ini
   const attendanceData = hitungDetailGaji(emp.gaji, emp.nama);
   const realAttendanceScore = (attendanceData.hadir / attendanceData.totalHariKerja) * 100;
@@ -2004,7 +2004,7 @@ async function fetchReviews() {
     // Trigger once to show metrics for the first selected employee
     updateKpiMetrics();
   }
-  
+
   lucide.createIcons();
 }
 
@@ -2067,7 +2067,7 @@ async function generateAIWeeklyReport() {
 
   // 3. Call Gemini API (Free Tier 1.5 Flash)
   // NOTE: Ganti 'YOUR_API_KEY' dengan API Key Google AI Studio Anda
-  const API_KEY = "AIzaSyDvBerE_xzwKRllhdCNzdoNvek_MhSCahU";
+  const API_KEY = "AIzaSyBt4fZHYz01w4rz73cgz0P0we6DFSltP6M";
 
   try {
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${API_KEY}`, {
@@ -2077,9 +2077,9 @@ async function generateAIWeeklyReport() {
     });
 
     if (!response.ok) {
-        const errorData = await response.json();
-        const detail = errorData.error ? errorData.error.message : "Unknown Error";
-        throw new Error(`Google API Error: ${detail}`);
+      const errorData = await response.json();
+      const detail = errorData.error ? errorData.error.message : "Unknown Error";
+      throw new Error(`Google API Error: ${detail}`);
     }
 
     const result = await response.json();
@@ -2091,7 +2091,7 @@ async function generateAIWeeklyReport() {
       .replace(/\*\*(.*?)\*\*/g, '<strong style="color:#1e293b;">$1</strong>')
       .replace(/\n/g, '<br>');
 
-        content.innerHTML = `
+    content.innerHTML = `
             <div id="printableAIReport" style="background: white; padding: 40px; border-radius: 15px; border: 1px solid #e2e8f0; box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.05); max-width: 700px; margin: 0 auto; text-align: left;">
                 <!-- Header Laporan (Hanya Muncul di PDF/Tampilan Rapi) -->
                 <div style="text-align: center; border-bottom: 2px solid #1e293b; padding-bottom: 20px; margin-bottom: 30px;">
@@ -2114,9 +2114,9 @@ async function generateAIWeeklyReport() {
   } catch (e) {
     console.error("AI Error:", e);
     const isPlaceholder = (API_KEY === "YOUR_GEMINI_API_KEY" || API_KEY === "" || API_KEY.length < 10);
-    
+
     if (isPlaceholder) {
-        content.innerHTML = `
+      content.innerHTML = `
             <div style="text-align: center; padding: 40px;">
                 <i data-lucide="alert-triangle" style="width: 48px; height: 48px; color: #f59e0b; margin-bottom: 20px;"></i>
                 <h4 style="font-weight: 800; color: #1e293b;">Konfigurasi API Diperlukan</h4>
@@ -2127,7 +2127,7 @@ async function generateAIWeeklyReport() {
             </div>
         `;
     } else {
-        content.innerHTML = `
+      content.innerHTML = `
             <div style="text-align: center; padding: 40px;">
                 <i data-lucide="x-circle" style="width: 48px; height: 48px; color: #ef4444; margin-bottom: 20px;"></i>
                 <h4 style="font-weight: 800; color: #1e293b;">AI Gagal Merespon</h4>
@@ -2156,14 +2156,14 @@ function exportAIReportPDF() {
     margin: [0.5, 0.5], // Margin 0.5 inch (Standar Rapih)
     filename: `KOBOI_AI_Report_${new Date().toISOString().split('T')[0]}.pdf`,
     image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: { 
-        scale: 3, // Resolusi tinggi agar teks tajam
-        useCORS: true,
-        letterRendering: true
+    html2canvas: {
+      scale: 3, // Resolusi tinggi agar teks tajam
+      useCORS: true,
+      letterRendering: true
     },
     jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
   };
-  
+
   // Efek Loading saat unduh
   showLoading(true);
   html2pdf().set(opt).from(element).save().then(() => {
@@ -2179,12 +2179,12 @@ function showManualLogModal() {
   if (sel) {
     sel.innerHTML = KARYAWAN.map(k => `<option value="${k.nama}">${k.nama}</option>`).join("");
   }
-  
+
   // Set default date & time to now
   const now = new Date();
   document.getElementById("manLogTgl").value = now.toISOString().split('T')[0];
   document.getElementById("manLogJam").value = now.toTimeString().split(' ')[0].substring(0, 5);
-  
+
   document.getElementById("modalManualLog").style.display = "flex";
   if (typeof lucide !== 'undefined') lucide.createIcons();
 }
@@ -2216,7 +2216,7 @@ async function saveManualLog() {
     }]);
 
     if (error) throw error;
-    
+
     if (typeof showToast === 'function') showToast("Presensi manual berhasil disimpan!", "success");
     closeManualLogModal();
     await syncData(); // Refresh all data
@@ -2240,13 +2240,13 @@ function deteksiLupaAbsen() {
 
   // Ambil semua log yang ada di memori (sudah di-sync)
   // Kita asumsikan LOGS sudah terisi dari syncData
-  
+
   for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
     if (d.getDay() === 0) continue; // Skip Minggu
-    
+
     const dateStr = d.toISOString().split('T')[0];
     const todayStr = new Date().toISOString().split('T')[0];
-    
+
     KARYAWAN.forEach(k => {
       // Filter logs untuk karyawan ini di tanggal ini
       const logsHariIni = allLogs.filter(l => {
@@ -2300,13 +2300,13 @@ function closeLupaAbsenModal() {
 
 function kirimPengingatWA(nama, nomor, tanggal, tipe) {
   if (!nomor) return alert("Nomor WA tidak ada!");
-  
+
   let noWa = nomor.trim();
   if (noWa.startsWith("0")) noWa = "62" + noWa.slice(1);
   else if (!noWa.startsWith("62")) noWa = "62" + noWa;
 
   const pesan = `Halo *${nama}*,\n\nKami mendeteksi Anda belum melakukan absensi *${tipe}* pada tanggal *${tanggal}*.\n\nMohon segera konfirmasi ke Admin atau lakukan input manual jika ada kendala teknis. Terima kasih!`;
-  
+
   const url = `https://wa.me/${noWa}?text=${encodeURIComponent(pesan)}`;
   window.open(url, '_blank');
 }
@@ -2315,7 +2315,7 @@ async function cetakLaporanLupaAbsenPDF() {
   const tglMulaiStr = document.getElementById("logFilterTglMulai").value;
   const tglSelesaiStr = document.getElementById("logFilterTglSelesai").value;
   const body = document.getElementById("lupaAbsenBody");
-  
+
   if (body.innerText.includes("Semua presensi lengkap")) {
     return alert("Tidak ada data untuk dicetak.");
   }
@@ -2331,7 +2331,7 @@ async function cetakLaporanLupaAbsenPDF() {
   const content = document.createElement("div");
   content.style.padding = "20px";
   content.style.fontFamily = "Arial, sans-serif";
-  
+
   const headerHtml = `
     <div style="text-align: center; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px;">
       <h1 style="margin: 0; font-size: 18pt;">PT. KOLA BORASI INDONESIA</h1>
@@ -2348,14 +2348,14 @@ async function cetakLaporanLupaAbsenPDF() {
       </thead>
       <tbody>
         ${Array.from(body.querySelectorAll("tr")).map(tr => {
-          const cells = tr.querySelectorAll("td");
-          return `
+    const cells = tr.querySelectorAll("td");
+    return `
             <tr>
               <td style="border: 1px solid #cbd5e1; padding: 8px;">${cells[0].innerText}</td>
               <td style="border: 1px solid #cbd5e1; padding: 8px;">${cells[1].innerText}</td>
               <td style="border: 1px solid #cbd5e1; padding: 8px;">${cells[2].innerText}</td>
             </tr>`;
-        }).join("")}
+  }).join("")}
       </tbody>
     </table>
     <div style="margin-top: 30px; text-align: right; font-size: 9pt;">
@@ -2364,9 +2364,9 @@ async function cetakLaporanLupaAbsenPDF() {
       <p>( Admin HRIS )</p>
     </div>
   `;
-  
+
   content.innerHTML = headerHtml;
-  
+
   showLoading(true);
   try {
     await html2pdf().set(opt).from(content).save();
