@@ -63,9 +63,16 @@ async function syncData() {
     if (errK) throw errK;
     KARYAWAN = dataKar || [];
 
-    // OPTIMASI: Ambil data berdasarkan range tanggal di filter untuk efisiensi skalabilitas
-    const tglMulai = document.getElementById("filterTglMulai")?.value;
-    const tglSelesai = document.getElementById("filterTglSelesai")?.value;
+    // OPTIMASI: Deteksi filter mana yang aktif (Global vs Log Tab)
+    const isLogTab = document.getElementById("tabLog")?.style.display !== "none";
+    
+    const tglMulai = isLogTab 
+      ? document.getElementById("logFilterTglMulai")?.value 
+      : document.getElementById("filterTglMulai")?.value;
+      
+    const tglSelesai = isLogTab 
+      ? document.getElementById("logFilterTglSelesai")?.value 
+      : document.getElementById("filterTglSelesai")?.value;
     
     let queryAllLog = supabaseClient.from("logs").select("id, nama, dept, waktu, status, isLate");
     
@@ -227,6 +234,7 @@ function switchTab(tab) {
     if (el) el.classList.toggle("active", l.includes(tab.replace('tab', '')));
   });
 
+  if (tab === "tabLog") syncData();
   if (tab === "tabLeave") fetchLeaveRequests();
   if (tab === "tabPerformance") fetchReviews();
   if (tab === "tabCalendar") renderCalendar();
