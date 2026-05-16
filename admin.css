@@ -675,3 +675,96 @@ tr:hover { background: #fbfcfe; }
 #logTableBody tr {
     animation: fadeIn 0.4s ease forwards;
 }
+
+/* CALENDAR STYLES */
+.calendar-container {
+    background: #f8fafc;
+    border-radius: 16px;
+    padding: 20px;
+    border: 1px solid var(--border);
+}
+
+.calendar-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    text-align: center;
+    font-weight: 800;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    margin-bottom: 15px;
+}
+
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 8px;
+}
+
+.calendar-day {
+    aspect-ratio: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: white;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: var(--text-main);
+    border: 1px solid var(--border);
+    transition: all 0.2s ease;
+    cursor: default;
+}
+
+.calendar-day.empty { background: transparent; border: none; }
+
+.calendar-day.sunday { color: var(--danger); background: #fff1f2; }
+
+.calendar-day.today { 
+    background: var(--primary); 
+    color: white; 
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
+    border-color: var(--primary);
+}
+
+.calendar-day.holiday {
+    background: #fffbeb;
+    color: var(--warning);
+    border: 1.5px solid var(--warning);
+    position: relative;
+}
+
+.calendar-day.holiday::after {
+    content: '';
+    position: absolute;
+    bottom: 4px;
+    width: 4px;
+    height: 4px;
+    background: var(--warning);
+    border-radius: 50%;
+}
+
+.holiday-item {
+    background: white;
+    padding: 12px 15px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: transform 0.2s ease;
+}
+
+.holiday-item:hover { transform: translateX(5px); border-color: var(--warning); }
+
+.holiday-date-badge {
+    background: #fffbeb;
+    color: var(--warning);
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-weight: 800;
+    font-size: 0.7rem;
+    min-width: 45px;
+    text-align: center;
+}

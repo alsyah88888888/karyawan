@@ -196,14 +196,14 @@ function renderVisualStats() {
 }
 
 function switchTab(tab) {
-  const tabs = ["tabDashboard", "tabLog", "tabKaryawan", "tabLeave", "tabPerformance", "tabCEO"];
+  const tabs = ["tabDashboard", "tabLog", "tabKaryawan", "tabLeave", "tabPerformance", "tabCEO", "tabCalendar"];
   tabs.forEach((t) => {
     const el = document.getElementById(t);
     if (el) el.style.display = t === tab ? "block" : "none";
   });
 
   // Update Sidebar Active States
-  const links = ["linkTabDashboard", "linkTabLog", "linkTabKaryawan", "linkTabLeave", "linkTabPerformance", "linkTabCEO"];
+  const links = ["linkTabDashboard", "linkTabLog", "linkTabKaryawan", "linkTabLeave", "linkTabPerformance", "linkTabCEO", "linkTabCalendar"];
   links.forEach(l => {
     const el = document.getElementById(l);
     if (el) el.classList.toggle("active", l.includes(tab.replace('tab', '')));
@@ -211,6 +211,7 @@ function switchTab(tab) {
 
   if (tab === "tabLeave") fetchLeaveRequests();
   if (tab === "tabPerformance") fetchReviews();
+  if (tab === "tabCalendar") renderCalendar();
 
   // Sembunyikan Header Actions (Tambah/Export) jika di Dashboard atau CEO
 
@@ -2377,3 +2378,87 @@ async function cetakLaporanLupaAbsenPDF() {
     showLoading(false);
   }
 }
+
+// --- KALENDER & HARI LIBUR LOGIC ---
+let currentCalendarDate = new Date();
+const DAFTAR_LIBUR = [
+  { tgl: '2026-01-01', nama: 'Tahun Baru 2026' },
+  { tgl: '2026-01-29', nama: 'Tahun Baru Imlek' },
+  { tgl: '2026-02-18', nama: 'Isra Mi\'raj' },
+  { tgl: '2026-03-20', nama: 'Hari Raya Nyepi' },
+  { tgl: '2026-03-25', nama: 'Idul Fitri 1447 H' },
+  { tgl: '2026-03-26', nama: 'Cuti Bersama Idul Fitri' },
+  { tgl: '2026-04-03', nama: 'Wafat Yesus Kristus' },
+  { tgl: '2026-05-01', nama: 'Hari Buruh Internasional' },
+  { tgl: '2026-05-14', nama: 'Kenaikan Yesus Kristus' },
+  { tgl: '2026-05-27', nama: 'Hari Raya Waisak' },
+  { tgl: '2026-06-01', nama: 'Hari Lahir Pancasila' },
+  { tgl: '2026-08-17', nama: 'Hari Kemerdekaan RI' },
+  { tgl: '2026-12-25', nama: 'Hari Raya Natal' }
+];
+
+function renderCalendar() {
+  const grid = document.getElementById("calendarGrid");
+  const title = document.getElementById("calendarMonthTitle");
+  if (!grid) return;
+
+  const year = currentCalendarDate.getFullYear();
+  const month = currentCalendarDate.getMonth();
+  
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  
+  const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+  title.innerText = `${monthNames[month]} ${year}`;
+
+  grid.innerHTML = "";
+  
+  // Empty slots for start of month
+  for (let i = 0; i < firstDay; i++) {
+    const div = document.createElement("div");
+    div.className = "calendar-day empty";
+    grid.appendChild(div);
+  }
+
+  // Days
+  const today = new Date();
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateObj = new Date(year, month, d);
+    const dateStr = dateObj.toISOString().split('T')[0];
+    const isSunday = dateObj.getDay() === 0;
+    const isToday = dateStr === today.toISOString().split('T')[0];
+    const holiday = DAFTAR_LIBUR.find(h => h.tgl === dateStr);
+
+    const div = document.createElement("div");
+    div.className = `calendar-day ${isSunday ? 'sunday' : ''} ${isToday ? 'today' : ''} ${holiday ? 'holiday' : ''}`;
+    div.innerHTML = `<span>${d}</span>`;
+    if (holiday) div.title = holiday.nama;
+    
+    grid.appendChild(div);
+  }
+
+  renderHolidaysList(month);
+}
+
+function renderHolidaysList(month) {
+  const list = document.getElementById("holidaysList");
+  const monthHolidays = DAFTAR_LIBUR.filter(h => new Date(h.tgl).getMonth() === month);
+  
+  list.innerHTML = monthHolidays.map(h => {
+    const d = new Date(h.tgl).getDate();
+    return `
+      <div class="holiday-item">
+        <div class="holiday-date-badge">${d}</div>
+        <div style="font-size: 0.85rem; font-weight: 700; color: var(--sidebar-bg);">${h.nama}</div>
+      </div>
+    `;
+  }).join("") || "<p style='font-size:0.8rem; color:var(--text-muted); text-align:center;'>Tidak ada hari libur bulan ini.</p>";
+}
+
+function changeCalendarMonth(offset) {
+  currentCalendarDate.setMonth(currentCalendarDate.getMonth() + offset);
+  renderCalendar();
+}
+
+// Tambahkan inisialisasi di syncData atau switchTab
+// Saya akan memodifikasi switchTab untuk memicu renderCalendar

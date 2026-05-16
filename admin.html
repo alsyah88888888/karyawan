@@ -52,6 +52,13 @@
                     <a href="#" class="nav-link" id="linkTabPerformance" onclick="switchTab('tabPerformance')">
                         <i data-lucide="trending-up"></i> <span>Performa (KPI)</span>
                     </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" id="linkTabCalendar" onclick="switchTab('tabCalendar')">
+                        <i data-lucide="calendar"></i> <span>Kalender & Libur</span>
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a href="#" class="nav-link" id="linkTabCEO" onclick="switchTab('tabCEO')">
                         <i data-lucide="shield-check"></i>
                         <span>CEO Access</span>
@@ -411,6 +418,44 @@
                             </thead>
                             <tbody id="adminPerformanceBody"></tbody>
                         </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB: KALENDER & HARI LIBUR -->
+            <section id="tabCalendar" style="display: none;">
+                <div class="data-section">
+                    <div class="section-header">
+                        <div class="card-title-group">
+                            <h3>Kalender Operasional</h3>
+                            <p>Manajemen hari kerja dan hari libur nasional</p>
+                        </div>
+                        <div class="action-group">
+                            <button class="btn btn-outline btn-small" onclick="changeCalendarMonth(-1)"><i data-lucide="chevron-left"></i></button>
+                            <h4 id="calendarMonthTitle" style="min-width: 150px; text-align: center; font-weight: 800; color: var(--sidebar-bg);">Mei 2026</h4>
+                            <button class="btn btn-outline btn-small" onclick="changeCalendarMonth(1)"><i data-lucide="chevron-right"></i></button>
+                        </div>
+                    </div>
+                    
+                    <div style="padding: 2rem; display: grid; grid-template-columns: 2fr 1fr; gap: 2rem;">
+                        <!-- Grid Kalender -->
+                        <div class="calendar-container">
+                            <div class="calendar-weekdays">
+                                <div>Min</div><div>Sen</div><div>Sel</div><div>Rab</div><div>Kam</div><div>Jum</div><div>Sab</div>
+                            </div>
+                            <div id="calendarGrid" class="calendar-grid"></div>
+                        </div>
+
+                        <!-- Daftar Hari Libur -->
+                        <div class="holidays-list-container">
+                            <h4 style="margin-bottom: 1rem; color: var(--sidebar-bg); border-bottom: 2px solid var(--border); padding-bottom: 10px;">Hari Libur / Event</h4>
+                            <div id="holidaysList" style="display: flex; flex-direction: column; gap: 10px;">
+                                <!-- Item Libur -->
+                            </div>
+                            <button class="btn btn-primary" style="width: 100%; margin-top: 20px; font-size: 0.75rem;" onclick="showAddHolidayModal()">
+                                <i data-lucide="plus-circle"></i> Tambah Libur Kustom
+                            </button>
+                        </div>
                     </div>
                 </div>
             </section>
