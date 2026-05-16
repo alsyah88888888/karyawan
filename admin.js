@@ -932,8 +932,13 @@ async function kirimSlipWA(index) {
     }
 
   } catch (err) {
-    console.error(err);
-    alert("Gagal memproses slip gambar: " + err.message);
+    // Abaikan jika user membatalkan sharing (AbortError)
+    if (err.name === 'AbortError') {
+      console.log("Sharing dibatalkan oleh pengguna.");
+    } else {
+      console.error(err);
+      alert("Gagal memproses slip gambar: " + err.message);
+    }
   } finally {
     showLoading(false);
   }
