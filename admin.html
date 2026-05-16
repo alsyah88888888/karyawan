@@ -215,6 +215,9 @@
                             <button class="btn btn-primary btn-small" style="background:#4f46e5; border:none;" onclick="exportData()">
                                 <i data-lucide="file-spreadsheet" style="width:14px;"></i> <span>Download Report</span>
                             </button>
+                            <button class="btn btn-success btn-small" onclick="showManualLogModal()">
+                                <i data-lucide="plus-circle" style="width:14px;"></i> <span>Input Manual (Lupa Absen)</span>
+                            </button>
                         </div>
                         <button class="btn btn-danger btn-small" onclick="hapusSemuaLog()">
                             <i data-lucide="trash-2"></i>
@@ -635,6 +638,46 @@
     <div id="loadingOverlay">
         <div class="spinner"></div>
         <p style="font-weight: 700;">Memproses Data...</p>
+    </div>
+
+    <!-- MODAL MANUAL LOG (LUPA ABSEN) -->
+    <div id="modalManualLog" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3>Input Presensi Manual</h3>
+                <button onclick="closeManualLogModal()" style="background:none; border:none; cursor:pointer;"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body">
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 20px;">Gunakan fitur ini hanya jika karyawan lupa melakukan presensi di terminal.</p>
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label>Pilih Karyawan</label>
+                    <select id="manLogNama" class="form-input"></select>
+                </div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Tanggal</label>
+                        <input type="date" id="manLogTgl" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label>Jam</label>
+                        <input type="time" id="manLogJam" class="form-input">
+                    </div>
+                </div>
+                <div class="form-group" style="margin-top: 15px;">
+                    <label>Status Presensi</label>
+                    <select id="manLogStatus" class="form-input">
+                        <option value="MASUK">MASUK</option>
+                        <option value="PULANG">PULANG</option>
+                        <option value="DINAS LUAR">DINAS LUAR</option>
+                        <option value="PULANG DINAS">PULANG DINAS</option>
+                    </select>
+                </div>
+                <div style="margin-top:25px; display:flex; gap:10px;">
+                    <button class="btn btn-primary" onclick="saveManualLog()" style="flex:2;">SIMPAN DATA</button>
+                    <button class="btn btn-outline" onclick="closeManualLogModal()" style="flex:1;">BATAL</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Scripts -->

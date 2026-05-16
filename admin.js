@@ -2129,3 +2129,57 @@ function exportAIReportPDF() {
   });
 }
 
+
+// --- MANUAL LOG (LUPA ABSEN) ---
+function showManualLogModal() {
+  const sel = document.getElementById("manLogNama");
+  if (sel) {
+    sel.innerHTML = KARYAWAN.map(k => `<option value="${k.nama}">${k.nama}</option>`).join("");
+  }
+  
+  // Set default date & time to now
+  const now = new Date();
+  document.getElementById("manLogTgl").value = now.toISOString().split('T')[0];
+  document.getElementById("manLogJam").value = now.toTimeString().split(' ')[0].substring(0, 5);
+  
+  document.getElementById("modalManualLog").style.display = "flex";
+  if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+function closeManualLogModal() {
+  document.getElementById("modalManualLog").style.display = "none";
+}
+
+async function saveManualLog() {
+  const nama = document.getElementById("manLogNama").value;
+  const tgl = document.getElementById("manLogTgl").value;
+  const jam = document.getElementById("manLogJam").value;
+  const status = document.getElementById("manLogStatus").value;
+
+  if (!nama || !tgl || !jam) return alert("Harap isi semua data!");
+
+  const isoWaktu = new Date(`${tgl}T${jam}:00`).toISOString();
+  const info = KARYAWAN.find(k => k.nama === nama);
+
+  showLoading(true);
+  try {
+    const { error } = await supabaseClient.from("logs").insert([{
+      nama: nama,
+      dept: info ? info.dept : "-",
+      waktu: isoWaktu,
+      status: status,
+      foto: null, // Manual input has no photo
+      isLate: false // Manual input assumed regular or handled by admin
+    }]);
+
+    if (error) throw error;
+    
+    if (typeof showToast === 'function') showToast("Presensi manual berhasil disimpan!", "success");
+    closeManualLogModal();
+    await syncData(); // Refresh all data
+  } catch (err) {
+    alert("Gagal menyimpan data: " + err.message);
+  } finally {
+    showLoading(false);
+  }
+}
