@@ -215,8 +215,11 @@
                             <button class="btn btn-primary btn-small" style="background:#4f46e5; border:none;" onclick="exportData()">
                                 <i data-lucide="file-spreadsheet" style="width:14px;"></i> <span>Download Report</span>
                             </button>
+                            <button class="btn btn-outline btn-small" style="color: #ef4444; border-color: #ef4444;" onclick="deteksiLupaAbsen()">
+                                <i data-lucide="bell" style="width:14px;"></i> <span>Deteksi Lupa Absen</span>
+                            </button>
                             <button class="btn btn-success btn-small" onclick="showManualLogModal()">
-                                <i data-lucide="plus-circle" style="width:14px;"></i> <span>Input Manual (Lupa Absen)</span>
+                                <i data-lucide="plus-circle" style="width:14px;"></i> <span>Input Manual</span>
                             </button>
                         </div>
                         <button class="btn btn-danger btn-small" onclick="hapusSemuaLog()">
@@ -640,7 +643,34 @@
         <p style="font-weight: 700;">Memproses Data...</p>
     </div>
 
-    <!-- MODAL MANUAL LOG (LUPA ABSEN) -->
+    <!-- MODAL DETEKSI LUPA ABSEN -->
+    <div id="modalLupaAbsen" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h3>Deteksi Lupa Absen (Hari Kerja)</h3>
+                <button onclick="closeLupaAbsenModal()" style="background:none; border:none; cursor:pointer;"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body">
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 20px;">Menampilkan daftar karyawan yang tidak memiliki log MASUK atau PULANG pada periode terpilih (Senin-Sabtu).</p>
+                <div class="table-wrapper" style="max-height: 400px; overflow-y: auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Karyawan</th>
+                                <th>Tanggal</th>
+                                <th>Keterangan</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="lupaAbsenBody"></tbody>
+                    </table>
+                </div>
+                <div style="margin-top:20px;">
+                    <button class="btn btn-outline" onclick="closeLupaAbsenModal()" style="width:100%;">TUTUP</button>
+                </div>
+            </div>
+        </div>
+    </div>
     <div id="modalManualLog" class="modal">
         <div class="modal-content" style="max-width: 500px;">
             <div class="modal-header">

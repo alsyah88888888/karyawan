@@ -2183,3 +2183,87 @@ async function saveManualLog() {
     showLoading(false);
   }
 }
+
+// --- DETEKSI LUPA ABSEN LOGIC ---
+function deteksiLupaAbsen() {
+  const tglMulaiStr = document.getElementById("logFilterTglMulai").value;
+  const tglSelesaiStr = document.getElementById("logFilterTglSelesai").value;
+  if (!tglMulaiStr || !tglSelesaiStr) return alert("Pilih periode terlebih dahulu!");
+
+  const start = new Date(tglMulaiStr);
+  const end = new Date(tglSelesaiStr);
+  const body = document.getElementById("lupaAbsenBody");
+  let html = "";
+
+  // Ambil semua log yang ada di memori (sudah di-sync)
+  // Kita asumsikan LOGS sudah terisi dari syncData
+  
+  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+    if (d.getDay() === 0) continue; // Skip Minggu
+    
+    const dateStr = d.toISOString().split('T')[0];
+    const todayStr = new Date().toISOString().split('T')[0];
+    
+    KARYAWAN.forEach(k => {
+      // Filter logs untuk karyawan ini di tanggal ini
+      const logsHariIni = LOGS.filter(l => {
+        const logDate = new Date(new Date(l.waktu).getTime() - 4 * 3600000).toISOString().split('T')[0];
+        return l.nama === k.nama && logDate === dateStr;
+      });
+
+      const hasMasuk = logsHariIni.some(l => l.status.toUpperCase().startsWith("MASUK") || l.status.toUpperCase().startsWith("DINAS LUAR"));
+      const hasPulang = logsHariIni.some(l => l.status.toUpperCase().startsWith("PULANG"));
+
+      // Jika belum masuk (hanya cek jika tanggal sudah lewat atau sudah siang)
+      if (!hasMasuk) {
+        html += `
+          <tr>
+            <td><strong>${k.nama}</strong></td>
+            <td>${dateStr}</td>
+            <td><span class="badge badge-danger">Lupa Masuk</span></td>
+            <td>
+              <button class="btn btn-outline btn-small" onclick="kirimPengingatWA('${k.nama}', '${k.nomor_wa}', '${dateStr}', 'MASUK')">
+                <i data-lucide="message-circle" style="width:14px;"></i>
+              </button>
+            </td>
+          </tr>`;
+      }
+
+      // Jika belum pulang (hanya cek jika tanggal sudah lewat)
+      if (hasMasuk && !hasPulang && dateStr < todayStr) {
+        html += `
+          <tr>
+            <td><strong>${k.nama}</strong></td>
+            <td>${dateStr}</td>
+            <td><span class="badge badge-warning">Lupa Pulang</span></td>
+            <td>
+              <button class="btn btn-outline btn-small" onclick="kirimPengingatWA('${k.nama}', '${k.nomor_wa}', '${dateStr}', 'PULANG')">
+                <i data-lucide="message-circle" style="width:14px;"></i>
+              </button>
+            </td>
+          </tr>`;
+      }
+    });
+  }
+
+  body.innerHTML = html || "<tr><td colspan='4' style='text-align:center;'>Semua presensi lengkap!</td></tr>";
+  document.getElementById("modalLupaAbsen").style.display = "flex";
+  if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+function closeLupaAbsenModal() {
+  document.getElementById("modalLupaAbsen").style.display = "none";
+}
+
+function kirimPengingatWA(nama, nomor, tanggal, tipe) {
+  if (!nomor) return alert("Nomor WA tidak ada!");
+  
+  let noWa = nomor.trim();
+  if (noWa.startsWith("0")) noWa = "62" + noWa.slice(1);
+  else if (!noWa.startsWith("62")) noWa = "62" + noWa;
+
+  const pesan = `Halo *${nama}*,\n\nKami mendeteksi Anda belum melakukan absensi *${tipe}* pada tanggal *${tanggal}*.\n\nMohon segera konfirmasi ke Admin atau lakukan input manual jika ada kendala teknis. Terima kasih!`;
+  
+  const url = `https://wa.me/${noWa}?text=${encodeURIComponent(pesan)}`;
+  window.open(url, '_blank');
+}
