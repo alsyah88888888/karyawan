@@ -2448,7 +2448,7 @@ function renderCalendar() {
     let attendanceHtml = "";
     if (!isSunday && !isFuture && totalKar > 0) {
       const color = hadirCount === totalKar ? 'var(--success)' : (hadirCount > 0 ? 'var(--warning)' : '#94a3b8');
-      attendanceHtml = `<div style="font-size: 0.65rem; margin-top: 4px; color: ${color}; font-weight: 800;">${hadirCount}/${totalKar}</div>`;
+      attendanceHtml = `<div class="attendance-mini-badge" style="color: ${color};">${hadirCount}/${totalKar}</div>`;
     }
 
     div.innerHTML = `

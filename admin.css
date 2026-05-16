@@ -676,12 +676,13 @@ tr:hover { background: #fbfcfe; }
     animation: fadeIn 0.4s ease forwards;
 }
 
-/* CALENDAR STYLES */
+/* CALENDAR PREMIUM STYLES */
 .calendar-container {
-    background: #f8fafc;
-    border-radius: 16px;
-    padding: 20px;
+    background: linear-gradient(145deg, #ffffff, #f1f5f9);
+    border-radius: 24px;
+    padding: 25px;
     border: 1px solid var(--border);
+    box-shadow: inset 0 2px 4px rgba(255,255,255,0.8), var(--shadow-sm);
 }
 
 .calendar-weekdays {
@@ -690,15 +691,18 @@ tr:hover { background: #fbfcfe; }
     text-align: center;
     font-weight: 800;
     color: var(--text-muted);
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     text-transform: uppercase;
-    margin-bottom: 15px;
+    letter-spacing: 1.5px;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
 }
 
 .calendar-grid {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    gap: 8px;
+    gap: 12px;
 }
 
 .calendar-day {
@@ -708,63 +712,110 @@ tr:hover { background: #fbfcfe; }
     align-items: center;
     justify-content: center;
     background: white;
-    border-radius: 12px;
-    font-weight: 700;
-    font-size: 0.9rem;
+    border-radius: 18px;
+    font-weight: 800;
+    font-size: 1rem;
     color: var(--text-main);
     border: 1px solid var(--border);
-    transition: all 0.2s ease;
-    cursor: default;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
 }
 
-.calendar-day.empty { background: transparent; border: none; }
+.calendar-day:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    border-color: var(--primary);
+    z-index: 2;
+}
 
-.calendar-day.sunday { color: var(--danger); background: #fff1f2; }
+.calendar-day.empty { background: transparent; border: none; cursor: default; }
+
+.calendar-day.sunday { 
+    color: var(--danger); 
+    background: #fff1f2;
+    border-color: #fecaca;
+}
 
 .calendar-day.today { 
     background: var(--primary); 
-    color: white; 
-    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
-    border-color: var(--primary);
+    color: white !important; 
+    box-shadow: 0 10px 20px rgba(79, 70, 229, 0.3);
+    border: none;
+    transform: scale(1.05);
+    z-index: 3;
+}
+
+.calendar-day.today::before {
+    content: 'HARI INI';
+    position: absolute;
+    top: 6px;
+    font-size: 0.5rem;
+    font-weight: 900;
+    letter-spacing: 0.5px;
+    opacity: 0.9;
 }
 
 .calendar-day.holiday {
     background: #fffbeb;
-    color: var(--warning);
-    border: 1.5px solid var(--warning);
-    position: relative;
+    color: #d97706;
+    border: 1.5px solid #fde68a;
 }
 
 .calendar-day.holiday::after {
     content: '';
     position: absolute;
-    bottom: 4px;
-    width: 4px;
-    height: 4px;
+    bottom: 8px;
+    width: 6px;
+    height: 6px;
     background: var(--warning);
     border-radius: 50%;
+    box-shadow: 0 0 8px var(--warning);
 }
 
+/* Holiday List Enhancements */
 .holiday-item {
     background: white;
-    padding: 12px 15px;
-    border-radius: 12px;
+    padding: 16px;
+    border-radius: 16px;
     border: 1px solid var(--border);
     display: flex;
     align-items: center;
-    gap: 12px;
-    transition: transform 0.2s ease;
+    gap: 15px;
+    transition: all 0.3s ease;
+    box-shadow: var(--shadow-sm);
 }
 
-.holiday-item:hover { transform: translateX(5px); border-color: var(--warning); }
+.holiday-item:hover { 
+    transform: translateX(8px); 
+    border-color: var(--warning);
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.15);
+}
 
 .holiday-date-badge {
-    background: #fffbeb;
-    color: var(--warning);
-    padding: 4px 8px;
-    border-radius: 6px;
-    font-weight: 800;
-    font-size: 0.7rem;
-    min-width: 45px;
-    text-align: center;
+    background: linear-gradient(135deg, #fef3c7, #fde68a);
+    color: #92400e;
+    padding: 8px;
+    border-radius: 10px;
+    font-weight: 900;
+    font-size: 0.8rem;
+    min-width: 42px;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 4px rgba(245, 158, 11, 0.1);
 }
+
+.attendance-mini-badge {
+    position: absolute;
+    bottom: 8px;
+    font-size: 0.6rem;
+    font-weight: 800;
+    padding: 2px 6px;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.8);
+    backdrop-filter: blur(4px);
+}
+
