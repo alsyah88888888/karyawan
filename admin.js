@@ -808,37 +808,135 @@ function cetakSlip(index) {
   win.document.close();
 }
 
-function kirimSlipWA(index) {
+async function kirimSlipWA(index) {
   const k = KARYAWAN[index];
   const d = hitungDetailGaji(k.gaji, k.nama);
-  const date = new Date();
-  const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
-  const period = `${monthNames[date.getMonth()]} ${date.getFullYear()}`;
-
+  
   if (!k.nomor_wa) return alert("Nomor WhatsApp tidak ditemukan!");
 
-  // Format Pesan
-  let pesan = `*SLIP GAJI - ${k.nama.toUpperCase()}*\n`;
-  pesan += `Periode: ${period}\n`;
-  pesan += `----------------------------------\n`;
-  pesan += `GAJI POKOK: Rp ${Math.floor(d.gapok).toLocaleString('id-ID')}\n`;
-  pesan += `PINJAMAN KANTOR: Rp ${Math.floor(d.pinjaman).toLocaleString('id-ID')}\n`;
-  pesan += `HKE (${d.hadir} hari): Rp ${Math.floor(d.uangHKE).toLocaleString('id-ID')}\n`;
-  pesan += `INCENTIVE: Rp ${Math.floor(d.incentive || 0).toLocaleString('id-ID')}\n`;
-  pesan += `INCENTIVE (LK/NGINAP): Rp ${Math.floor(d.incentiveLuar || 0).toLocaleString('id-ID')}\n`;
-  pesan += `OVERTIME (${d.totalLembur} jam): Rp ${Math.floor(d.uangLembur).toLocaleString('id-ID')}\n`;
-  pesan += `----------------------------------\n`;
-  pesan += `*Total THP: Rp ${Math.floor(d.thp).toLocaleString('id-ID')}*\n`;
-  pesan += `----------------------------------\n`;
-  pesan += `_Pesan otomatis dari Sistem HRIS KOBOI_`;
+  showLoading(true);
+  
+  try {
+    const tglMulai = document.getElementById("filterTglMulai")?.value;
+    const tglSelesai = document.getElementById("filterTglSelesai")?.value;
+    const fmt = (dt) => dt ? dt.split('-').reverse().join('/') : '-';
+    const periodeTampil = (tglMulai && tglSelesai) ? `${fmt(tglMulai)} - ${fmt(tglSelesai)}` : "Bulan Berjalan";
 
-  // Format nomor (ubah 0 jadi 62)
-  let noWa = k.nomor_wa.trim();
-  if (noWa.startsWith("0")) noWa = "62" + noWa.slice(1);
-  else if (!noWa.startsWith("62")) noWa = "62" + noWa;
+    // 1. Generate Hidden Container for Render
+    const renderContainer = document.createElement("div");
+    renderContainer.style.position = "absolute";
+    renderContainer.style.top = "-9999px";
+    renderContainer.style.width = "600px";
+    renderContainer.style.backgroundColor = "white";
+    document.body.appendChild(renderContainer);
 
-  const url = `https://wa.me/${noWa}?text=${encodeURIComponent(pesan)}`;
-  window.open(url, '_blank');
+    const slipHtml = `
+      <div id="slip-to-share" style="font-family: 'Outfit', sans-serif; color: #1e293b; background: white; padding: 40px; border: 1px solid #e2e8f0; position: relative;">
+        <div style="position: absolute; top: 20px; right: -35px; background: #fee2e2; color: #ef4444; padding: 5px 40px; transform: rotate(45deg); font-size: 0.6rem; font-weight: 800; letter-spacing: 1px;">CONFIDENTIAL</div>
+        
+        <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 2px solid #1e293b; padding-bottom: 20px;">
+          <div style="display: flex; align-items: center; gap: 15px;">
+            <img src="logokoboi.png" alt="Logo" style="width: 50px; border-radius: 8px;" onerror="this.style.display='none'">
+            <div>
+              <h1 style="font-size: 1.2rem; font-weight: 800; margin-bottom: 4px;">PT. KOLA BORASI INDONESIA</h1>
+              <p style="font-size: 0.75rem; color: #64748b;">Payroll System Digital</p>
+            </div>
+          </div>
+          <div style="text-align: right;">
+            <h2 style="font-size: 1.4rem; font-weight: 800; color: #4f46e5; margin-bottom: 4px;">SLIP GAJI</h2>
+            <p style="font-size: 0.85rem; font-weight: 600; color: #64748b;">${periodeTampil}</p>
+          </div>
+        </header>
+
+        <section style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 30px; background: #f8fafc; padding: 20px; border-radius: 12px;">
+          <div>
+            <p style="font-size: 0.7rem; color: #64748b; font-weight: 600; text-transform: uppercase; margin-bottom: 4px;">Karyawan</p>
+            <p style="font-weight: 700; color: #1e293b;">${k.nama}</p>
+            <p style="font-size: 0.75rem; color: #64748b;">ID: ${k.nik}</p>
+          </div>
+          <div>
+            <p style="font-size: 0.7rem; color: #64748b; font-weight: 600; text-transform: uppercase; margin-bottom: 4px;">Jabatan / Dept</p>
+            <p style="font-weight: 700; color: #1e293b;">${k.jabatan || k.dept}</p>
+            <p style="font-size: 0.75rem; color: #64748b;">Rek: ${k.rekening || '-'}</p>
+          </div>
+        </section>
+
+        <section style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-bottom: 30px;">
+          <div>
+            <h3 style="font-size: 0.85rem; font-weight: 800; text-transform: uppercase; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 12px; color: #4f46e5;">Penerimaan</h3>
+            <div style="display: flex; justify-content: space-between; padding: 6px 0; font-size: 0.8rem; border-bottom: 1px solid #f8fafc;"><span>Gaji Pokok</span><span style="font-weight: 600;">Rp ${Math.floor(d.gapok).toLocaleString('id-ID')}</span></div>
+            <div style="display: flex; justify-content: space-between; padding: 6px 0; font-size: 0.8rem; border-bottom: 1px solid #f8fafc;"><span>HKE (${d.hadir} hari)</span><span style="font-weight: 600;">Rp ${Math.floor(d.uangHKE).toLocaleString('id-ID')}</span></div>
+            <div style="display: flex; justify-content: space-between; padding: 6px 0; font-size: 0.8rem; border-bottom: 1px solid #f8fafc;"><span>Overtime (${d.totalLembur} jam)</span><span style="font-weight: 600;">Rp ${Math.floor(d.uangLembur).toLocaleString('id-ID')}</span></div>
+            <div style="display: flex; justify-content: space-between; padding: 6px 0; font-size: 0.8rem; border-bottom: 1px solid #f8fafc;"><span>Insentif</span><span style="font-weight: 600;">Rp ${Math.floor(d.incentive || 0).toLocaleString('id-ID')}</span></div>
+          </div>
+          <div>
+            <h3 style="font-size: 0.85rem; font-weight: 800; text-transform: uppercase; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 12px; color: #4f46e5;">Potongan</h3>
+            <div style="display: flex; justify-content: space-between; padding: 6px 0; font-size: 0.8rem; border-bottom: 1px solid #f8fafc;"><span>Pinjaman Kantor</span><span style="font-weight: 600; color: #ef4444;">Rp ${Math.floor(d.pinjaman).toLocaleString('id-ID')}</span></div>
+          </div>
+        </section>
+
+        <section style="background: #1e293b; color: white; padding: 25px 30px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <span style="font-size: 0.75rem; font-weight: 600; opacity: 0.7; text-transform: uppercase; letter-spacing: 1px;">Total Gaji Bersih (THP)</span>
+            <br>
+            <span style="font-size: 2rem; font-weight: 800;">Rp ${Math.floor(d.thp).toLocaleString('id-ID')}</span>
+          </div>
+          <div style="text-align: right;">
+            <div style="font-size: 0.7rem; font-weight: 700; background: rgba(255,255,255,0.1); padding: 4px 12px; border-radius: 20px; display: inline-block;">KPI: ${calculateLiveKPI(d.hadir, d.telat).score.toFixed(1)}</div>
+          </div>
+        </section>
+        
+        <p style="margin-top: 40px; font-size: 0.65rem; color: #94a3b8; text-align: center; font-style: italic;">Slip gaji ini dihasilkan secara digital oleh HRIS KOBOI. Informasi bersifat rahasia.</p>
+      </div>
+    `;
+    renderContainer.innerHTML = slipHtml;
+
+    // 2. Convert to Image
+    const canvas = await html2canvas(renderContainer.querySelector("#slip-to-share"), {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: "#ffffff"
+    });
+    
+    document.body.removeChild(renderContainer);
+    
+    const imageBlob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+    const fileName = `Slip_Gaji_${k.nama.replace(/\s+/g, '_')}_${periodeTampil.replace(/\//g, '-')}.png`;
+    const imageFile = new File([imageBlob], fileName, { type: 'image/png' });
+
+    // 3. Format Message
+    let noWa = k.nomor_wa.trim();
+    if (noWa.startsWith("0")) noWa = "62" + noWa.slice(1);
+    else if (!noWa.startsWith("62")) noWa = "62" + noWa;
+
+    const pesan = `Halo ${k.nama}, berikut adalah Slip Gaji Anda untuk periode ${periodeTampil}. Total THP: Rp ${Math.floor(d.thp).toLocaleString('id-ID')}`;
+
+    // 4. Attempt to Share File (Modern Mobile Browsers)
+    if (navigator.share && navigator.canShare && navigator.canShare({ files: [imageFile] })) {
+      await navigator.share({
+        files: [imageFile],
+        title: 'Slip Gaji Digital',
+        text: pesan
+      });
+      showToast("Slip Gambar dikirim via Share Menu!", "success");
+    } else {
+      // Fallback: Download image and open WA text
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(imageBlob);
+      link.download = fileName;
+      link.click();
+      
+      const waUrl = `https://wa.me/${noWa}?text=${encodeURIComponent(pesan + "\n\n(Mohon lampirkan gambar slip yang baru saja terunduh)")}`;
+      window.open(waUrl, '_blank');
+      showToast("Gambar terunduh! Silakan lampirkan di WA.", "info");
+    }
+
+  } catch (err) {
+    console.error(err);
+    alert("Gagal memproses slip gambar: " + err.message);
+  } finally {
+    showLoading(false);
+  }
 }
 
 // --- UTILS & UX ---
