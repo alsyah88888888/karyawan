@@ -394,11 +394,11 @@ function renderLogTable() {
   logs.forEach((l) => {
     const s = l.status.toUpperCase();
     let badgeClass = "badge-masuk";
-    let icon = "login";
+    let icon = "log-in";
 
     if (s.includes("PULANG")) {
       badgeClass = "badge-pulang";
-      icon = "logout";
+      icon = "log-out";
     } else if (s.includes("DINAS")) {
       badgeClass = "badge-dinas";
       icon = "briefcase";
