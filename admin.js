@@ -407,10 +407,14 @@ function toggleSidebar() { document.getElementById("sidebar").classList.toggle("
 
 function renderLogTable() {
   const body = document.getElementById("logTableBody");
+  const searchInput = document.getElementById("logSearchInput")?.value.toLowerCase() || "";
   if (!body) return;
 
   let htmlRows = "";
-  logs.forEach((l) => {
+  // Filter logs berdasarkan input pencarian
+  const filteredLogs = logs.filter(l => l.nama.toLowerCase().includes(searchInput));
+
+  filteredLogs.forEach((l) => {
     const s = l.status.toUpperCase();
     let badgeClass = "badge-masuk";
     let icon = "log-in";
