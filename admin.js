@@ -2206,7 +2206,7 @@ function deteksiLupaAbsen() {
     
     KARYAWAN.forEach(k => {
       // Filter logs untuk karyawan ini di tanggal ini
-      const logsHariIni = LOGS.filter(l => {
+      const logsHariIni = allLogs.filter(l => {
         const logDate = new Date(new Date(l.waktu).getTime() - 4 * 3600000).toISOString().split('T')[0];
         return l.nama === k.nama && logDate === dateStr;
       });
