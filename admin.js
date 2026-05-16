@@ -548,7 +548,15 @@ function hitungDetailGaji(gapok, namaKaryawan, customStart = null, customEnd = n
     const d = new Date(dateObj.getTime() - 4 * 3600000);
     return d.toISOString().split('T')[0];
   };
-  const hariHadir = [...new Set(dataLogKaryawan.map((l) => getShiftDateStr(new Date(l.waktu))))].length;
+  const hariHadir = [...new Set(
+    dataLogKaryawan
+      .filter(l => l.status.toUpperCase() === 'MASUK' || l.status.toUpperCase() === 'BERANGKAT')
+      .map(l => {
+        const d = new Date(new Date(l.waktu).getTime() - 4 * 3600000);
+        return d.getDay() !== 0 ? d.toISOString().split('T')[0] : null;
+      })
+      .filter(d => d !== null)
+  )].length;
 
   let totalLembur = 0;
   let i = 0;

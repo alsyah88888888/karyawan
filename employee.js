@@ -99,7 +99,15 @@ function renderDashboard() {
     return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
   });
 
-  const hadirCount = [...new Set(monthLogs.map(l => new Date(l.waktu).toLocaleDateString()))].length;
+  const hadirCount = [...new Set(
+    monthLogs
+      .filter(l => l.status.toUpperCase() === 'MASUK' || l.status.toUpperCase() === 'BERANGKAT')
+      .map(l => {
+        const d = new Date(new Date(l.waktu).getTime() - 4 * 3600000);
+        return d.getDay() !== 0 ? d.toISOString().split('T')[0] : null;
+      })
+      .filter(d => d !== null)
+  )].length;
   const lateCount = monthLogs.filter(l => l.status === 'MASUK' && l.isLate).length;
 
   document.getElementById("statHadir").innerText = hadirCount;
@@ -331,7 +339,15 @@ function hitungDetailGaji(gapok, namaKaryawan, customStart, customEnd) {
     return w >= start && w <= end;
   });
 
-  const hariHadir = [...new Set(periodLogs.map(l => new Date(l.waktu).toLocaleDateString()))].length;
+  const hariHadir = [...new Set(
+    periodLogs
+      .filter(l => l.status.toUpperCase() === 'MASUK' || l.status.toUpperCase() === 'BERANGKAT')
+      .map(l => {
+        const d = new Date(new Date(l.waktu).getTime() - 4 * 3600000);
+        return d.getDay() !== 0 ? d.toISOString().split('T')[0] : null;
+      })
+      .filter(d => d !== null)
+  )].length;
   
   // Simplified Overtime for ESS View (Assuming 0 if not calculated here yet)
   const uangLembur = 0; 
