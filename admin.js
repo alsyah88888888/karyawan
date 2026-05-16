@@ -911,36 +911,23 @@ async function kirimSlipWA(index) {
     if (noWa.startsWith("0")) noWa = "62" + noWa.slice(1);
     else if (!noWa.startsWith("62")) noWa = "62" + noWa;
 
-    const pesan = `Halo ${k.nama}, berikut adalah Slip Gaji Anda untuk periode ${periodeTampil}. Total THP: Rp ${Math.floor(d.thp).toLocaleString('id-ID')}`;
+    const pesan = `Halo *${k.nama}*,\n\nBerikut adalah *Slip Gaji Digital* Anda untuk periode *${periodeTampil}*.\n\nTotal THP: *Rp ${Math.floor(d.thp).toLocaleString('id-ID')}*\n\n_(Mohon lampirkan gambar slip gaji yang baru saja terunduh otomatis ke chat ini)_`;
 
-    // 4. Attempt to Share File (Modern Mobile Browsers)
-    if (navigator.share && navigator.canShare && navigator.canShare({ files: [imageFile] })) {
-      await navigator.share({
-        files: [imageFile],
-        title: 'Slip Gaji Digital',
-        text: pesan
-      });
-      showToast("Slip Gambar dikirim via Share Menu!", "success");
-    } else {
-      // Fallback: Download image and open WA text
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(imageBlob);
-      link.download = fileName;
-      link.click();
-      
-      const waUrl = `https://wa.me/${noWa}?text=${encodeURIComponent(pesan + "\n\n(Mohon lampirkan gambar slip yang baru saja terunduh)")}`;
-      window.open(waUrl, '_blank');
-      showToast("Gambar terunduh! Silakan lampirkan di WA.", "info");
-    }
+    // 4. Always Download for Reliability
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(imageBlob);
+    link.download = fileName;
+    link.click();
+    
+    // 5. Open WA Chat with Pre-filled Text
+    const waUrl = `https://wa.me/${noWa}?text=${encodeURIComponent(pesan)}`;
+    window.open(waUrl, '_blank');
+    
+    showToast("Slip terunduh & WA Terbuka!", "success");
 
   } catch (err) {
-    // Abaikan jika user membatalkan sharing (AbortError)
-    if (err.name === 'AbortError') {
-      console.log("Sharing dibatalkan oleh pengguna.");
-    } else {
-      console.error(err);
-      alert("Gagal memproses slip gambar: " + err.message);
-    }
+    console.error(err);
+    alert("Gagal memproses slip gambar: " + err.message);
   } finally {
     showLoading(false);
   }
