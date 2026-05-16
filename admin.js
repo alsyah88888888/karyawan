@@ -891,11 +891,13 @@ async function kirimSlipWA(index) {
     `;
     renderContainer.innerHTML = slipHtml;
 
-    // 2. Convert to Image
+    // 2. Convert to Image (Optimized for speed)
     const canvas = await html2canvas(renderContainer.querySelector("#slip-to-share"), {
-      scale: 2,
+      scale: 1.2, // Slightly reduced scale for much faster processing on mobile
       useCORS: true,
-      backgroundColor: "#ffffff"
+      backgroundColor: "#ffffff",
+      logging: false, // Disable logging to save resources
+      removeContainer: true // Faster cleanup
     });
     
     document.body.removeChild(renderContainer);
