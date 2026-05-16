@@ -2462,3 +2462,43 @@ function changeCalendarMonth(offset) {
 
 // Tambahkan inisialisasi di syncData atau switchTab
 // Saya akan memodifikasi switchTab untuk memicu renderCalendar
+
+// --- REALTIME CLOCK LOGIC ---
+function updateClock() {
+  const now = new Date();
+  const timeEl = document.getElementById("liveClockTime");
+  const dateEl = document.getElementById("liveClockDate");
+  
+  if (timeEl) {
+    timeEl.innerText = now.toLocaleTimeString('id-ID', { hour12: false });
+  }
+  
+  if (dateEl) {
+    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    dateEl.innerText = now.toLocaleDateString('id-ID', options);
+  }
+}
+
+// Update clock every second
+setInterval(updateClock, 1000);
+updateClock(); // Initial call
+
+// --- SUPABASE REALTIME SUBSCRIPTION ---
+function initRealtime() {
+  console.log("Initializing Supabase Realtime...");
+  
+  supabaseClient
+    .channel('any')
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'logs' }, payload => {
+      console.log('New log detected:', payload.new);
+      // Jika ada log baru, otomatis sinkronkan data agar dashboard update
+      syncData(); 
+      if (typeof showToast === 'function') showToast("Presensi baru masuk: " + payload.new.nama, "info");
+    })
+    .subscribe();
+}
+
+// Panggil initRealtime saat aplikasi siap
+document.addEventListener("DOMContentLoaded", () => {
+  initRealtime();
+});
