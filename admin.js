@@ -87,6 +87,7 @@ function refreshUI() {
   renderCEOTable();
   renderVisualStats();
   renderKPITable();
+  renderCalendar();
 }
 
 // --- DASHBOARD UI ---
@@ -2431,9 +2432,31 @@ function renderCalendar() {
 
     const div = document.createElement("div");
     div.className = `calendar-day ${isSunday ? 'sunday' : ''} ${isToday ? 'today' : ''} ${holiday ? 'holiday' : ''}`;
-    div.innerHTML = `<span>${d}</span>`;
-    if (holiday) div.title = holiday.nama;
     
+    // Hitung Kehadiran Real-time untuk tanggal ini
+    const hadirCount = KARYAWAN.filter(k => {
+      return allLogs.some(l => {
+        const logDate = new Date(new Date(l.waktu).getTime() - 4 * 3600000).toISOString().split('T')[0];
+        const s = l.status.toUpperCase();
+        return l.nama === k.nama && logDate === dateStr && (s.includes("MASUK") || s.includes("DINAS"));
+      });
+    }).length;
+
+    const totalKar = KARYAWAN.length;
+    const isFuture = dateStr > today.toISOString().split('T')[0];
+    
+    let attendanceHtml = "";
+    if (!isSunday && !isFuture && totalKar > 0) {
+      const color = hadirCount === totalKar ? 'var(--success)' : (hadirCount > 0 ? 'var(--warning)' : '#94a3b8');
+      attendanceHtml = `<div style="font-size: 0.65rem; margin-top: 4px; color: ${color}; font-weight: 800;">${hadirCount}/${totalKar}</div>`;
+    }
+
+    div.innerHTML = `
+      <span style="z-index:1;">${d}</span>
+      ${attendanceHtml}
+    `;
+    
+    if (holiday) div.title = holiday.nama;
     grid.appendChild(div);
   }
 
