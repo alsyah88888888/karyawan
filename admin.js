@@ -2267,3 +2267,70 @@ function kirimPengingatWA(nama, nomor, tanggal, tipe) {
   const url = `https://wa.me/${noWa}?text=${encodeURIComponent(pesan)}`;
   window.open(url, '_blank');
 }
+
+async function cetakLaporanLupaAbsenPDF() {
+  const tglMulaiStr = document.getElementById("logFilterTglMulai").value;
+  const tglSelesaiStr = document.getElementById("logFilterTglSelesai").value;
+  const body = document.getElementById("lupaAbsenBody");
+  
+  if (body.innerText.includes("Semua presensi lengkap")) {
+    return alert("Tidak ada data untuk dicetak.");
+  }
+
+  const opt = {
+    margin: 10,
+    filename: `Laporan_Lupa_Absen_${tglMulaiStr}_${tglSelesaiStr}.pdf`,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2 },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  };
+
+  const content = document.createElement("div");
+  content.style.padding = "20px";
+  content.style.fontFamily = "Arial, sans-serif";
+  
+  const headerHtml = `
+    <div style="text-align: center; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px;">
+      <h1 style="margin: 0; font-size: 18pt;">PT. KOLA BORASI INDONESIA</h1>
+      <p style="margin: 5px 0; font-size: 10pt;">Laporan Deteksi Lupa Presensi (Hari Kerja)</p>
+      <p style="margin: 0; font-size: 9pt; font-weight: bold;">Periode: ${tglMulaiStr} s/d ${tglSelesaiStr}</p>
+    </div>
+    <table style="width: 100%; border-collapse: collapse; font-size: 10pt;">
+      <thead>
+        <tr style="background: #f1f5f9;">
+          <th style="border: 1px solid #cbd5e1; padding: 8px; text-align: left;">Nama Karyawan</th>
+          <th style="border: 1px solid #cbd5e1; padding: 8px; text-align: left;">Tanggal</th>
+          <th style="border: 1px solid #cbd5e1; padding: 8px; text-align: left;">Keterangan</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${Array.from(body.querySelectorAll("tr")).map(tr => {
+          const cells = tr.querySelectorAll("td");
+          return `
+            <tr>
+              <td style="border: 1px solid #cbd5e1; padding: 8px;">${cells[0].innerText}</td>
+              <td style="border: 1px solid #cbd5e1; padding: 8px;">${cells[1].innerText}</td>
+              <td style="border: 1px solid #cbd5e1; padding: 8px;">${cells[2].innerText}</td>
+            </tr>`;
+        }).join("")}
+      </tbody>
+    </table>
+    <div style="margin-top: 30px; text-align: right; font-size: 9pt;">
+      <p>Dicetak pada: ${new Date().toLocaleString('id-ID')}</p>
+      <br><br><br>
+      <p>( Admin HRIS )</p>
+    </div>
+  `;
+  
+  content.innerHTML = headerHtml;
+  
+  showLoading(true);
+  try {
+    await html2pdf().set(opt).from(content).save();
+    showToast("Laporan PDF berhasil dibuat!", "success");
+  } catch (err) {
+    alert("Gagal mencetak PDF: " + err.message);
+  } finally {
+    showLoading(false);
+  }
+}

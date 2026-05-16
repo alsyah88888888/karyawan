@@ -665,8 +665,11 @@
                         <tbody id="lupaAbsenBody"></tbody>
                     </table>
                 </div>
-                <div style="margin-top:20px;">
-                    <button class="btn btn-outline" onclick="closeLupaAbsenModal()" style="width:100%;">TUTUP</button>
+                <div style="margin-top:20px; display: flex; gap: 10px;">
+                    <button class="btn btn-primary" onclick="cetakLaporanLupaAbsenPDF()" style="flex: 2;">
+                        <i data-lucide="file-text"></i> CETAK LAPORAN (PDF)
+                    </button>
+                    <button class="btn btn-outline" onclick="closeLupaAbsenModal()" style="flex: 1;">TUTUP</button>
                 </div>
             </div>
         </div>
