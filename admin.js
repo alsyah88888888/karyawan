@@ -665,12 +665,13 @@ function hitungDetailGaji(gapok, namaKaryawan, customStart = null, customEnd = n
       })
       .map(l => {
         const d = new Date(new Date(l.waktu).getTime() - 4 * 3600000);
-        return d.getDay() !== 0 ? d.toISOString().split('T')[0] : null;
+        return d.getDay() !== 0 ? toLocalISO(d).split('T')[0] : null;
       })
       .filter(d => d !== null)
   )].length;
 
   let totalLembur = 0;
+  let totalJamKerja = 0; // Tambahan kalkulasi Total Jam Kerja Riil
   let i = 0;
   while (i < dataLogKaryawan.length) {
     const l = dataLogKaryawan[i];
@@ -693,9 +694,15 @@ function hitungDetailGaji(gapok, namaKaryawan, customStart = null, customEnd = n
       const currentStdPulang = isOffice ? 18 : 17; // Office 9 jam (18:00), Operasional 8 jam (17:00)
 
       if (shiftEnd) {
+        // Kalkulasi Total Jam Kerja (Dari Masuk hingga Pulang)
+        let durasiShift = (shiftEnd - actualMasuk) / (1000 * 60 * 60);
+        if (durasiShift > 0) totalJamKerja += durasiShift;
+
+        // Kalkulasi Lembur Sore
         const thresholdPulang = getWIBThreshold(actualMasuk, currentStdPulang);
         let jamSore = (shiftEnd - thresholdPulang) / (1000 * 60 * 60);
         if (jamSore > 0) totalLembur += jamSore;
+        
         i = j;
       } else { i++; }
     } else { i++; }
@@ -732,6 +739,7 @@ function hitungDetailGaji(gapok, namaKaryawan, customStart = null, customEnd = n
     hadir: hariHadir,
     telat: telatCount,
     totalHariKerja,
+    totalJamKerja: Math.round(totalJamKerja * 10) / 10, // Dibulatkan 1 desimal
     totalLembur: jamLemburBulat.toFixed(1),
     uangLembur,
     incentive,
