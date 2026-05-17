@@ -79,16 +79,19 @@ body {
   font-family: inherit;
 }
 
-.btn-login, .btn-primary {
+.btn-login, .btn-primary, .btn-outline {
   width: 100%;
   padding: 16px;
-  background: var(--primary);
-  color: white;
-  border: none;
   border-radius: 12px;
   font-weight: 800;
   cursor: pointer;
   transition: all 0.3s;
+}
+
+.btn-login, .btn-primary {
+  background: var(--primary);
+  color: white;
+  border: none;
 }
 
 .btn-login:hover, .btn-primary:hover { background: var(--primary-hover); transform: translateY(-2px); }
@@ -101,6 +104,7 @@ body {
 
 .btn-outline:hover {
   background: rgba(255, 255, 255, 0.05);
+  transform: translateY(-2px);
 }
 
 .error-msg { color: var(--danger); font-size: 0.85rem; margin-top: 15px; font-weight: 600; }
@@ -202,9 +206,31 @@ th { padding: 12px; font-size: 0.75rem; color: var(--text-muted); text-transform
 td { padding: 12px; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
 
 /* PAYSLIP */
-.payslip-selector { display: flex; gap: 12px; flex-wrap: wrap; }
-.payslip-selector select { width: auto; min-width: 150px; }
-.payslip-selector .btn-primary { width: auto; padding: 14px 24px; }
+/* PAYSLIP */
+.payslip-selector { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+.payslip-selector select { 
+  width: auto; 
+  min-width: 150px; 
+  padding: 14px 16px; 
+  background: rgba(15, 23, 42, 0.5); 
+  border: 1px solid var(--border); 
+  border-radius: 12px; 
+  color: white; 
+  outline: none; 
+  font-family: inherit; 
+  font-size: 0.95rem; 
+  font-weight: 600; 
+  cursor: pointer;
+}
+.payslip-selector select option { background: var(--bg); color: white; }
+.payslip-selector .btn-primary, .payslip-selector .btn-outline { 
+  width: auto; 
+  padding: 14px 24px; 
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
 
 /* LEAVE */
 .leave-container { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
