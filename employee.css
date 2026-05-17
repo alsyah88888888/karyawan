@@ -93,6 +93,16 @@ body {
 
 .btn-login:hover, .btn-primary:hover { background: var(--primary-hover); transform: translateY(-2px); }
 
+.btn-outline {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+.btn-outline:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
 .error-msg { color: var(--danger); font-size: 0.85rem; margin-top: 15px; font-weight: 600; }
 
 /* MAIN PORTAL LAYOUT */

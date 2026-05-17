@@ -395,7 +395,7 @@ function hitungDetailGaji(gapok, namaKaryawan, customStart, customEnd) {
 
 function createSlipHtml(k, d, period) {
   return `
-    <div style="font-family: 'Outfit', sans-serif; color: #1e293b; background: white; padding: 40px; border: 1px solid #e2e8f0; width: 190mm;">
+    <div style="font-family: 'Outfit', sans-serif; color: #1e293b; background: white; padding: 40px; border: 1px solid #e2e8f0; width: 100%; max-width: 800px; margin: 0 auto; box-sizing: border-box;">
       <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 2px solid #1e293b; padding-bottom: 20px;">
         <div>
           <h1 style="font-size: 1.2rem; font-weight: 800; margin-bottom: 4px;">PT. KOLA BORASI INDONESIA</h1>
