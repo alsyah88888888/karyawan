@@ -107,7 +107,8 @@ function renderDashboard() {
       })
       .map(l => {
         const d = new Date(new Date(l.waktu).getTime() - 4 * 3600000);
-        return d.getDay() !== 0 ? d.toISOString().split('T')[0] : null;
+        const pad = num => (num < 10 ? '0' : '') + num;
+        return d.getDay() !== 0 ? (d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate())) : null;
       })
       .filter(d => d !== null)
   )].length;
@@ -199,6 +200,31 @@ async function renderLeaveHistory() {
   body.innerHTML = html || "<tr><td colspan='3'>Belum ada riwayat.</td></tr>";
 }
 
+function getPayslipHtml() {
+  const m = document.getElementById("slipMonth").value;
+  const y = document.getElementById("slipYear").value;
+  if (m === "") return null;
+
+  const lastDay = new Date(y, parseInt(m) + 1, 0);
+  const pad = num => (num < 10 ? '0' : '') + num;
+  const startStr = `${y}-${pad(parseInt(m)+1)}-01`;
+  const endStr = `${y}-${pad(parseInt(m)+1)}-${pad(lastDay.getDate())}`;
+
+  const d = hitungDetailGaji(CURRENT_USER.gaji, CURRENT_USER.nama, startStr, endStr);
+  return createSlipHtml(CURRENT_USER, d, `${getMonthName(m)} ${y}`);
+}
+
+function previewPayslip() {
+  const html = getPayslipHtml();
+  if (!html) return alert("Pilih bulan terlebih dahulu!");
+  
+  const container = document.getElementById("payslipPreviewContainer");
+  const box = document.getElementById("payslipPreviewBox");
+  box.innerHTML = html;
+  container.style.display = "block";
+  if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
 // --- PAYSLIP DOWNLOAD ---
 async function downloadPayslip() {
   const m = document.getElementById("slipMonth").value;
@@ -208,27 +234,21 @@ async function downloadPayslip() {
 
   showLoading(true);
   try {
-    // We need to calculate the slip for the selected month
-    const firstDay = new Date(y, m, 1);
-    const lastDay = new Date(y, parseInt(m) + 1, 0);
-    const startStr = firstDay.toISOString().split('T')[0];
-    const endStr = lastDay.toISOString().split('T')[0];
-
-    // Re-use logic from admin.js for calculation
-    const d = hitungDetailGaji(CURRENT_USER.gaji, CURRENT_USER.nama, startStr, endStr);
+    const slipHtml = getPayslipHtml();
     
-    // Generate the HTML for the slip
-    const slipHtml = createSlipHtml(CURRENT_USER, d, `${getMonthName(m)} ${y}`);
-
+    // Gunakan div sementara agar ukuran fix dan tidak terpotong (meski layar HP kecil)
     const element = document.createElement("div");
     element.innerHTML = slipHtml;
+    element.style.position = "absolute";
+    element.style.top = "-9999px";
+    element.style.width = "800px"; // Paksa ukuran desktop untuk PDF
     document.body.appendChild(element);
 
     const opt = {
       margin: 10,
-      filename: `Slip_Gaji_${CURRENT_USER.nama}_${getMonthName(m)}_${y}.pdf`,
+      filename: `Slip_Gaji_${CURRENT_USER.nama.replace(/\s+/g, '_')}_${getMonthName(m)}_${y}.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2 },
+      html2canvas: { scale: 2, windowWidth: 800 },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
 
@@ -350,7 +370,8 @@ function hitungDetailGaji(gapok, namaKaryawan, customStart, customEnd) {
       })
       .map(l => {
         const d = new Date(new Date(l.waktu).getTime() - 4 * 3600000);
-        return d.getDay() !== 0 ? d.toISOString().split('T')[0] : null;
+        const pad = num => (num < 10 ? '0' : '') + num;
+        return d.getDay() !== 0 ? (d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate())) : null;
       })
       .filter(d => d !== null)
   )].length;

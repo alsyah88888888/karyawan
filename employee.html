@@ -152,8 +152,8 @@
             <!-- TAB: PAYSLIP -->
             <section id="tabPayslip" class="tab-content" style="display: none;">
                 <div class="data-section">
-                    <h3>Unduh Slip Gaji</h3>
-                    <p>Pilih periode bulan untuk mengunduh slip gaji digital Anda.</p>
+                    <h3>Slip Gaji Digital</h3>
+                    <p>Pilih periode bulan untuk melihat dan mengunduh rincian gaji Anda.</p>
                     <div class="payslip-selector">
                         <select id="slipMonth">
                             <option value="">Pilih Bulan</option>
@@ -174,10 +174,18 @@
                             <option value="2026">2026</option>
                             <option value="2025">2025</option>
                         </select>
+                        <button class="btn-primary" onclick="previewPayslip()" style="background: var(--text);">
+                            <i data-lucide="eye"></i> Tampilkan Slip
+                        </button>
                         <button class="btn-primary" onclick="downloadPayslip()">
-                            <i data-lucide="download"></i> Download PDF
+                            <i data-lucide="download"></i> Unduh PDF
                         </button>
                     </div>
+                </div>
+
+                <!-- PREVIEW CONTAINER -->
+                <div id="payslipPreviewContainer" style="display: none; margin-top: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); overflow-x: auto;">
+                    <div id="payslipPreviewBox"></div>
                 </div>
             </section>
 
