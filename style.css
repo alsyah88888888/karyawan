@@ -361,10 +361,33 @@ header p {
 .btn-confirm:hover { transform: translateY(-2px); filter: brightness(1.1); }
 
 /* MOBILE RESPONSIVE */
-@media (max-width: 480px) {
-  #liveClock { font-size: 3rem; }
+@media (max-width: 500px) {
+  .terminal-container { padding: 10px; }
   .terminal-card { border-radius: 30px; }
-  .btn-m, .btn-p { padding: 16px; }
+  header { padding: 25px 20px 15px; }
+  #liveClock { font-size: 3.2rem; }
+  .input-box { padding: 25px 20px; }
+  .btn-m, .btn-p { padding: 18px; font-size: 0.85rem; }
+  .cam-box { border-radius: 20px; }
+}
+
+@media (max-width: 380px) {
+  #liveClock { font-size: 2.6rem; letter-spacing: -1px; }
+  .btn-group { gap: 10px; }
+  .btn-m, .btn-p { padding: 14px; font-size: 0.75rem; }
+  .btn-d { padding: 12px; font-size: 0.7rem; }
+  .cam-box { margin: 0 15px; width: calc(100% - 30px); }
+  #namaSelect { padding: 15px; font-size: 1rem; }
+}
+
+/* RESPONSIVE UNTUK LAYAR PENDEK (LANDSCAPE HP) */
+@media (max-height: 650px) {
+  header { padding: 15px 20px 10px; }
+  #terminalLogo { width: 40px; height: 40px; }
+  #liveClock { font-size: 2.8rem; }
+  .cam-box { aspect-ratio: 16/9; max-height: 200px; } /* Paksa lebih pendek */
+  .input-box { padding: 15px 20px; }
+  .btn-m, .btn-p { padding: 14px; }
 }
 /* SPINNER MINI FOR BUTTONS */
 .spinner-mini {
