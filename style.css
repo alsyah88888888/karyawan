@@ -360,7 +360,11 @@ header p {
 .btn-confirm { background: var(--primary); color: white; }
 .btn-confirm:hover { transform: translateY(-2px); filter: brightness(1.1); }
 
-/* MOBILE RESPONSIVE */
+/* =========================================
+   COMPREHENSIVE RESPONSIVE DESIGN (ALL DEVICES)
+   ========================================= */
+
+/* 1. HP STANDAR (Mobile - < 500px) */
 @media (max-width: 500px) {
   .terminal-container { padding: 10px; }
   .terminal-card { border-radius: 30px; }
@@ -371,6 +375,7 @@ header p {
   .cam-box { border-radius: 20px; }
 }
 
+/* 2. HP LAYAR KECIL (iPhone SE - < 380px) */
 @media (max-width: 380px) {
   #liveClock { font-size: 2.6rem; letter-spacing: -1px; }
   .btn-group { gap: 10px; }
@@ -380,14 +385,86 @@ header p {
   #namaSelect { padding: 15px; font-size: 1rem; }
 }
 
-/* RESPONSIVE UNTUK LAYAR PENDEK (LANDSCAPE HP) */
-@media (max-height: 650px) {
+/* 3. HP LANDSCAPE / LAYAR PENDEK (< 650px tinggi) */
+@media (max-height: 650px) and (max-width: 1023px) {
   header { padding: 15px 20px 10px; }
   #terminalLogo { width: 40px; height: 40px; }
   #liveClock { font-size: 2.8rem; }
-  .cam-box { aspect-ratio: 16/9; max-height: 200px; } /* Paksa lebih pendek */
+  .cam-box { aspect-ratio: 16/9; max-height: 200px; }
   .input-box { padding: 15px 20px; }
   .btn-m, .btn-p { padding: 14px; }
+}
+
+/* 4. TABLET (iPad, Galaxy Tab - 768px s/d 1023px) */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .terminal-container { max-width: 650px; }
+  header { padding: 40px; }
+  #liveClock { font-size: 4.5rem; }
+  .cam-box { margin: 0 40px; width: calc(100% - 80px); border-radius: 40px; }
+  .input-box { padding: 40px; }
+  #namaSelect { padding: 22px; font-size: 1.2rem; }
+  .btn-m, .btn-p { padding: 25px; font-size: 1rem; }
+}
+
+/* 5. MACBOOK / LAPTOP (1024px s/d 1439px) */
+@media (min-width: 1024px) and (max-width: 1439px) {
+  body { justify-content: center; }
+  .terminal-container { max-width: 900px; }
+  .terminal-card {
+    display: grid;
+    grid-template-columns: 1.1fr 1fr;
+    grid-template-areas: 
+      "header input"
+      "cam input";
+    align-items: center;
+  }
+  header { grid-area: header; padding: 40px 40px 20px; text-align: left; }
+  .logo-area { text-align: left; }
+  #liveClock { font-size: 4.2rem; letter-spacing: -2px; }
+  .cam-box { grid-area: cam; margin: 0 40px 40px 40px; width: auto; aspect-ratio: 1/1; border-radius: 30px; }
+  .input-box { 
+    grid-area: input; 
+    padding: 40px; 
+    border-left: 1px solid rgba(255,255,255,0.08); 
+    display: flex; 
+    flex-direction: column; 
+    justify-content: center; 
+    height: 100%;
+    background: rgba(0,0,0,0.2);
+  }
+  #namaSelect { padding: 20px; font-size: 1.15rem; }
+  .btn-m, .btn-p { padding: 24px; font-size: 1rem; }
+}
+
+/* 6. IMAC / DESKTOP BESAR (>= 1440px) */
+@media (min-width: 1440px) {
+  body { justify-content: center; }
+  .terminal-container { max-width: 1100px; }
+  .terminal-card {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    grid-template-areas: 
+      "header input"
+      "cam input";
+    align-items: center;
+  }
+  header { grid-area: header; padding: 50px 50px 30px; text-align: left; }
+  .logo-area { text-align: left; }
+  #liveClock { font-size: 5.5rem; letter-spacing: -3px; }
+  .cam-box { grid-area: cam; margin: 0 50px 50px 50px; width: auto; aspect-ratio: 1/1; border-radius: 40px; }
+  .input-box { 
+    grid-area: input; 
+    padding: 60px; 
+    border-left: 1px solid rgba(255,255,255,0.08); 
+    display: flex; 
+    flex-direction: column; 
+    justify-content: center; 
+    height: 100%;
+    background: rgba(0,0,0,0.2);
+  }
+  #namaSelect { padding: 25px; font-size: 1.3rem; border-radius: 25px; }
+  .btn-m, .btn-p { padding: 30px; font-size: 1.1rem; border-radius: 25px; }
+  .btn-d { padding: 25px; font-size: 0.9rem; border-radius: 25px; }
 }
 /* SPINNER MINI FOR BUTTONS */
 .spinner-mini {
