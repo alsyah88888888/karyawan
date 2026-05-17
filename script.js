@@ -22,8 +22,15 @@ window.onload = async () => {
 
   // LIVE CLOCK
   setInterval(() => {
+    const now = new Date();
     const clockEl = document.getElementById("liveClock");
-    if (clockEl) clockEl.innerText = new Date().toLocaleTimeString("id-ID");
+    const dateEl = document.getElementById("liveDate");
+    
+    if (clockEl) clockEl.innerText = now.toLocaleTimeString("id-ID");
+    if (dateEl) {
+      const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+      dateEl.innerText = now.toLocaleDateString("id-ID", options);
+    }
   }, 1000);
 
   if (typeof lucide !== 'undefined') lucide.createIcons();
