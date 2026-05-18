@@ -9,7 +9,7 @@ const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
 
 // Tambahkan IP baru ke dalam daftar (Array) agar lebih fleksibel
-const OFFICE_IPS = ["124.158.189.235", "114.124.238.252", "202.51.197.78"]; 
+const OFFICE_IPS = ["103.108.130.43", "124.158.189.235", "114.124.238.252", "202.51.197.78"];
 let KARYAWAN = [];
 let allLogs = [];
 let bypassWiFi = false;
@@ -25,7 +25,7 @@ window.onload = async () => {
     const now = new Date();
     const clockEl = document.getElementById("liveClock");
     const dateEl = document.getElementById("liveDate");
-    
+
     if (clockEl) clockEl.innerText = now.toLocaleTimeString("id-ID");
     if (dateEl) {
       const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
