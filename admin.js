@@ -446,6 +446,17 @@ function renderLogTable() {
     const tgl = new Date(l.waktu);
     const initials = l.nama.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase();
 
+    let displayStatus = l.status;
+    let gpsLink = "";
+    if (l.status.includes("[GPS:")) {
+        const gpsMatch = l.status.match(/\[GPS:\s*([^\]]+)\]/);
+        if (gpsMatch) {
+            const coords = gpsMatch[1]; // e.g. "-6.22, 106.88"
+            gpsLink = `<a href="https://maps.google.com/?q=${coords}" target="_blank" style="display:inline-block; margin-top:4px; color:#2563eb; text-decoration:none; font-size:0.75rem; font-weight:700;"><i data-lucide="map-pin" style="width:12px; height:12px; vertical-align:middle;"></i> Buka di Maps</a>`;
+            displayStatus = l.status.replace(/\[GPS:.*?\]/, "").trim();
+        }
+    }
+
     htmlRows += `
       <tr class="${isLate ? 'row-late' : ''}">
         <td>
@@ -461,8 +472,9 @@ function renderLogTable() {
           <div class="log-status-cell">
             <span class="badge ${badgeClass}">
               <i data-lucide="${icon}" style="width:12px; height:12px;"></i>
-              ${l.status}
+              ${displayStatus}
             </span>
+            ${gpsLink ? `<br>${gpsLink}` : ''}
           </div>
         </td>
         <td>

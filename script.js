@@ -157,9 +157,25 @@ async function prosesAbsen(tipe) {
 
   let finalTipe = tipe;
   if (isDinas) {
-    const lokasi = await showModernPrompt("Dinas Luar", `Masukkan lokasi/tujuan ${tipe} Anda:`, "text");
-    if (!lokasi || lokasi.trim() === "") return;
-    finalTipe = `${tipe} - ${lokasi.trim().toUpperCase()}`;
+    if (!navigator.geolocation) {
+      return showModernAlert("Browser Anda tidak mendukung fitur GPS/Lokasi.", "error");
+    }
+    try {
+      const position = await new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0
+        });
+      });
+      const lat = position.coords.latitude;
+      const lng = position.coords.longitude;
+      const lokasi = await showModernPrompt("Dinas Luar", `Masukkan lokasi/tujuan ${tipe} Anda:`, "text");
+      if (!lokasi || lokasi.trim() === "") return;
+      finalTipe = `${tipe} - ${lokasi.trim().toUpperCase()} [GPS: ${lat}, ${lng}]`;
+    } catch (err) {
+      return showModernAlert("GAGAL: Izin lokasi (GPS) wajib diaktifkan untuk absen Dinas Luar!", "error");
+    }
   }
 
   let btn;
