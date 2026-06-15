@@ -518,7 +518,7 @@ function renderKaryawanTable() {
         <td>
           <div style="display: flex; align-items: center; gap: 15px;">
             <div style="width: 48px; height: 48px; border-radius: 14px; overflow: hidden; border: 2.5px solid #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.1); background: #f1f5f9;">
-              <img src="image/NAME CARD KOLA BORASI INDONESIA/${k.nik}.jpg" 
+              <img src="image/NAME CARD KOLA BORASI INDONESIA/${k.nik}.png" 
                    onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(k.nama)}&background=4f46e5&color=fff&bold=true'"
                    style="width: 100%; height: 100%; object-fit: cover;">
             </div>
@@ -849,7 +849,7 @@ function cetakSlip(index) {
 
         <section class="info-box">
           <div class="info-photo">
-            <img src="image/NAME CARD KOLA BORASI INDONESIA/${k.nik}.jpg" 
+            <img src="image/NAME CARD KOLA BORASI INDONESIA/${k.nik}.png" 
                  onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(k.nama)}&background=4f46e5&color=fff'">
           </div>
           <div class="info-details">
