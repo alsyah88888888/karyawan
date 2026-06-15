@@ -9,7 +9,7 @@ const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
 
 // Tambahkan IP baru ke dalam daftar (Array) agar lebih fleksibel
-const OFFICE_IPS = ["202.51.197.75", "103.108.130.43", "124.158.189.235", "114.124.238.252", "202.51.197.78"];
+const OFFICE_IPS = ["202.51.197.77", "103.108.130.43", "124.158.189.235", "114.124.238.252", "202.51.197.78"];
 let KARYAWAN = [];
 let allLogs = [];
 let bypassWiFi = false;
