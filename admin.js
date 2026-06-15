@@ -676,7 +676,7 @@ function hitungDetailGaji(gapok, namaKaryawan, customStart = null, customEnd = n
   while (i < dataLogKaryawan.length) {
     const l = dataLogKaryawan[i];
     const statusUpper = l.status.toUpperCase();
-    if (statusUpper === 'MASUK' || statusUpper === 'BERANGKAT') {
+    if (statusUpper.startsWith('MASUK') || statusUpper.startsWith('BERANGKAT') || statusUpper.startsWith('DINAS LUAR')) {
       const actualMasuk = new Date(l.waktu);
       const thresholdMasuk = getWIBThreshold(actualMasuk, STANDAR_MASUK);
       if (actualMasuk < thresholdMasuk) {
@@ -685,7 +685,7 @@ function hitungDetailGaji(gapok, namaKaryawan, customStart = null, customEnd = n
       }
       let shiftEnd = null;
       let j = i + 1;
-      while (j < dataLogKaryawan.length && dataLogKaryawan[j].status.toUpperCase() === 'PULANG') {
+      while (j < dataLogKaryawan.length && dataLogKaryawan[j].status.toUpperCase().startsWith('PULANG')) {
         shiftEnd = new Date(dataLogKaryawan[j].waktu);
         j++;
       }
