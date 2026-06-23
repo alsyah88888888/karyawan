@@ -1,4 +1,4 @@
-const CACHE_NAME = 'koboi-hris-v3'; // Naikkan versi ke v3
+const CACHE_NAME = 'koboi-hris-v4'; // Naikkan versi ke v4
 const urlsToCache = [
   './',
   './index.html',

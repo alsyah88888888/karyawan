@@ -34,29 +34,46 @@ window.onload = async () => {
   }, 1000);
 
   if (typeof lucide !== 'undefined') lucide.createIcons();
+
+  // Network offline/online listeners
+  window.addEventListener('online', () => {
+    updateWiFiStatus();
+    syncOfflineData();
+  });
+  window.addEventListener('offline', updateWiFiStatus);
+
+  // Sync offline data on startup
+  await syncOfflineData();
 };
 
 async function syncDataTerminal() {
   try {
     const { data: dataKar } = await supabaseClient.from("karyawan").select("*").order("nama", { ascending: true });
     KARYAWAN = dataKar || [];
+    if (KARYAWAN.length > 0) {
+      localStorage.setItem("koboi_karyawan", JSON.stringify(KARYAWAN));
+    }
 
     const { data: dataLog } = await supabaseClient.from("logs").select("nama, waktu, status").order("id", { ascending: false });
     allLogs = dataLog || [];
-
-    // Populate dropdown
-    const sel = document.getElementById("namaSelect");
-    if (sel) {
-      sel.innerHTML = '<option value="">-- Pilih Nama Anda --</option>';
-      KARYAWAN.forEach((k) => {
-        const option = document.createElement("option");
-        option.value = k.nama;
-        option.textContent = k.nama;
-        sel.appendChild(option);
-      });
-    }
   } catch (e) {
     console.error("Sync Error:", e.message);
+    const cachedKar = localStorage.getItem("koboi_karyawan");
+    if (cachedKar) {
+      KARYAWAN = JSON.parse(cachedKar);
+    }
+  }
+
+  // Populate dropdown
+  const sel = document.getElementById("namaSelect");
+  if (sel) {
+    sel.innerHTML = '<option value="">-- Pilih Nama Anda --</option>';
+    KARYAWAN.forEach((k) => {
+      const option = document.createElement("option");
+      option.value = k.nama;
+      option.textContent = k.nama;
+      sel.appendChild(option);
+    });
   }
 }
 
@@ -78,6 +95,13 @@ async function initUser() {
 async function updateWiFiStatus() {
   const badge = document.getElementById("wifiStatus");
   if (!badge) return;
+
+  if (!navigator.onLine) {
+    badge.innerText = "OFFLINE MODE AKTIF ⚠️";
+    badge.className = "wifi-badge disconnected";
+    isNetworkValid = true; // Izinkan absen saat offline (disimpan lokal)
+    return;
+  }
 
   try {
     badge.innerText = "MEMVERIFIKASI JARINGAN...";
@@ -108,9 +132,9 @@ async function updateWiFiStatus() {
       };
     }
   } catch (e) {
-    badge.innerText = "GAGAL VERIFIKASI / OFFLINE ❌";
+    badge.innerText = "OFFLINE MODE (JARINGAN ERROR) ⚠️";
     badge.className = "wifi-badge disconnected";
-    isNetworkValid = false;
+    isNetworkValid = true; // Izinkan absen jika koneksi ke ipify gagal/koneksi putus
   }
 }
 
@@ -142,6 +166,57 @@ function capturePhoto() {
   const ctx = canvas.getContext("2d");
   ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
   return canvas.toDataURL("image/webp", 0.4);
+}
+
+// --- OFFLINE STORAGE & SYNC HELPERS ---
+function getOfflineLogs() {
+  const logs = localStorage.getItem("koboi_offline_logs");
+  return logs ? JSON.parse(logs) : [];
+}
+
+function saveOfflineLog(log) {
+  const logs = getOfflineLogs();
+  logs.push(log);
+  localStorage.setItem("koboi_offline_logs", JSON.stringify(logs));
+}
+
+let isSyncing = false;
+async function syncOfflineData() {
+  if (isSyncing) return;
+  if (!navigator.onLine) return;
+
+  const logs = getOfflineLogs();
+  if (logs.length === 0) return;
+
+  isSyncing = true;
+  const badge = document.getElementById("wifiStatus");
+  if (badge) {
+    badge.innerText = `MENYINKRONKAN DATA OFFLINE (${logs.length})...`;
+    badge.className = "wifi-badge checking";
+  }
+
+  const failedLogs = [];
+  for (const log of logs) {
+    try {
+      const { error } = await supabaseClient.from("logs").insert([log]);
+      if (error) throw error;
+    } catch (e) {
+      console.error("Gagal sinkronisasi data offline:", e);
+      failedLogs.push(log);
+    }
+  }
+
+  localStorage.setItem("koboi_offline_logs", JSON.stringify(failedLogs));
+  isSyncing = false;
+
+  if (failedLogs.length === 0) {
+    showModernAlert("Semua absensi offline berhasil disinkronkan ke server!", "success");
+  } else {
+    showModernAlert(`Gagal menyinkronkan ${failedLogs.length} data absensi. Akan dicoba kembali nanti.`, "error");
+  }
+
+  await syncDataTerminal();
+  updateWiFiStatus();
 }
 
 // --- ATTENDANCE PROCESS ---
@@ -194,21 +269,36 @@ async function prosesAbsen(tipe) {
     const sekarang = new Date();
     const tglHariIni = getISODate(sekarang);
 
-    // CRITICAL BACKEND CHECK: Fetch latest logs
-    const { data: latestLogs, error: fetchErr } = await supabaseClient
-      .from("logs")
-      .select("nama, waktu, status")
-      .eq("nama", nama)
-      .order("id", { ascending: false })
-      .limit(10);
-
-    if (fetchErr) throw new Error("Gagal mengambil data absensi terbaru.");
-
-    const sudahAbsen = (latestLogs || []).find(l =>
+    // 1. Cek di antrean offline lokal dulu untuk menghindari duplikasi
+    const offlineLogs = getOfflineLogs();
+    const sudahAbsenOffline = offlineLogs.find(l =>
+      l.nama === nama &&
       getISODate(new Date(l.waktu)) === tglHariIni &&
       l.status.startsWith(tipe)
     );
-    if (sudahAbsen) throw new Error(`Anda SUDAH absen ${tipe} hari ini!`);
+    if (sudahAbsenOffline) throw new Error(`Anda SUDAH absen ${tipe} hari ini (dalam antrean offline)!`);
+
+    // 2. Cek di database server jika online
+    if (navigator.onLine) {
+      try {
+        const { data: latestLogs, error: fetchErr } = await supabaseClient
+          .from("logs")
+          .select("nama, waktu, status")
+          .eq("nama", nama)
+          .order("id", { ascending: false })
+          .limit(10);
+
+        if (!fetchErr && latestLogs) {
+          const sudahAbsen = latestLogs.find(l =>
+            getISODate(new Date(l.waktu)) === tglHariIni &&
+            l.status.startsWith(tipe)
+          );
+          if (sudahAbsen) throw new Error(`Anda SUDAH absen ${tipe} hari ini!`);
+        }
+      } catch (e) {
+        console.warn("Gagal menghubungi server untuk cek duplikasi, melanjutkan absen offline-first.", e);
+      }
+    }
 
     const imageBase64 = capturePhoto();
     if (!imageBase64 && !isDinas) {
@@ -234,18 +324,32 @@ async function prosesAbsen(tipe) {
       isLate: telat,
     };
 
-    const { error } = await supabaseClient.from("logs").insert([newLog]);
-    if (error) throw error;
-
-    let successMsg = "BERHASIL!";
-    if (tipe.includes('MASUK')) {
-      successMsg = telat ? "BERHASIL! (Anda Terlambat)" : "BERHASIL! Selamat Bekerja.";
-    } else {
-      successMsg = "BERHASIL! Selamat Beristirahat.";
+    // 3. Jika offline, langsung simpan lokal
+    if (!navigator.onLine) {
+      saveOfflineLog(newLog);
+      showModernAlert("BERHASIL (OFFLINE) ⚠️! Koneksi terputus, absen disimpan secara lokal di perangkat.", "warning");
+      return;
     }
 
-    showModernAlert(successMsg, telat ? "warning" : "success");
-    await syncDataTerminal();
+    // 4. Jika online, kirim ke server
+    try {
+      const { error } = await supabaseClient.from("logs").insert([newLog]);
+      if (error) throw error;
+
+      let successMsg = "BERHASIL!";
+      if (tipe.includes('MASUK')) {
+        successMsg = telat ? "BERHASIL! (Anda Terlambat)" : "BERHASIL! Selamat Bekerja.";
+      } else {
+        successMsg = "BERHASIL! Selamat Beristirahat.";
+      }
+
+      showModernAlert(successMsg, telat ? "warning" : "success");
+      await syncDataTerminal();
+    } catch (dbErr) {
+      console.warn("Gagal kirim ke database, menyimpan secara offline:", dbErr);
+      saveOfflineLog(newLog);
+      showModernAlert("BERHASIL (OFFLINE) ⚠️! Gagal mengirim ke server, absen disimpan secara lokal.", "warning");
+    }
 
   } catch (err) {
     showModernAlert("GAGAL: " + err.message, "error");
