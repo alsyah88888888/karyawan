@@ -3,3 +3,4 @@
 wa-gateway/node_modules/
 wa-gateway/auth_session/
 wa-gateway/.env
+.env
