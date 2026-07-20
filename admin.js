@@ -925,29 +925,28 @@ function cetakSlip(index) {
   win.document.close();
 }
 
-async function kirimSlipWA(index) {
-  const k = KARYAWAN[index];
-  const d = hitungDetailGaji(k.gaji, k.nama);
+// Menghitung periode tampilan (dari filter tanggal aktif di halaman) dipakai
+// bareng oleh alur kirim manual (wa.me) dan kirim otomatis (Fonnte).
+function getPeriodeTampilAktif() {
+  const tglMulai = document.getElementById("filterTglMulai")?.value;
+  const tglSelesai = document.getElementById("filterTglSelesai")?.value;
+  const fmt = (dt) => dt ? dt.split('-').reverse().join('/') : '-';
+  return (tglMulai && tglSelesai) ? `${fmt(tglMulai)} - ${fmt(tglSelesai)}` : "Bulan Berjalan";
+}
 
-  if (!k.nomor_wa) return alert("Nomor WhatsApp tidak ditemukan!");
+// Merender slip gaji karyawan `k` menjadi PNG blob. Dipakai baik oleh alur
+// kirim manual (wa.me, minta klik Send) maupun kirim otomatis (upload ke
+// storage lalu dikirim via Edge Function + Fonnte).
+async function generateSlipGajiBlob(k, d, periodeTampil) {
+  // 1. Generate Hidden Container for Render
+  const renderContainer = document.createElement("div");
+  renderContainer.style.position = "absolute";
+  renderContainer.style.top = "-9999px";
+  renderContainer.style.width = "600px";
+  renderContainer.style.backgroundColor = "white";
+  document.body.appendChild(renderContainer);
 
-  showLoading(true);
-
-  try {
-    const tglMulai = document.getElementById("filterTglMulai")?.value;
-    const tglSelesai = document.getElementById("filterTglSelesai")?.value;
-    const fmt = (dt) => dt ? dt.split('-').reverse().join('/') : '-';
-    const periodeTampil = (tglMulai && tglSelesai) ? `${fmt(tglMulai)} - ${fmt(tglSelesai)}` : "Bulan Berjalan";
-
-    // 1. Generate Hidden Container for Render
-    const renderContainer = document.createElement("div");
-    renderContainer.style.position = "absolute";
-    renderContainer.style.top = "-9999px";
-    renderContainer.style.width = "600px";
-    renderContainer.style.backgroundColor = "white";
-    document.body.appendChild(renderContainer);
-
-    const slipHtml = `
+  const slipHtml = `
       <div id="slip-to-share" style="font-family: 'Outfit', sans-serif; color: #1e293b; background: white; padding: 40px; border: 1px solid #e2e8f0; position: relative;">
         <div style="position: absolute; top: 20px; right: -35px; background: #fee2e2; color: #ef4444; padding: 5px 40px; transform: rotate(45deg); font-size: 0.6rem; font-weight: 800; letter-spacing: 1px;">CONFIDENTIAL</div>
         
@@ -1006,24 +1005,38 @@ async function kirimSlipWA(index) {
         <p style="margin-top: 40px; font-size: 0.65rem; color: #94a3b8; text-align: center; font-style: italic;">Slip gaji ini dihasilkan secara digital oleh HRIS KOBOI. Informasi bersifat rahasia.</p>
       </div>
     `;
-    renderContainer.innerHTML = slipHtml;
+  renderContainer.innerHTML = slipHtml;
 
-    // 2. Convert to Image (Optimized for speed)
-    const canvas = await html2canvas(renderContainer.querySelector("#slip-to-share"), {
-      scale: 1.2, // Slightly reduced scale for much faster processing on mobile
-      useCORS: true,
-      backgroundColor: "#ffffff",
-      logging: false, // Disable logging to save resources
-      removeContainer: true // Faster cleanup
-    });
+  // 2. Convert to Image (Optimized for speed)
+  const canvas = await html2canvas(renderContainer.querySelector("#slip-to-share"), {
+    scale: 1.2, // Slightly reduced scale for much faster processing on mobile
+    useCORS: true,
+    backgroundColor: "#ffffff",
+    logging: false, // Disable logging to save resources
+    removeContainer: true // Faster cleanup
+  });
 
-    document.body.removeChild(renderContainer);
+  document.body.removeChild(renderContainer);
 
-    const imageBlob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
-    const fileName = `Slip_Gaji_${k.nama.replace(/\s+/g, '_')}_${periodeTampil.replace(/\//g, '-')}.png`;
+  const imageBlob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+  const fileName = `Slip_Gaji_${k.nama.replace(/\s+/g, '_')}_${periodeTampil.replace(/\//g, '-')}.png`;
+  return { imageBlob, fileName };
+}
+
+async function kirimSlipWA(index) {
+  const k = KARYAWAN[index];
+  const d = hitungDetailGaji(k.gaji, k.nama);
+
+  if (!k.nomor_wa) return alert("Nomor WhatsApp tidak ditemukan!");
+
+  showLoading(true);
+
+  try {
+    const periodeTampil = getPeriodeTampilAktif();
+    const { imageBlob, fileName } = await generateSlipGajiBlob(k, d, periodeTampil);
     const imageFile = new File([imageBlob], fileName, { type: 'image/png' });
 
-    // 3. Format WhatsApp Link
+    // Format WhatsApp Link
     let noWa = k.nomor_wa.trim();
     if (noWa.startsWith("0")) noWa = "62" + noWa.slice(1);
     else if (!noWa.startsWith("62")) noWa = "62" + noWa;
@@ -1031,7 +1044,7 @@ async function kirimSlipWA(index) {
     const pesan = `Halo *${k.nama}*,\n\nBerikut adalah *Slip Gaji Digital* Anda untuk periode *${periodeTampil}*.\n\nTotal THP: *Rp ${Math.floor(d.thp).toLocaleString('id-ID')}*\n\n_(Mohon tempel/paste gambar slip gaji yang sudah tersalin otomatis ke chat ini)_`;
     const waUrl = `https://wa.me/${noWa}?text=${encodeURIComponent(pesan)}`;
 
-    // 4. STEP 1: Try Native Share (Best for Mobile)
+    // STEP 1: Try Native Share (Best for Mobile)
     if (navigator.share && navigator.canShare && navigator.canShare({ files: [imageFile] })) {
       try {
         await navigator.share({
@@ -1046,7 +1059,7 @@ async function kirimSlipWA(index) {
       }
     }
 
-    // 5. STEP 2: Copy to Clipboard (Best for Desktop/PC)
+    // STEP 2: Copy to Clipboard (Best for Desktop/PC)
     // Most modern browsers support copying images to clipboard
     try {
       if (navigator.clipboard && window.ClipboardItem) {
@@ -1058,7 +1071,7 @@ async function kirimSlipWA(index) {
       console.log("Clipboard copy failed, falling back to download...");
     }
 
-    // 6. STEP 3: Fallback Download & Open WA
+    // STEP 3: Fallback Download & Open WA
     const link = document.createElement('a');
     link.href = URL.createObjectURL(imageBlob);
     link.download = fileName;
@@ -1073,6 +1086,73 @@ async function kirimSlipWA(index) {
   } finally {
     showLoading(false);
   }
+}
+
+// Kirim slip gaji OTOMATIS (tanpa klik manual di WhatsApp) via Fonnte.
+// Alur: render slip -> upload PNG ke storage bucket "slip-gaji" -> panggil
+// Edge Function send-salary-report yang menyimpan FONNTE_TOKEN secara aman.
+async function kirimSlipOtomatis(k) {
+  if (!k.nomor_wa) return showToast("Nomor WhatsApp karyawan ini belum diisi.", "error");
+
+  showLoading(true);
+  try {
+    const d = hitungDetailGaji(k.gaji, k.nama);
+    const periodeTampil = getPeriodeTampilAktif();
+    const { imageBlob, fileName } = await generateSlipGajiBlob(k, d, periodeTampil);
+
+    const path = `${k.nik || k.id}/${Date.now()}_${fileName}`;
+    const { error: uploadErr } = await supabaseClient.storage
+      .from("slip-gaji")
+      .upload(path, imageBlob, { contentType: "image/png", upsert: true });
+    if (uploadErr) throw uploadErr;
+
+    const { data: pub } = supabaseClient.storage.from("slip-gaji").getPublicUrl(path);
+
+    const { data: fnRes, error: fnErr } = await supabaseClient.functions.invoke("send-salary-report", {
+      body: {
+        nama: k.nama,
+        nomor_wa: k.nomor_wa,
+        imageUrl: pub.publicUrl,
+        periode: periodeTampil,
+        totalThp: Math.floor(d.thp),
+      },
+    });
+    if (fnErr) throw fnErr;
+    if (fnRes?.error) throw new Error(fnRes.error);
+
+    showToast(`Slip gaji ${k.nama} berhasil dikirim otomatis ke WhatsApp!`, "success");
+    logAudit("Kirim Slip Otomatis", `${k.nama} (${k.nik}) - periode ${periodeTampil}`);
+  } catch (err) {
+    console.error(err);
+    showToast("Gagal kirim otomatis: " + err.message, "error");
+  } finally {
+    showLoading(false);
+  }
+}
+
+// Cari karyawan berdasarkan "nomor" (NIK KBI, mis. KBI-108647 / 108647) atau
+// nomor WhatsApp, lalu kirim slip gaji otomatis via Fonnte. Dipakai oleh
+// kolom pencarian di tab Karyawan (lihat admin.html).
+function cariDanKirimSlip() {
+  const inputEl = document.getElementById("inputCariNomorSlip");
+  const raw = (inputEl?.value || "").trim();
+  if (!raw) return showToast("Masukkan nomor karyawan (NIK) atau nomor WhatsApp.", "info");
+
+  const normalizedDigits = raw.replace(/\D/g, "");
+  const cocok = KARYAWAN.filter((k) => {
+    const nik = (k.nik || "").toUpperCase();
+    const waDigits = (k.nomor_wa || "").replace(/\D/g, "");
+    return (
+      nik.includes(raw.toUpperCase()) ||
+      (normalizedDigits.length >= 4 && (nik.replace(/\D/g, "").includes(normalizedDigits) || waDigits.includes(normalizedDigits)))
+    );
+  });
+
+  if (cocok.length === 0) return showToast(`Karyawan dengan nomor "${raw}" tidak ditemukan.`, "error");
+  if (cocok.length > 1) return showToast(`Ditemukan ${cocok.length} karyawan cocok, perjelas nomornya.`, "info");
+
+  kirimSlipOtomatis(cocok[0]);
+  if (inputEl) inputEl.value = "";
 }
 
 // --- UTILS & UX ---

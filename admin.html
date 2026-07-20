@@ -343,6 +343,19 @@
                             </button>
                         </div>
                     </div>
+
+                    <div class="section-header" style="background: #f8fafc; border-top: none;">
+                        <div class="action-group">
+                            <span style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Kirim Slip Otomatis:</span>
+                            <div class="search-box" style="position: relative; display: flex; align-items: center; background: white; border-radius: 12px; padding: 0 12px; border: 1px solid var(--border); width: 280px;">
+                                <i data-lucide="hash" style="width: 16px; color: var(--text-muted);"></i>
+                                <input type="text" id="inputCariNomorSlip" placeholder="Nomor Karyawan (NIK) atau No. WA..." style="background: none; border: none; padding: 8px 12px; outline: none; font-size: 0.85rem; width: 100%;" onkeydown="if(event.key==='Enter') cariDanKirimSlip();">
+                            </div>
+                            <button class="btn btn-primary btn-small" style="background:#25d366; border:none;" onclick="cariDanKirimSlip()">
+                                <i data-lucide="send" style="width:14px;"></i> <span>Cari & Kirim WA</span>
+                            </button>
+                        </div>
+                    </div>
                     <div class="table-wrapper">
                         <table>
                             <thead>
