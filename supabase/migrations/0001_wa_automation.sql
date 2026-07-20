@@ -1,7 +1,10 @@
 -- ============================================================================
 -- WA AUTOMATION: kirim slip gaji otomatis + reminder presensi jam 10:00 WIB
 -- Cara pakai: buka Supabase Dashboard > SQL Editor, tempel isi file ini,
--- GANTI placeholder <SERVICE_ROLE_KEY> di bagian paling bawah, lalu Run.
+-- GANTI placeholder <CRON_SECRET> di bagian paling bawah dengan nilai yang
+-- SAMA PERSIS dengan yang di-set lewat `supabase secrets set CRON_SECRET=...`,
+-- lalu Run. JANGAN commit versi file ini yang sudah berisi nilai asli ke git
+-- (repo ini publik) - isi placeholder-nya cuma di SQL Editor saja.
 -- Project ref sudah terisi otomatis: ulmwpmzcaiuyubgehptt (dari script.js).
 -- ============================================================================
 
@@ -55,7 +58,7 @@ select cron.schedule(
     url := 'https://ulmwpmzcaiuyubgehptt.supabase.co/functions/v1/send-attendance-reminder',
     headers := jsonb_build_object(
       'Content-Type', 'application/json',
-      'Authorization', 'Bearer <SERVICE_ROLE_KEY>'
+      'x-cron-secret', '<CRON_SECRET>'
     ),
     body := '{}'::jsonb
   );
@@ -63,7 +66,8 @@ select cron.schedule(
 );
 
 -- Catatan:
--- - <SERVICE_ROLE_KEY> ambil dari Dashboard > Project Settings > API > service_role key.
---   JANGAN commit key ini ke git. Isi langsung di SQL Editor saat menjalankan query.
+-- - <CRON_SECRET> harus SAMA PERSIS dengan secret CRON_SECRET yang di-set di Edge Function
+--   (lihat supabase/functions/send-attendance-reminder/index.ts). Ini BUKAN service_role key,
+--   jadi kalau bocor risikonya jauh lebih kecil (cuma bisa memicu function ini, bukan akses DB).
 -- - Jadwal Senin-Sabtu (1-6). Ubah ke "* * * * *" range sesuai hari kerja perusahaan bila perlu.
 -- - Untuk cek histori jalannya cron: select * from cron.job_run_details order by start_time desc limit 20;

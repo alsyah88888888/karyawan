@@ -4,9 +4,13 @@
 // lalu mengirim pesan pengingat via Fonnte ke nomor WA masing-masing.
 //
 // Deploy: supabase functions deploy send-attendance-reminder --no-verify-jwt
-//   (--no-verify-jwt karena dipanggil pg_cron pakai service_role key, bukan
-//    login user biasa. Kalau tidak dipasang, panggilan cron akan ditolak 401.)
+//   (--no-verify-jwt supaya bisa dipanggil pg_cron. Karena itu function ini
+//    TIDAK memakai Supabase JWT sama sekali untuk otorisasi - sebagai gantinya
+//    setiap request wajib membawa header x-cron-secret yang cocok dengan
+//    secret CRON_SECRET, supaya endpoint publiknya tidak bisa dipicu sembarang
+//    orang. Jauh lebih aman daripada menaruh service_role key di cron job.)
 // Secret : supabase secrets set FONNTE_TOKEN=xxxxxxxxxxxx
+//          supabase secrets set CRON_SECRET=xxxxxxxxxxxx
 //          (SUPABASE_URL & SUPABASE_SERVICE_ROLE_KEY otomatis tersedia di Edge Functions)
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -14,6 +18,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const FONNTE_TOKEN = Deno.env.get("FONNTE_TOKEN")!;
+const CRON_SECRET = Deno.env.get("CRON_SECRET")!;
 
 // Tanggal "hari ini" menurut WIB (UTC+7), dalam format YYYY-MM-DD
 function tanggalHariIniWIB(): string {
@@ -21,7 +26,11 @@ function tanggalHariIniWIB(): string {
   return now.toISOString().slice(0, 10);
 }
 
-Deno.serve(async () => {
+Deno.serve(async (req) => {
+  if (req.headers.get("x-cron-secret") !== CRON_SECRET) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
+  }
+
   const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
   const tanggal = tanggalHariIniWIB();
 

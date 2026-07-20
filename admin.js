@@ -1091,10 +1091,13 @@ async function kirimSlipWA(index) {
 // Kirim slip gaji OTOMATIS (tanpa klik manual di WhatsApp) via Fonnte.
 // Alur: render slip -> upload PNG ke storage bucket "slip-gaji" -> panggil
 // Edge Function send-salary-report yang menyimpan FONNTE_TOKEN secara aman.
-async function kirimSlipOtomatis(k) {
-  if (!k.nomor_wa) return showToast("Nomor WhatsApp karyawan ini belum diisi.", "error");
+async function kirimSlipOtomatis(k, { silent = false } = {}) {
+  if (!k.nomor_wa) {
+    if (!silent) showToast("Nomor WhatsApp karyawan ini belum diisi.", "error");
+    return { ok: false, error: "Nomor WhatsApp kosong" };
+  }
 
-  showLoading(true);
+  if (!silent) showLoading(true);
   try {
     const d = hitungDetailGaji(k.gaji, k.nama);
     const periodeTampil = getPeriodeTampilAktif();
@@ -1120,14 +1123,47 @@ async function kirimSlipOtomatis(k) {
     if (fnErr) throw fnErr;
     if (fnRes?.error) throw new Error(fnRes.error);
 
-    showToast(`Slip gaji ${k.nama} berhasil dikirim otomatis ke WhatsApp!`, "success");
+    if (!silent) showToast(`Slip gaji ${k.nama} berhasil dikirim otomatis ke WhatsApp!`, "success");
     logAudit("Kirim Slip Otomatis", `${k.nama} (${k.nik}) - periode ${periodeTampil}`);
+    return { ok: true };
   } catch (err) {
     console.error(err);
-    showToast("Gagal kirim otomatis: " + err.message, "error");
+    if (!silent) showToast("Gagal kirim otomatis: " + err.message, "error");
+    return { ok: false, error: err.message };
   } finally {
-    showLoading(false);
+    if (!silent) showLoading(false);
   }
+}
+
+// Kirim slip gaji otomatis ke SEMUA karyawan yang punya nomor WA, satu per
+// satu dengan jeda antar pesan (supaya tidak dianggap spam oleh WhatsApp dan
+// device Fonnte tidak diblokir).
+async function kirimSemuaSlipOtomatis() {
+  const target = KARYAWAN.filter((k) => k.nomor_wa);
+  if (target.length === 0) return showToast("Tidak ada karyawan dengan nomor WhatsApp.", "info");
+
+  if (!confirm(`Kirim slip gaji otomatis ke ${target.length} karyawan via WhatsApp sekarang?`)) return;
+
+  showLoading(true);
+  let sukses = 0;
+  const gagalList = [];
+
+  for (let i = 0; i < target.length; i++) {
+    const k = target[i];
+    showToast(`Mengirim ${i + 1}/${target.length}: ${k.nama}...`, "info");
+    const result = await kirimSlipOtomatis(k, { silent: true });
+    if (result.ok) sukses++;
+    else gagalList.push(`${k.nama} (${result.error})`);
+
+    // Jeda antar pesan agar tidak terdeteksi spam oleh WhatsApp
+    if (i < target.length - 1) await new Promise((r) => setTimeout(r, 3000));
+  }
+
+  showLoading(false);
+  const ringkasan = `Selesai: ${sukses}/${target.length} terkirim${gagalList.length ? `, ${gagalList.length} gagal` : ""}.`;
+  showToast(ringkasan, gagalList.length ? "warning" : "success");
+  if (gagalList.length) console.warn("Gagal kirim slip ke:", gagalList);
+  logAudit("Kirim Semua Slip Otomatis", `${sukses} sukses, ${gagalList.length} gagal dari ${target.length} karyawan`);
 }
 
 // Cari karyawan berdasarkan "nomor" (NIK KBI, mis. KBI-108647 / 108647) atau
