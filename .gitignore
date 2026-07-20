@@ -1,0 +1,5 @@
+# WhatsApp gateway self-hosted (wa-gateway/) - JANGAN pernah commit sesi WA
+# atau .env, itu setara dengan login penuh ke akun WhatsApp perusahaan.
+wa-gateway/node_modules/
+wa-gateway/auth_session/
+wa-gateway/.env

@@ -1,7 +1,8 @@
 // Edge Function: send-attendance-reminder
 // Dipanggil oleh pg_cron tiap hari jam 10:00 WIB (lihat supabase/migrations/0001_wa_automation.sql).
 // Mengecek siapa saja karyawan yang belum presensi MASUK / DINAS LUAR hari ini,
-// lalu mengirim pesan pengingat via Fonnte ke nomor WA masing-masing.
+// lalu mengirim pesan pengingat via wa-gateway self-hosted (Baileys, lihat
+// folder wa-gateway/) ke nomor WA masing-masing.
 //
 // Deploy: supabase functions deploy send-attendance-reminder --no-verify-jwt
 //   (--no-verify-jwt supaya bisa dipanggil pg_cron. Karena itu function ini
@@ -9,7 +10,8 @@
 //    setiap request wajib membawa header x-cron-secret yang cocok dengan
 //    secret CRON_SECRET, supaya endpoint publiknya tidak bisa dipicu sembarang
 //    orang. Jauh lebih aman daripada menaruh service_role key di cron job.)
-// Secret : supabase secrets set FONNTE_TOKEN=xxxxxxxxxxxx
+// Secret : supabase secrets set WA_GATEWAY_URL=https://wa.domainanda.com
+//          supabase secrets set WA_GATEWAY_SECRET=xxxxxxxxxxxx
 //          supabase secrets set CRON_SECRET=xxxxxxxxxxxx
 //          (SUPABASE_URL & SUPABASE_SERVICE_ROLE_KEY otomatis tersedia di Edge Functions)
 
@@ -17,7 +19,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const FONNTE_TOKEN = Deno.env.get("FONNTE_TOKEN")!;
+const WA_GATEWAY_URL = Deno.env.get("WA_GATEWAY_URL")!;
+const WA_GATEWAY_SECRET = Deno.env.get("WA_GATEWAY_SECRET")!;
 const CRON_SECRET = Deno.env.get("CRON_SECRET")!;
 
 // Tanggal "hari ini" menurut WIB (UTC+7), dalam format YYYY-MM-DD
@@ -80,19 +83,17 @@ Deno.serve(async (req) => {
       `Mohon segera lakukan presensi di aplikasi, atau hubungi atasan Anda bila ada kendala.\n\n` +
       `_Pesan otomatis - HRIS KOBOI_`;
 
-    const form = new URLSearchParams();
-    form.set("target", k.nomor_wa);
-    form.set("message", pesan);
-    form.set("countryCode", "62");
-
     try {
-      const waRes = await fetch("https://api.fonnte.com/send", {
+      const waRes = await fetch(`${WA_GATEWAY_URL}/send`, {
         method: "POST",
-        headers: { Authorization: FONNTE_TOKEN },
-        body: form,
+        headers: {
+          "Content-Type": "application/json",
+          "x-gateway-secret": WA_GATEWAY_SECRET,
+        },
+        body: JSON.stringify({ target: k.nomor_wa, message: pesan }),
       });
       const waJson = await waRes.json();
-      hasil.push({ nama: k.nama, status: waJson?.status === false ? "gagal" : "terkirim", detail: waJson });
+      hasil.push({ nama: k.nama, status: !waRes.ok || waJson?.error ? "gagal" : "terkirim", detail: waJson });
     } catch (e) {
       hasil.push({ nama: k.nama, status: "error", detail: e instanceof Error ? e.message : String(e) });
     }
