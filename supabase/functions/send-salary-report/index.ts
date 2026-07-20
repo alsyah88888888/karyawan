@@ -8,9 +8,25 @@
 
 const FONNTE_TOKEN = Deno.env.get("FONNTE_TOKEN")!;
 
+// Dipanggil langsung dari browser (admin.html di-hosting di domain lain, mis.
+// Vercel), jadi wajib kirim header CORS - tanpa ini browser menolak membaca
+// respons dan supabase-js melempar "Failed to send a request to the Edge Function".
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
+
 Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
+  }
+
   if (req.method !== "POST") {
-    return new Response(JSON.stringify({ error: "Method not allowed" }), { status: 405 });
+    return new Response(JSON.stringify({ error: "Method not allowed" }), {
+      status: 405,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 
   try {
@@ -19,7 +35,7 @@ Deno.serve(async (req) => {
     if (!nomor_wa || !imageUrl) {
       return new Response(
         JSON.stringify({ error: "nomor_wa dan imageUrl wajib diisi" }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -46,17 +62,17 @@ Deno.serve(async (req) => {
     if (waJson?.status === false) {
       return new Response(
         JSON.stringify({ error: waJson.reason || "Gagal mengirim via Fonnte", detail: waJson }),
-        { status: 502, headers: { "Content-Type": "application/json" } }
+        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     return new Response(JSON.stringify({ ok: true, detail: waJson }), {
-      headers: { "Content-Type": "application/json" },
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
     return new Response(JSON.stringify({ error: err instanceof Error ? err.message : String(err) }), {
       status: 500,
-      headers: { "Content-Type": "application/json" },
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });
