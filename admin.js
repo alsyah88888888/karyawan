@@ -946,81 +946,114 @@ async function generateSlipGajiBlob(k, d, periodeTampil) {
   renderContainer.style.backgroundColor = "white";
   document.body.appendChild(renderContainer);
 
-  // Template "Cetak Slip" (sama dengan cetakSlip() / cetakSemuaSlipJPG()) -
-  // dipakai juga untuk gambar yang dikirim via WhatsApp supaya konsisten.
+  // Template identik dengan cetakSlip() (tombol Cetak/Print) - dipakai juga
+  // untuk gambar yang dikirim via WhatsApp supaya hasilnya sama persis.
   const slipHtml = `
-      <div id="slip-to-share" style="font-family: 'Outfit', sans-serif; color: #1e293b; background: white; padding: 40px; border: 1px solid #e2e8f0; position: relative;">
-        <div style="position: absolute; top: 20px; right: -35px; background: #fee2e2; color: #ef4444; padding: 5px 40px; transform: rotate(45deg); font-size: 0.6rem; font-weight: 800; letter-spacing: 1px;">CONFIDENTIAL</div>
+      <style>
+        #slip-to-share { font-family: 'Outfit', sans-serif; }
+        #slip-to-share * { box-sizing: border-box; margin: 0; padding: 0; }
+        #slip-to-share.payslip-card { background: white; padding: 40px; border-radius: 16px; border: 1px solid #e2e8f0; position: relative; overflow: hidden; color: #1e293b; }
+        #slip-to-share .confidential { position: absolute; top: 20px; right: -35px; background: #fee2e2; color: #ef4444; padding: 5px 40px; transform: rotate(45deg); font-size: 0.6rem; font-weight: 800; letter-spacing: 1px; }
+        #slip-to-share .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 2px solid #1e293b; padding-bottom: 20px; }
+        #slip-to-share .logo-section { display: flex; align-items: center; gap: 15px; }
+        #slip-to-share .logo-section img { width: 60px; height: 60px; object-fit: contain; }
+        #slip-to-share .company-name h1 { font-size: 1.25rem; font-weight: 800; color: #4f46e5; margin: 0; }
+        #slip-to-share .company-name p { font-size: 0.7rem; color: #64748b; max-width: 250px; }
+        #slip-to-share .doc-title { text-align: right; }
+        #slip-to-share .doc-title h2 { font-size: 1.8rem; font-weight: 800; text-transform: uppercase; margin: 0; }
+        #slip-to-share .doc-title p { font-size: 0.8rem; font-weight: 600; color: #64748b; }
+        #slip-to-share .info-box { display: flex; gap: 20px; background: #f8fafc; padding: 20px; border-radius: 12px; margin-bottom: 30px; border: 1px solid #e2e8f0; }
+        #slip-to-share .info-photo { width: 85px; height: 85px; border-radius: 8px; border: 2px solid white; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); overflow: hidden; flex-shrink: 0; }
+        #slip-to-share .info-photo img { width: 100%; height: 100%; object-fit: cover; }
+        #slip-to-share .info-details { flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 10px 30px; }
+        #slip-to-share .info-item { display: flex; flex-direction: column; }
+        #slip-to-share .info-item .label { font-size: 0.6rem; text-transform: uppercase; color: #64748b; font-weight: 700; }
+        #slip-to-share .info-item .val { font-size: 0.85rem; font-weight: 600; }
+        #slip-to-share .salary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 30px; }
+        #slip-to-share .salary-col h3 { font-size: 0.85rem; font-weight: 800; text-transform: uppercase; padding-bottom: 8px; border-bottom: 2px solid #e2e8f0; margin-bottom: 12px; color: #4f46e5; }
+        #slip-to-share .row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 0.8rem; border-bottom: 1px solid #f8fafc; }
+        #slip-to-share .row .label { color: #64748b; }
+        #slip-to-share .row .val { font-weight: 600; }
+        #slip-to-share .total-section { background: #1e293b; color: white; padding: 20px 30px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        #slip-to-share .total-thp { display: flex; flex-direction: column; }
+        #slip-to-share .total-thp .label { font-size: 0.75rem; font-weight: 600; opacity: 0.7; }
+        #slip-to-share .total-thp .val { font-size: 1.75rem; font-weight: 800; }
+        #slip-to-share .thp-message { text-align: right; font-size: 0.75rem; font-style: italic; opacity: 0.8; max-width: 250px; }
+        #slip-to-share .signatures { display: flex; justify-content: space-between; margin-top: 40px; }
+        #slip-to-share .sign-box { text-align: center; width: 180px; }
+        #slip-to-share .sign-box .label { font-size: 0.7rem; font-weight: 700; color: #64748b; margin-bottom: 60px; text-transform: uppercase; }
+        #slip-to-share .sign-box .name { font-size: 0.85rem; font-weight: 800; border-bottom: 1.5px solid #1e293b; padding-bottom: 3px; }
+      </style>
+      <div id="slip-to-share" class="payslip-card">
+        <div class="confidential">CONFIDENTIAL</div>
 
-        <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 2px solid #1e293b; padding-bottom: 20px;">
-          <div style="display: flex; align-items: center; gap: 15px;">
-            <img src="logokoboi.png" alt="Logo KBI" style="width: 50px; border-radius: 8px;" onerror="this.style.display='none'">
-            <div>
-              <h1 style="font-size: 1.2rem; font-weight: 800; margin-bottom: 4px;">PT. KOLA BORASI INDONESIA</h1>
-              <p style="font-size: 0.75rem; color: #64748b;">Human Resource Information System</p>
+        <header class="header">
+          <div class="logo-section">
+            <img src="logokoboi.png" alt="Logo KBI">
+            <div class="company-name">
+              <h1>PT. KOLA BORASI INDONESIA</h1>
+              <p>Green Kartika Residence Blok EE No.2, Cibinong, Bogor</p>
             </div>
           </div>
-          <div style="text-align: right;">
-            <h2 style="font-size: 1.4rem; font-weight: 800; color: #4f46e5; margin-bottom: 4px;">SLIP GAJI</h2>
-            <p style="font-size: 0.85rem; font-weight: 600; color: #64748b;">Periode: ${periodeTampil}</p>
+          <div class="doc-title">
+            <h2>PAYSLIP</h2>
+            <p>${periodeTampil}</p>
           </div>
         </header>
 
-        <section style="display: grid; grid-template-columns: auto 1fr; gap: 20px; margin-bottom: 30px; background: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0;">
-          <div style="width: 85px; height: 85px; border-radius: 8px; border: 2px solid white; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); overflow: hidden; flex-shrink: 0;">
+        <section class="info-box">
+          <div class="info-photo">
             <img src="image/NAME CARD KOLA BORASI INDONESIA/${k.nik}.png"
-                 onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(k.nama)}&background=4f46e5&color=fff'"
-                 style="width: 100%; height: 100%; object-fit: cover;">
+                 onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(k.nama)}&background=4f46e5&color=fff'">
           </div>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px 30px;">
-            <div style="display: flex; justify-content: space-between; font-size: 0.85rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;"><span style="color: #64748b; font-size: 0.75rem; font-weight: 600; text-transform: uppercase;">NIK / ID</span><span style="font-weight: 700;">${k.nik}</span></div>
-            <div style="display: flex; justify-content: space-between; font-size: 0.85rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;"><span style="color: #64748b; font-size: 0.75rem; font-weight: 600; text-transform: uppercase;">Nama Lengkap</span><span style="font-weight: 700;">${k.nama}</span></div>
-            <div style="display: flex; justify-content: space-between; font-size: 0.85rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;"><span style="color: #64748b; font-size: 0.75rem; font-weight: 600; text-transform: uppercase;">Jabatan / Dept</span><span style="font-weight: 700;">${k.jabatan || k.dept}</span></div>
-            <div style="display: flex; justify-content: space-between; font-size: 0.85rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;"><span style="color: #64748b; font-size: 0.75rem; font-weight: 600; text-transform: uppercase;">No. Rekening</span><span style="font-weight: 700;">${k.rekening || '-'}</span></div>
-            <div style="display: flex; justify-content: space-between; font-size: 0.85rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;"><span style="color: #64748b; font-size: 0.75rem; font-weight: 600; text-transform: uppercase;">Hadir / Hari Kerja</span><span style="font-weight: 700;">${d.hadir} / ${d.totalHariKerja} Hari</span></div>
-            <div style="display: flex; justify-content: space-between; font-size: 0.85rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;"><span style="color: #64748b; font-size: 0.75rem; font-weight: 600; text-transform: uppercase;">NPWP</span><span style="font-weight: 700;">${k.npwp || '-'}</span></div>
+          <div class="info-details">
+            <div class="info-item"><span class="label">Nama Karyawan</span><span class="val">${k.nama}</span></div>
+            <div class="info-item"><span class="label">NIK / ID</span><span class="val">${k.nik}</span></div>
+            <div class="info-item"><span class="label">Jabatan / Dept</span><span class="val">${k.jabatan || k.dept}</span></div>
+            <div class="info-item"><span class="label">No. Rekening</span><span class="val">${k.rekening || '-'}</span></div>
+            <div class="info-item"><span class="label">Hadir / Hari Kerja</span><span class="val">${d.hadir} / ${d.totalHariKerja} Hari</span></div>
+            <div class="info-item"><span class="label">NPWP</span><span class="val">${k.npwp || '-'}</span></div>
           </div>
         </section>
 
-        <section style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-bottom: 30px;">
-          <div>
-            <h3 style="font-size: 0.85rem; font-weight: 800; text-transform: uppercase; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 12px; color: #4f46e5;">Penerimaan (Earnings)</h3>
-            <div style="display: flex; justify-content: space-between; padding: 6px 0; font-size: 0.8rem; border-bottom: 1px solid #f8fafc;"><span style="color: #64748b;">GAJI POKOK</span><span style="font-weight: 600;">Rp ${Math.floor(d.gapok).toLocaleString('id-ID')}</span></div>
-            <div style="display: flex; justify-content: space-between; padding: 6px 0; font-size: 0.8rem; border-bottom: 1px solid #f8fafc;"><span style="color: #64748b;">HKE (${d.hadir} hari)</span><span style="font-weight: 600;">Rp ${Math.floor(d.uangHKE).toLocaleString('id-ID')}</span></div>
-            <div style="display: flex; justify-content: space-between; padding: 6px 0; font-size: 0.8rem; border-bottom: 1px solid #f8fafc;"><span style="color: #64748b;">INCENTIVE</span><span style="font-weight: 600;">Rp ${Math.floor(d.incentive || 0).toLocaleString('id-ID')}</span></div>
-            <div style="display: flex; justify-content: space-between; padding: 6px 0; font-size: 0.8rem; border-bottom: 1px solid #f8fafc;"><span style="color: #64748b;">INCENTIVE (LK/NGINAP)</span><span style="font-weight: 600;">Rp ${Math.floor(d.incentiveLuar || 0).toLocaleString('id-ID')}</span></div>
-            <div style="display: flex; justify-content: space-between; padding: 6px 0; font-size: 0.8rem; border-bottom: 1px solid #f8fafc;"><span style="color: #64748b;">OVERTIME (${d.totalLembur} jam)</span><span style="font-weight: 600;">Rp ${Math.floor(d.uangLembur).toLocaleString('id-ID')}</span></div>
+        <section class="salary-grid">
+          <div class="salary-col">
+            <h3>Penerimaan (Earnings)</h3>
+            <div class="row"><span class="label">GAJI POKOK</span><span class="val">Rp ${Math.floor(d.gapok).toLocaleString('id-ID')}</span></div>
+            <div class="row"><span class="label">HKE (${d.hadir} hari)</span><span class="val">Rp ${Math.floor(d.uangHKE).toLocaleString('id-ID')}</span></div>
+            <div class="row"><span class="label">INCENTIVE</span><span class="val">Rp ${Math.floor(d.incentive || 0).toLocaleString('id-ID')}</span></div>
+            <div class="row"><span class="label">INCENTIVE (LK/NGINAP)</span><span class="val">Rp ${Math.floor(d.incentiveLuar || 0).toLocaleString('id-ID')}</span></div>
+            <div class="row"><span class="label">OVERTIME (${d.totalLembur} jam)</span><span class="val">Rp ${Math.floor(d.uangLembur).toLocaleString('id-ID')}</span></div>
           </div>
-          <div>
-            <h3 style="font-size: 0.85rem; font-weight: 800; text-transform: uppercase; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 12px; color: #4f46e5;">Potongan (Deductions)</h3>
-            <div style="display: flex; justify-content: space-between; padding: 6px 0; font-size: 0.8rem; border-bottom: 1px solid #f8fafc;"><span style="color: #64748b;">PINJAMAN KANTOR</span><span style="font-weight: 600;">Rp ${Math.floor(d.pinjaman).toLocaleString('id-ID')}</span></div>
-            <div style="margin-top: 15px; border-top: 1px solid #e2e8f0; padding-top: 10px; display: flex; justify-content: space-between; font-size: 0.8rem;">
-                <span style="font-weight: 800; color: #64748b;">TOTAL POTONGAN</span>
-                <span style="font-weight: 600;">Rp ${Math.floor(d.pinjaman).toLocaleString('id-ID')}</span>
+          <div class="salary-col">
+            <h3>Potongan (Deductions)</h3>
+            <div class="row"><span class="label">PINJAMAN KANTOR</span><span class="val">Rp ${Math.floor(d.pinjaman).toLocaleString('id-ID')}</span></div>
+            <div class="row"><span class="label">PPh21 (Estimasi)</span><span class="val">Rp 0</span></div>
+            <div class="row" style="margin-top: 15px; border-top: 1px solid #e2e8f0; padding-top: 10px;">
+                <span class="label" style="font-weight: 800;">TOTAL POTONGAN</span>
+                <span class="val">Rp ${Math.floor(d.pinjaman).toLocaleString('id-ID')}</span>
             </div>
           </div>
         </section>
 
-        <section style="background: #1e293b; color: white; padding: 20px 30px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
-          <div style="display: flex; flex-direction: column;">
-            <span style="font-size: 0.75rem; font-weight: 600; opacity: 0.7;">Total THP</span>
-            <span style="font-size: 1.75rem; font-weight: 800;">Rp ${Math.floor(d.thp).toLocaleString('id-ID')}</span>
+        <section class="total-section">
+          <div class="total-thp">
+            <span class="label">Total THP</span>
+            <span class="val">Rp ${Math.floor(d.thp).toLocaleString('id-ID')}</span>
           </div>
-          <div style="text-align: right; font-size: 0.75rem; font-style: italic; opacity: 0.8; max-width: 250px;">
+          <div class="thp-message">
             "Semoga bermanfaat untuk keluarga. Terus berkarya bersama KOLA BORASI."
           </div>
         </section>
 
-        <footer style="display: flex; justify-content: space-between; margin-top: 40px;">
-          <div style="text-align: center; width: 180px;">
-            <p style="font-size: 0.7rem; font-weight: 700; color: #64748b; margin-bottom: 60px; text-transform: uppercase;">Diterima Oleh,</p>
-            <p style="font-size: 0.85rem; font-weight: 800; border-bottom: 1.5px solid #1e293b; padding-bottom: 3px;">${k.nama}</p>
-            <p style="font-size: 0.65rem; color: #64748b; margin-top: 4px;">Karyawan</p>
+        <footer class="signatures">
+          <div class="sign-box">
+            <p class="label">Diterima Oleh,</p>
+            <p class="name">${k.nama}</p>
           </div>
-          <div style="text-align: center; width: 180px;">
-            <p style="font-size: 0.7rem; font-weight: 700; color: #64748b; margin-bottom: 60px; text-transform: uppercase;">Disetujui Oleh,</p>
-            <p style="font-size: 0.85rem; font-weight: 800; border-bottom: 1.5px solid #1e293b; padding-bottom: 3px;">Manajemen</p>
-            <p style="font-size: 0.65rem; color: #64748b; margin-top: 4px;">PT. Kola Borasi Indonesia</p>
+          <div class="sign-box">
+            <p class="label">HRD Manager,</p>
+            <p class="name">PT. Kola Borasi Indonesia</p>
           </div>
         </footer>
       </div>
