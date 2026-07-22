@@ -156,6 +156,24 @@ function getISODate(dateObj) {
   return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
 }
 
+// Tanggal Senin (00:00) dari minggu berjalan, dipakai untuk hitung berapa kali
+// telat dalam seminggu. Pakai basis "Hari Kerja" yang sama dengan getISODate.
+function getMondayISO(dateObj) {
+  const d = new Date(dateObj.getTime() - 5 * 60 * 60 * 1000);
+  const hari = d.getDay(); // 0=Minggu, 1=Senin, ... 6=Sabtu
+  const selisihKeSenin = hari === 0 ? 6 : hari - 1;
+  d.setDate(d.getDate() - selisihKeSenin);
+  const pad = num => (num < 10 ? '0' : '') + num;
+  return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+}
+
+function getSapaanWaktu(jam) {
+  if (jam < 10) return "Selamat Pagi";
+  if (jam < 15) return "Selamat Siang";
+  if (jam < 18) return "Selamat Sore";
+  return "Selamat Malam";
+}
+
 function capturePhoto() {
   const video = document.getElementById("video");
   const canvas = document.getElementById("canvas");
@@ -336,11 +354,32 @@ async function prosesAbsen(tipe) {
       const { error } = await supabaseClient.from("logs").insert([newLog]);
       if (error) throw error;
 
-      let successMsg = "BERHASIL!";
-      if (tipe.includes('MASUK')) {
-        successMsg = telat ? "BERHASIL! (Anda Terlambat)" : "BERHASIL! Selamat Bekerja.";
+      const namaDepan = info.nama.split(' ')[0];
+      const isMasukType = tipe === 'MASUK' || tipe === 'DINAS LUAR';
+      let successMsg;
+
+      if (isMasukType && telat) {
+        // Hitung sudah berapa kali telat masuk dalam minggu berjalan (Senin-Minggu ini)
+        let jumlahTelatMingguIni = 1; // minimal diri sendiri hari ini
+        try {
+          const mondayStr = getMondayISO(sekarang);
+          const { data: telatLogs, error: telatErr } = await supabaseClient
+            .from("logs")
+            .select("waktu")
+            .eq("nama", nama)
+            .eq("isLate", true)
+            .gte("waktu", mondayStr + "T00:00:00")
+            .or("status.ilike.MASUK%,status.ilike.DINAS LUAR%");
+          if (!telatErr && telatLogs) jumlahTelatMingguIni = telatLogs.length;
+        } catch (e) {
+          console.warn("Gagal menghitung rekap telat mingguan:", e);
+        }
+
+        successMsg = `⚠️ Anda tercatat TERLAMBAT masuk hari ini.\nIni adalah keterlambatan ke-${jumlahTelatMingguIni} Anda minggu ini. Mohon lebih disiplin ya, ${namaDepan}!`;
+      } else if (isMasukType) {
+        successMsg = `${getSapaanWaktu(sekarang.getHours())}, ${namaDepan}! 👋\nAbsen masuk berhasil, selamat bekerja & semoga hari ini menyenangkan!`;
       } else {
-        successMsg = "BERHASIL! Selamat Beristirahat.";
+        successMsg = `Sampai jumpa, ${namaDepan}! 🙏\nAbsen pulang berhasil, terima kasih atas kerja keras Anda hari ini.`;
       }
 
       showModernAlert(successMsg, telat ? "warning" : "success");
