@@ -116,14 +116,18 @@ async function syncData() {
 }
 
 // --- UI NAVIGATION ---
-function switchTab(tabId) {
+// Terima `evt` sebagai parameter eksplisit (bukan bergantung pada variabel
+// global implicit `window.event`) - supaya tetap jalan kalau suatu saat
+// dipanggil bukan langsung dari atribut onclick (mis. lewat keyboard shortcut
+// atau tryResumeSession), yang tidak punya event bawaan.
+function switchTab(tabId, evt) {
   const tabs = document.querySelectorAll(".tab-content");
   tabs.forEach(t => t.style.display = "none");
   document.getElementById(tabId).style.display = "block";
 
   const links = document.querySelectorAll(".nav-link");
   links.forEach(l => l.classList.remove("active"));
-  event.currentTarget.classList.add("active");
+  if (evt?.currentTarget) evt.currentTarget.classList.add("active");
 
   if (tabId === "tabLeave") renderLeaveHistory();
   if (tabId === "tabPerformance") { renderPerformance(); renderKpiSnapshotCard(); }
@@ -155,7 +159,13 @@ function renderDashboard() {
       })
       .filter(d => d !== null)
   )].length;
-  const lateCount = monthLogs.filter(l => l.status === 'MASUK' && l.isLate).length;
+  // "DINAS LUAR" juga terhitung telat kalau isLate, sama seperti "MASUK"
+  // (lihat script.js prosesAbsen) - sebelumnya karyawan yang telat lewat
+  // Dinas Luar tidak pernah tercatat telat di statistik pribadinya.
+  const lateCount = monthLogs.filter(l => {
+    const s = (l.status || "").toUpperCase();
+    return (s.startsWith("MASUK") || s.startsWith("DINAS LUAR")) && l.isLate;
+  }).length;
 
   document.getElementById("statHadir").innerText = hadirCount;
   document.getElementById("statLate").innerText = lateCount;
@@ -428,7 +438,7 @@ function calculateLiveKPI(hadir, telat) {
 // Helper: hitungDetailGaji (Logic replicated from admin.js for offline calculation)
 function hitungDetailGaji(gapok, namaKaryawan, customStart, customEnd) {
   const targetNama = namaKaryawan.trim().toLowerCase();
-  const k = ALL_KARYAWAN.find(item => item.nama.trim().toLowerCase() === targetNama);
+  const k = ALL_KARYAWAN.find(item => (item.nama || '').trim().toLowerCase() === targetNama);
   const totalHariKerja = 22; // Simplified fallback for ESS
   
   const g = parseFloat(gapok) || 0;

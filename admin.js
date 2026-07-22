@@ -289,8 +289,8 @@ function renderStats() {
   const todayStr = new Date().toLocaleDateString();
   const logsToday = allLogs.filter(l => new Date(l.waktu).toLocaleDateString() === todayStr);
 
-  const uniqueHadir = [...new Set(logsToday.filter(l => l.status === 'MASUK').map(l => l.nama))].length;
-  const totalTelat = logsToday.filter(l => l.status === 'MASUK' && l.isLate).length;
+  const uniqueHadir = [...new Set(logsToday.filter(l => isMasukStatus(l.status)).map(l => l.nama))].length;
+  const totalTelat = logsToday.filter(l => isMasukStatus(l.status) && l.isLate).length;
 
   if (hadirEl) hadirEl.innerText = uniqueHadir;
   if (terlambatEl) terlambatEl.innerText = totalTelat;
@@ -310,8 +310,8 @@ function renderVisualStats() {
   // 1. Chart Analisis Kedisiplinan (Punctuality)
   const punctCtx = document.getElementById('punctualityChart')?.getContext('2d');
   if (punctCtx) {
-    const onTime = allLogs.filter(l => l.status === 'MASUK' && !l.isLate).length;
-    const late = allLogs.filter(l => l.status === 'MASUK' && l.isLate).length;
+    const onTime = allLogs.filter(l => isMasukStatus(l.status) && !l.isLate).length;
+    const late = allLogs.filter(l => isMasukStatus(l.status) && l.isLate).length;
 
     if (punctualityChartInstance) punctualityChartInstance.destroy();
     punctualityChartInstance = new Chart(punctCtx, {
@@ -346,7 +346,7 @@ function renderVisualStats() {
       days.push(d.toLocaleDateString('id-ID', { weekday: 'short' }));
 
       const uniqueAtDay = [...new Set(allLogs.filter(l =>
-        new Date(l.waktu).toLocaleDateString() === dateStr && l.status === 'MASUK'
+        new Date(l.waktu).toLocaleDateString() === dateStr && isMasukStatus(l.status)
       ).map(l => l.nama))].length;
 
       counts.push(uniqueAtDay);
@@ -443,7 +443,7 @@ function renderKPITable() {
     // Perhitungan KPI
     const attendanceRate = ((d.hadir / d.totalHariKerja) * 100) || 0;
 
-    let logsKar = allLogs.filter(l => l.nama.trim().toLowerCase() === k.nama.trim().toLowerCase() && l.status === 'MASUK');
+    let logsKar = allLogs.filter(l => (l.nama || '').trim().toLowerCase() === k.nama.trim().toLowerCase() && isMasukStatus(l.status));
 
     // Filter logs berdasarkan tanggal dashboard
     if (customStart && customEnd) {
@@ -587,7 +587,7 @@ function renderLogTable() {
 
   let htmlRows = "";
   // Filter logs berdasarkan input pencarian
-  const filteredLogs = logs.filter(l => l.nama.toLowerCase().includes(searchInput));
+  const filteredLogs = logs.filter(l => (l.nama || '').toLowerCase().includes(searchInput));
 
   let total = 0;
   let tepat = 0;
@@ -628,10 +628,10 @@ function renderLogTable() {
       <tr class="${isLate ? 'row-late' : ''}">
         <td>
           <div class="emp-info">
-            <div class="emp-avatar">${initials}</div>
+            <div class="emp-avatar">${escapeHtml(initials)}</div>
             <div>
-              <div style="font-weight: 700; color: var(--sidebar-bg); font-size: 0.9rem;">${l.nama}</div>
-              <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500;">${l.dept || "GENERAL"}</div>
+              <div style="font-weight: 700; color: var(--sidebar-bg); font-size: 0.9rem;">${escapeHtml(l.nama)}</div>
+              <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500;">${escapeHtml(l.dept || "GENERAL")}</div>
             </div>
           </div>
         </td>
@@ -639,7 +639,7 @@ function renderLogTable() {
           <div class="log-status-cell">
             <span class="badge ${badgeClass}">
               <i data-lucide="${icon}" style="width:12px; height:12px;"></i>
-              ${displayStatus}
+              ${escapeHtml(displayStatus)}
             </span>
             ${gpsLink ? `<br>${gpsLink}` : ''}
           </div>
@@ -818,7 +818,7 @@ function hitungDetailGaji(gapok, namaKaryawan, customStart = null, customEnd = n
   const pinjaman = k ? (parseFloat(k.pinjaman) || 0) : 0;
 
   let dataLogKaryawan = allLogs
-    .filter((l) => l.nama.trim().toLowerCase() === targetNama)
+    .filter((l) => (l.nama || '').trim().toLowerCase() === targetNama)
     .sort((a, b) => new Date(a.waktu) - new Date(b.waktu));
 
   // --- FILTER TANGGAL ---
@@ -1422,6 +1422,29 @@ function cariDanKirimSlip() {
 }
 
 // --- UTILS & UX ---
+// Cegah XSS: karyawan bisa isi teks bebas untuk lokasi "Dinas Luar" (script.js
+// showModernPrompt) yang tersimpan di logs.status - kalau ditampilkan lewat
+// innerHTML tanpa di-escape, kode HTML/script di dalamnya bisa ikut jalan di
+// browser admin. Pakai fungsi ini untuk SEMUA teks dari user sebelum masuk innerHTML.
+// Status "MASUK" DAN "DINAS LUAR" sama-sama menandai karyawan hadir/masuk
+// kerja (lihat script.js prosesAbsen) - perbandingan persis "=== 'MASUK'" di
+// banyak tempat Dashboard membuat karyawan yang absen via Dinas Luar hilang
+// dari statistik kehadiran/keterlambatan padahal tetap dibayar hari itu.
+function isMasukStatus(status) {
+  const s = (status || "").toUpperCase();
+  return s.startsWith("MASUK") || s.startsWith("DINAS LUAR");
+}
+
+function escapeHtml(str) {
+  if (str === null || str === undefined) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 function showLoading(show) {
   document.getElementById("loadingOverlay").style.display = show ? "flex" : "none";
 }
@@ -1471,7 +1494,7 @@ function notifikasiCEOPayroll(deptFilter = "ALL") {
     rincianKaryawan += `   - PINJAMAN KANTOR: Rp ${Math.floor(d.pinjaman).toLocaleString('id-ID')}\n`;
     rincianKaryawan += `   - HKE (${d.hadir} hari): Rp ${Math.floor(d.uangHKE).toLocaleString('id-ID')}\n`;
     rincianKaryawan += `   - INCENTIVE: Rp ${insentifVal.toLocaleString('id-ID')} ${isApproved ? '✅' : '❌'}\n`;
-    rincianKaryawan += `   - INCENTIVE (LK/NGINAP): Rp ${Math.floor(d.incentiveLuarMaster).toLocaleString('id-ID')}\n`;
+    rincianKaryawan += `   - INCENTIVE (LK/NGINAP): Rp ${Math.floor(d.incentiveLuar || 0).toLocaleString('id-ID')}\n`;
     rincianKaryawan += `   - OVERTIME (${d.totalLembur} jam): Rp ${Math.floor(d.uangLembur).toLocaleString('id-ID')}\n`;
     rincianKaryawan += `   - *Total THP: Rp ${Math.floor(d.thp).toLocaleString('id-ID')}*\n\n`;
   });
@@ -1683,7 +1706,7 @@ function exportKPIReport() {
     totalRate += rate;
     totalLemburAll += parseFloat(d.totalLembur) || 0;
 
-    let logsKar = allLogs.filter(l => l.nama.trim().toLowerCase() === k.nama.trim().toLowerCase() && l.status === 'MASUK');
+    let logsKar = allLogs.filter(l => (l.nama || '').trim().toLowerCase() === k.nama.trim().toLowerCase() && isMasukStatus(l.status));
     if (customStart && customEnd) {
       const start = new Date(customStart + "T00:00:00");
       const end = new Date(customEnd + "T23:59:59");
@@ -1879,13 +1902,17 @@ function exportData() {
   }
 
   const logGroups = {};
+  // Buffer 4 jam (BUKAN 5) - harus sama dengan getShiftDateStr() yang dipakai
+  // hitungDetailGaji() untuk hariHadir, supaya kolom "TANGGAL SHIFT" di sheet
+  // detail log tidak pernah beda tanggal dengan rekap hari hadir di sheet lain
+  // untuk baris log yang sama (dulu 5 jam di sini vs 4 jam di sana).
   const getShiftDateStrExport = (dateObj) => {
-    const d = new Date(dateObj.getTime() - 5 * 3600000);
+    const d = new Date(dateObj.getTime() - 4 * 3600000);
     return d.toLocaleDateString("id-ID");
   };
 
   filteredLogs.forEach(l => {
-    const norm = l.nama.trim().toLowerCase();
+    const norm = (l.nama || '').trim().toLowerCase();
     if (!logGroups[norm]) logGroups[norm] = [];
     logGroups[norm].push(l);
   });
@@ -2556,10 +2583,14 @@ async function fetchReviews() {
             <td><button class="btn btn-outline btn-small" onclick="deleteReview('${r.id}')"><i data-lucide="trash"></i></button></td>
         </tr>
     `).join("");
-  // Attach event listener for dynamic KPI metrics
+  // Attach event listener for dynamic KPI metrics.
+  // Pakai onchange (bukan addEventListener) - fetchReviews() dipanggil ulang
+  // tiap kali tab Performa dibuka, addEventListener akan menumpuk listener
+  // baru terus setiap kali (bocor memori + updateKpiMetrics jalan berkali-kali
+  // per satu perubahan). Assignment ke .onchange otomatis menggantikan yang lama.
   const revKaryawan = document.getElementById("revKaryawan");
   if (revKaryawan) {
-    revKaryawan.addEventListener("change", () => updateKpiMetrics());
+    revKaryawan.onchange = () => updateKpiMetrics();
     // Trigger once to show metrics for the first selected employee
     updateKpiMetrics();
   }
@@ -2596,7 +2627,7 @@ async function generateAIWeeklyReport() {
       nama: k.nama,
       dept: k.dept,
       hadir: d.hadir,
-      lembur_jam: d.jamLembur,
+      lembur_jam: d.totalLembur, // hitungDetailGaji tidak punya field "jamLembur" - dulu selalu undefined
       gaji_bersih: d.thp
     });
   });
@@ -2624,25 +2655,16 @@ async function generateAIWeeklyReport() {
         (3 poin tindakan konkret)
     `;
 
-  // 3. Call Gemini API (Free Tier 1.5 Flash)
-  // NOTE: Ganti 'YOUR_API_KEY' dengan API Key Google AI Studio Anda
-  const API_KEY = "AIzaSyBt4fZHYz01w4rz73cgz0P0we6DFSltP6M";
-
+  // 3. Panggil Gemini lewat Edge Function (API key disimpan server-side,
+  // tidak lagi hardcoded di kode client seperti sebelumnya).
   try {
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${API_KEY}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+    const { data: aiRes, error: aiErr } = await supabaseClient.functions.invoke("generate-ai-report", {
+      body: { prompt },
     });
+    if (aiErr) throw new Error(aiErr.message || "Gagal memanggil layanan AI");
+    if (aiRes?.error) throw new Error(aiRes.error);
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      const detail = errorData.error ? errorData.error.message : "Unknown Error";
-      throw new Error(`Google API Error: ${detail}`);
-    }
-
-    const result = await response.json();
-    let aiMarkdown = result.candidates[0].content.parts[0].text;
+    let aiMarkdown = aiRes.text;
 
     // Simple Markdown to HTML Conversion
     const htmlContent = aiMarkdown
@@ -2672,33 +2694,18 @@ async function generateAIWeeklyReport() {
     lucide.createIcons();
   } catch (e) {
     console.error("AI Error:", e);
-    const isPlaceholder = (API_KEY === "YOUR_GEMINI_API_KEY" || API_KEY === "" || API_KEY.length < 10);
-
-    if (isPlaceholder) {
-      content.innerHTML = `
-            <div style="text-align: center; padding: 40px;">
-                <i data-lucide="alert-triangle" style="width: 48px; height: 48px; color: #f59e0b; margin-bottom: 20px;"></i>
-                <h4 style="font-weight: 800; color: #1e293b;">Konfigurasi API Diperlukan</h4>
-                <p style="color: #64748b; font-size: 0.9rem; margin-top: 10px;">
-                    Silakan masukkan **Gemini API Key** Anda di file admin.js.
-                </p>
-                <button class="btn btn-primary" style="margin-top: 20px;" onclick="window.open('https://aistudio.google.com/app/apikey')">Dapatkan API Key Gratis</button>
-            </div>
-        `;
-    } else {
-      content.innerHTML = `
+    content.innerHTML = `
             <div style="text-align: center; padding: 40px;">
                 <i data-lucide="x-circle" style="width: 48px; height: 48px; color: #ef4444; margin-bottom: 20px;"></i>
                 <h4 style="font-weight: 800; color: #1e293b;">AI Gagal Merespon</h4>
                 <p style="color: #64748b; font-size: 0.8rem; margin-top: 10px; background: #fee2e2; padding: 10px; border-radius: 8px; font-family: monospace;">
-                    Error: ${e.message}
+                    Error: ${escapeHtml(e.message)}
                 </p>
                 <p style="margin-top: 15px; font-size: 0.75rem; color: #94a3b8;">
-                    Tips: Pastikan API Key Anda valid dan tidak ada batasan domain (Referrer Restriction) di Google Cloud Console.
+                    Tips: Pastikan GEMINI_API_KEY sudah di-set sebagai secret Edge Function generate-ai-report.
                 </p>
             </div>
         `;
-    }
     lucide.createIcons();
   }
 }

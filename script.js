@@ -250,34 +250,16 @@ async function prosesAbsen(tipe) {
   const nama = document.getElementById("namaSelect").value;
   if (!nama) return showModernAlert("Harap pilih Nama Anda terlebih dahulu!", "info");
 
-  let finalTipe = tipe;
-  if (isDinas) {
-    if (!navigator.geolocation) {
-      return showModernAlert("Browser Anda tidak mendukung fitur GPS/Lokasi.", "error");
-    }
-    try {
-      const position = await new Promise((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(resolve, reject, {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 0
-        });
-      });
-      const lat = position.coords.latitude;
-      const lng = position.coords.longitude;
-      const lokasi = await showModernPrompt("Dinas Luar", `Masukkan lokasi/tujuan ${tipe} Anda:`, "text");
-      if (!lokasi || lokasi.trim() === "") return;
-      finalTipe = `${tipe} - ${lokasi.trim().toUpperCase()} [GPS: ${lat}, ${lng}]`;
-    } catch (err) {
-      return showModernAlert("GAGAL: Izin lokasi (GPS) wajib diaktifkan untuk absen Dinas Luar!", "error");
-    }
-  }
-
+  // Tombol di-disable SEBELUM proses async apapun (termasuk dialog GPS/lokasi
+  // Dinas Luar di bawah) - sebelumnya baru di-disable setelah dialog itu,
+  // jadi klik ganda cepat bisa memicu dua proses absen Dinas Luar bersamaan.
   let btn;
   if (tipe === 'MASUK') btn = document.getElementById("btnMasuk");
   else if (tipe === 'PULANG') btn = document.getElementById("btnPulang");
   else if (tipe === 'DINAS LUAR') btn = document.getElementById("btnDinasMasuk");
   else if (tipe === 'PULANG DINAS') btn = document.getElementById("btnDinasPulang");
+
+  if (btn && btn.disabled) return; // sudah ada proses berjalan, abaikan klik ganda
 
   const originalContent = btn ? btn.innerHTML : "";
   if (btn) {
@@ -285,7 +267,32 @@ async function prosesAbsen(tipe) {
     btn.innerHTML = `<span class="spinner-mini"></span> MEMPROSES...`;
   }
 
+  let finalTipe = tipe;
+
   try {
+    if (isDinas) {
+      if (!navigator.geolocation) {
+        throw new Error("Browser Anda tidak mendukung fitur GPS/Lokasi.");
+      }
+      let lat, lng;
+      try {
+        const position = await new Promise((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
+          });
+        });
+        lat = position.coords.latitude;
+        lng = position.coords.longitude;
+      } catch (err) {
+        throw new Error("Izin lokasi (GPS) wajib diaktifkan untuk absen Dinas Luar!");
+      }
+      const lokasi = await showModernPrompt("Dinas Luar", `Masukkan lokasi/tujuan ${tipe} Anda:`, "text");
+      if (!lokasi || lokasi.trim() === "") return;
+      finalTipe = `${tipe} - ${lokasi.trim().toUpperCase()} [GPS: ${lat}, ${lng}]`;
+    }
+
     const sekarang = new Date();
     const tglHariIni = getISODate(sekarang);
 
