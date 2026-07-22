@@ -48,7 +48,9 @@ window.onload = async () => {
 
 async function syncDataTerminal() {
   try {
-    const { data: dataKar } = await supabaseClient.from("karyawan").select("*").order("nama", { ascending: true });
+    // Kiosk anonim (tanpa login) cuma boleh baca daftar nama/dept lewat view
+    // publik ini - data sensitif (gaji, PIN, rekening, dst) tidak ikut terbawa.
+    const { data: dataKar } = await supabaseClient.from("karyawan_public").select("*").order("nama", { ascending: true });
     KARYAWAN = dataKar || [];
     if (KARYAWAN.length > 0) {
       localStorage.setItem("koboi_karyawan", JSON.stringify(KARYAWAN));
@@ -336,6 +338,7 @@ async function prosesAbsen(tipe) {
     const newLog = {
       nama: info.nama,
       dept: info.dept,
+      karyawan_id: info.id,
       waktu: toLocalISO(sekarang),
       status: finalTipe,
       foto: imageBase64,
