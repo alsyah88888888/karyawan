@@ -768,7 +768,7 @@ function renderKaryawanTable() {
             <button class="btn btn-outline btn-small" style="padding: 6px;" onclick="cetakSlip(${index})" title="Cetak Slip">
                 <i data-lucide="printer" style="width:14px;"></i>
             </button>
-            <button class="btn btn-primary btn-small" style="background:#25d366; border:none; padding: 6px;" onclick="kirimSlipWA(${index})" title="WhatsApp">
+            <button class="btn btn-primary btn-small" style="background:#25d366; border:none; padding: 6px;" onclick="kirimSlipOtomatis(KARYAWAN[${index}])" title="Kirim Otomatis via WhatsApp">
                 <i data-lucide="message-circle" style="width:14px;"></i>
             </button>
             <button class="btn btn-outline btn-small" style="padding: 6px;" onclick="bukaModalEditKaryawan(${index})" title="Edit Data">
