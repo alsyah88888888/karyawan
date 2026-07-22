@@ -6,7 +6,50 @@
 // 1. CONFIGURATION
 const SB_URL = "https://ulmwpmzcaiuyubgehptt.supabase.co";
 const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVsbXdwbXpjYWl1eXViZ2VocHR0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE4MzI2MjUsImV4cCI6MjA4NzQwODYyNX0._Y2MkIiRDM52CVMsZEp-lSRBQ93ZYGkwkFbmxfZ5tFo";
-const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
+
+// Token login admin (diterbitkan Edge Function login-admin) dilampirkan
+// otomatis ke tiap request lewat accessToken callback ini - RLS di database
+// membaca klaim di token ini untuk menentukan akses (bukan cuma tampilan).
+const supabaseClient = supabase.createClient(SB_URL, SB_KEY, {
+  accessToken: async () => localStorage.getItem("hris_token") || null,
+});
+
+// --- GUARD LOGIN ADMIN ---
+// Sebelumnya admin.html bisa dibuka langsung tanpa password sama sekali.
+// Sekarang wajib ada token valid (dari login-admin) sebelum halaman dipakai.
+let ADMIN_USER = null;
+
+function decodeJwtPayload(token) {
+  try {
+    const payload = token.split(".")[1];
+    return JSON.parse(atob(payload.replace(/-/g, "+").replace(/_/g, "/")));
+  } catch {
+    return null;
+  }
+}
+
+function checkAdminAuthOrRedirect() {
+  const token = localStorage.getItem("hris_token");
+  const claims = token ? decodeJwtPayload(token) : null;
+  const expired = !claims || !claims.exp || claims.exp * 1000 < Date.now();
+  const isAdminRole = claims && (claims.app_role === "admin" || claims.app_role === "super_admin");
+
+  if (!token || expired || !isAdminRole) {
+    localStorage.removeItem("hris_token");
+    localStorage.removeItem("hris_admin_user");
+    window.location.href = "index.html";
+    return false;
+  }
+
+  ADMIN_USER = { ...JSON.parse(localStorage.getItem("hris_admin_user") || "{}"), role: claims.app_role };
+  return true;
+}
+
+function logoutAdmin() {
+  localStorage.removeItem("hris_token");
+  localStorage.removeItem("hris_admin_user");
+  window.location.href = "index.html";
+}
 
 const STANDAR_MASUK = 9; // Jam 9 Pagi
 const STANDAR_PULANG = 18; // Jam 6 Sore
@@ -1895,6 +1938,8 @@ function setPeriodeLog() {
 }
 
 window.onload = async () => {
+  if (!checkAdminAuthOrRedirect()) return;
+
   if (typeof syncData === 'function') {
     await syncData();
     // Pastikan tab yang aktif di sidebar ditampilkan kontennya

@@ -6,7 +6,13 @@
 // 1. CONFIGURATION
 const SB_URL = "https://ulmwpmzcaiuyubgehptt.supabase.co";
 const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVsbXdwbXpjYWl1eXViZ2VocHR0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE4MzI2MjUsImV4cCI6MjA4NzQwODYyNX0._Y2MkIiRDM52CVMsZEp-lSRBQ93ZYGkwkFbmxfZ5tFo";
-const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
+
+// Token login (diterbitkan oleh Edge Function login-employee) dilampirkan
+// otomatis ke tiap request Supabase lewat callback accessToken ini - inilah
+// yang dibaca RLS di database untuk menentukan data siapa yang boleh diakses.
+const supabaseClient = supabase.createClient(SB_URL, SB_KEY, {
+  accessToken: async () => localStorage.getItem("hris_token") || null,
+});
 
 let CURRENT_USER = null;
 let MY_LOGS = [];
@@ -22,30 +28,67 @@ async function loginEmployee() {
 
   showLoading(true);
   try {
-    const { data, error } = await supabaseClient
-      .from("karyawan")
-      .select("*")
-      .eq("nik", nik)
-      .eq("pin", pin)
-      .single();
+    const res = await fetch(`${SB_URL}/functions/v1/login-employee`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ nik, pin }),
+    });
+    const result = await res.json();
+    if (!res.ok || result.error) throw new Error(result.error || "NIK atau PIN salah!");
 
-    if (error || !data) throw new Error("NIK atau PIN salah!");
+    localStorage.setItem("hris_token", result.token);
+
+    // Ambil data lengkap karyawan (slip gaji, dsb butuh semua kolom) memakai
+    // token yang baru saja terbit - sekaligus jadi tes token-nya benar jalan.
+    const { data, error } = await supabaseClient.from("karyawan").select("*").eq("id", result.user.id).single();
+    if (error || !data) throw new Error("Gagal memuat profil karyawan.");
 
     CURRENT_USER = data;
+    localStorage.setItem("hris_user", JSON.stringify(data));
     document.getElementById("loginOverlay").style.display = "none";
     document.getElementById("portalContainer").style.display = "flex";
-    
+
     initPortal();
   } catch (err) {
     errEl.innerText = err.message;
+    localStorage.removeItem("hris_token");
+    localStorage.removeItem("hris_user");
   } finally {
     showLoading(false);
   }
 }
 
 function logout() {
+  localStorage.removeItem("hris_token");
+  localStorage.removeItem("hris_user");
   window.location.reload();
 }
+
+// Lanjutkan sesi otomatis kalau token masih ada & belum kedaluwarsa (memperbaiki
+// bug lama: sesi karyawan sebelumnya hilang setiap kali halaman di-refresh).
+function tryResumeSession() {
+  const token = localStorage.getItem("hris_token");
+  const cachedUser = localStorage.getItem("hris_user");
+  if (!token || !cachedUser) return;
+
+  try {
+    const claims = JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
+    if (!claims.exp || claims.exp * 1000 < Date.now() || claims.app_role !== "user") {
+      localStorage.removeItem("hris_token");
+      localStorage.removeItem("hris_user");
+      return;
+    }
+    CURRENT_USER = JSON.parse(cachedUser);
+    document.getElementById("loginOverlay").style.display = "none";
+    document.getElementById("portalContainer").style.display = "flex";
+    initPortal();
+  } catch {
+    localStorage.removeItem("hris_token");
+    localStorage.removeItem("hris_user");
+  }
+}
+
+document.addEventListener("DOMContentLoaded", tryResumeSession);
 
 // --- PORTAL INITIALIZATION ---
 async function initPortal() {

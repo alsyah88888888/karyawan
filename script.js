@@ -486,7 +486,25 @@ function hiddenLogin() {
 }
 
 async function loginAdmin() {
-  const p = await showModernPrompt("Security Entry", "Masukkan Password Admin:", "password");
-  if (p === "mautaubanget") window.location.href = "admin.html";
-  else if (p !== null) showModernAlert("Password Salah!", "error");
+  const username = await showModernPrompt("Security Entry", "Masukkan Username Admin:", "text");
+  if (username === null || username.trim() === "") return;
+
+  const password = await showModernPrompt("Security Entry", "Masukkan Password Admin:", "password");
+  if (password === null) return;
+
+  try {
+    const res = await fetch(`${SB_URL}/functions/v1/login-admin`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: username.trim(), password }),
+    });
+    const result = await res.json();
+    if (!res.ok || result.error) throw new Error(result.error || "Login gagal");
+
+    localStorage.setItem("hris_token", result.token);
+    localStorage.setItem("hris_admin_user", JSON.stringify(result.user));
+    window.location.href = "admin.html";
+  } catch (err) {
+    showModernAlert(err.message, "error");
+  }
 }
