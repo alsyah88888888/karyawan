@@ -7,9 +7,16 @@
 // yang jalan di VPS sendiri - gratis selamanya, mendukung kirim gambar penuh
 // tanpa batasan paket/watermark seperti gateway pihak ketiga.
 //
-// Deploy: supabase functions deploy send-salary-report
+// Deploy: supabase functions deploy send-salary-report --no-verify-jwt
+//   (--no-verify-jwt WAJIB - gateway Supabase menolak token custom RS256 kita
+//    dengan UNAUTHORIZED_ASYMMETRIC_JWT kalau verifikasi bawaan dinyalakan.
+//    Karena gateway jadi tidak mengecek apapun, function ini verifikasi
+//    sendiri lewat requireAdmin() - kalau dihapus, siapa saja yang tahu URL
+//    ini bisa memicu kirim WA ke nomor manapun tanpa login.)
 // Secret : supabase secrets set WA_GATEWAY_URL=https://wa.domainanda.com
 //          supabase secrets set WA_GATEWAY_SECRET=xxxxxxxxxxxx
+
+import { requireAdmin } from "../_shared/verifyAdmin.ts";
 
 const WA_GATEWAY_URL = Deno.env.get("WA_GATEWAY_URL")!;
 const WA_GATEWAY_SECRET = Deno.env.get("WA_GATEWAY_SECRET")!;
@@ -31,6 +38,14 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") {
     return new Response(JSON.stringify({ error: "Method not allowed" }), {
       status: 405,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  const auth = await requireAdmin(req);
+  if (!auth.ok) {
+    return new Response(JSON.stringify({ error: auth.error }), {
+      status: 401,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }

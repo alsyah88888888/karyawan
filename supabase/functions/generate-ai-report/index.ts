@@ -3,8 +3,16 @@
 // hardcoded langsung di admin.js, siapa saja yang view-source bisa mencurinya
 // dan memakai/menghabiskan kuota atas nama pemilik akun).
 //
-// Deploy: supabase functions deploy generate-ai-report
+// Deploy: supabase functions deploy generate-ai-report --no-verify-jwt
+//   (--no-verify-jwt WAJIB - gateway Supabase menolak token custom RS256
+//    kita dengan error UNAUTHORIZED_ASYMMETRIC_JWT kalau verifikasi bawaan
+//    dinyalakan, karena gateway cuma paham token native Supabase. Karena
+//    gatewaynya jadi tidak mengecek apapun, function ini verifikasi sendiri
+//    lewat requireAdmin() - kalau dihapus, endpoint ini bisa dipanggil siapa
+//    saja tanpa login sama sekali.)
 // Secret : supabase secrets set GEMINI_API_KEY=xxxxxxxxxxxx
+
+import { requireAdmin } from "../_shared/verifyAdmin.ts";
 
 const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY")!;
 
@@ -19,6 +27,14 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") {
     return new Response(JSON.stringify({ error: "Method not allowed" }), {
       status: 405,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  const auth = await requireAdmin(req);
+  if (!auth.ok) {
+    return new Response(JSON.stringify({ error: auth.error }), {
+      status: 401,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }

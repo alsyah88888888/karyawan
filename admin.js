@@ -123,6 +123,9 @@ async function renderAdminAccounts() {
         <button class="btn btn-outline btn-small" onclick="toggleAdminActive(${a.id}, ${!a.is_active})">
           ${a.is_active ? "Nonaktifkan" : "Aktifkan"}
         </button>
+        <button class="btn btn-outline btn-small" onclick="changeAdminPassword(${a.id}, '${escapeHtml(a.username)}')">
+          Ganti Password
+        </button>
       </td>
     </tr>
   `).join("") || `<tr><td colspan="6" style="text-align:center; padding:2rem; color:var(--text-muted);">Belum ada akun admin lain.</td></tr>`;
@@ -139,6 +142,30 @@ async function toggleAdminActive(id, setActive) {
     showToast(setActive ? "Akun diaktifkan" : "Akun dinonaktifkan", "success");
     logAudit(setActive ? "Aktifkan Akun Admin" : "Nonaktifkan Akun Admin", `admin_accounts.id=${id}`);
     renderAdminAccounts();
+  } catch (err) {
+    showToast("Gagal: " + err.message, "error");
+  } finally {
+    showLoading(false);
+  }
+}
+
+// super_admin bisa ganti password akun siapa saja; admin biasa cuma bisa
+// ganti password miliknya sendiri (dijaga di RPC admin_change_password, jadi
+// walau tombol ini tampil di semua baris, RPC akan menolak kalau tidak berhak).
+async function changeAdminPassword(id, username) {
+  const newPassword = window.prompt(`Password baru untuk akun "${username}" (minimal 6 karakter):`);
+  if (newPassword === null) return;
+  if (newPassword.length < 6) return alert("Password minimal 6 karakter!");
+
+  showLoading(true);
+  try {
+    const { error } = await supabaseClient.rpc("admin_change_password", {
+      p_admin_id: id,
+      p_new_password: newPassword,
+    });
+    if (error) throw error;
+    showToast(`Password akun "${username}" berhasil diganti`, "success");
+    logAudit("Ganti Password Admin", `admin_accounts.id=${id} (${username})`);
   } catch (err) {
     showToast("Gagal: " + err.message, "error");
   } finally {
