@@ -1,0 +1,12 @@
+{
+  "headers": [
+    {
+      "source": "/.well-known/openid-configuration",
+      "headers": [{ "key": "Content-Type", "value": "application/json" }]
+    },
+    {
+      "source": "/.well-known/jwks.json",
+      "headers": [{ "key": "Content-Type", "value": "application/json" }]
+    }
+  ]
+}
