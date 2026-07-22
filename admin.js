@@ -530,7 +530,7 @@ function renderKaryawanTable() {
         <td>
           <div style="display: flex; align-items: center; gap: 15px;">
             <div style="width: 48px; height: 48px; border-radius: 14px; overflow: hidden; border: 2.5px solid #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.1); background: #f1f5f9;">
-              <img src="image/NAME CARD KOLA BORASI INDONESIA/${k.nik}.png" 
+              <img src="${k.foto_url || 'image/NAME CARD KOLA BORASI INDONESIA/' + k.nik + '.png'}" 
                    onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(k.nama)}&background=4f46e5&color=fff&bold=true'"
                    style="width: 100%; height: 100%; object-fit: cover;">
             </div>
@@ -861,7 +861,7 @@ function cetakSlip(index) {
 
         <section class="info-box">
           <div class="info-photo">
-            <img src="image/NAME CARD KOLA BORASI INDONESIA/${k.nik}.png" 
+            <img src="${k.foto_url || 'image/NAME CARD KOLA BORASI INDONESIA/' + k.nik + '.png'}" 
                  onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(k.nama)}&background=4f46e5&color=fff'">
           </div>
           <div class="info-details">
@@ -1003,7 +1003,7 @@ async function generateSlipGajiBlob(k, d, periodeTampil) {
 
         <section class="info-box">
           <div class="info-photo">
-            <img src="image/NAME CARD KOLA BORASI INDONESIA/${k.nik}.png"
+            <img src="${k.foto_url || 'image/NAME CARD KOLA BORASI INDONESIA/' + k.nik + '.png'}"
                  onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(k.nama)}&background=4f46e5&color=fff'">
           </div>
           <div class="info-details">
@@ -1338,10 +1338,22 @@ function showModal() {
   document.getElementById("inpDept").value = "OFFICE";
   document.getElementById("inpPtkp").value = "TK/0";
 
+  const inpFoto = document.getElementById("inpFoto");
+  if (inpFoto) inpFoto.value = "";
+  const previewFoto = document.getElementById("previewFotoKaryawan");
+  if (previewFoto) previewFoto.src = "https://ui-avatars.com/api/?name=?&background=e2e8f0&color=94a3b8";
+
   document.getElementById("modalKaryawan").style.display = "flex";
 }
 
 function hideModal() { document.getElementById("modalKaryawan").style.display = "none"; }
+
+// Tampilkan preview instan saat admin memilih file foto, sebelum di-upload.
+function previewFotoKaryawanInput(event) {
+  const file = event.target.files?.[0];
+  const previewFoto = document.getElementById("previewFotoKaryawan");
+  if (file && previewFoto) previewFoto.src = URL.createObjectURL(file);
+}
 
 async function simpanKaryawan() {
   const id = document.getElementById("editKaryawanId").value;
@@ -1370,6 +1382,18 @@ async function simpanKaryawan() {
 
   showLoading(true);
   try {
+    const fotoFile = document.getElementById("inpFoto")?.files?.[0];
+    if (fotoFile) {
+      const ext = fotoFile.name.split('.').pop() || 'jpg';
+      const path = `${data.nik || 'karyawan'}_${Date.now()}.${ext}`;
+      const { error: uploadErr } = await supabaseClient.storage
+        .from("foto-karyawan")
+        .upload(path, fotoFile, { upsert: true });
+      if (uploadErr) throw uploadErr;
+      const { data: pub } = supabaseClient.storage.from("foto-karyawan").getPublicUrl(path);
+      data.foto_url = pub.publicUrl;
+    }
+
     if (id) {
       const { error } = await supabaseClient.from("karyawan").update(data).eq("id", id);
       if (error) throw error;
@@ -1418,6 +1442,14 @@ function bukaModalEditKaryawan(index) {
   document.getElementById("inpPtkp").value = k.status_ptkp || "TK/0";
   document.getElementById("inpNpwp").value = k.npwp || "";
   document.getElementById("inpPinjaman").value = k.pinjaman || 0;
+
+  const inpFoto = document.getElementById("inpFoto");
+  if (inpFoto) inpFoto.value = "";
+  const previewFoto = document.getElementById("previewFotoKaryawan");
+  if (previewFoto) {
+    previewFoto.src = k.foto_url || `image/NAME CARD KOLA BORASI INDONESIA/${k.nik}.png`;
+    previewFoto.onerror = () => { previewFoto.onerror = null; previewFoto.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(k.nama)}&background=4f46e5&color=fff`; };
+  }
 
   document.getElementById("modalKaryawan").style.display = "flex";
 }
@@ -1797,6 +1829,7 @@ function exportMasterKaryawan() {
   const dataExcel = KARYAWAN.map(k => ({
     "NIK KBI": k.nik || "-",
     "NAMA LENGKAP": k.nama,
+    "FOTO": k.foto_url || "-",
     "NIK KTP": k.nik_ktp || "-",
     "DEPARTMENT": k.dept,
     "JABATAN": k.jabatan || "-",
@@ -1811,6 +1844,18 @@ function exportMasterKaryawan() {
   }));
 
   const ws = XLSX.utils.json_to_sheet(dataExcel);
+
+  // Jadikan kolom FOTO hyperlink yang bisa langsung diklik untuk lihat gambarnya
+  const fotoColIndex = Object.keys(dataExcel[0] || {}).indexOf("FOTO");
+  if (fotoColIndex >= 0) {
+    KARYAWAN.forEach((k, i) => {
+      if (k.foto_url) {
+        const cellRef = XLSX.utils.encode_cell({ r: i + 1, c: fotoColIndex });
+        if (ws[cellRef]) ws[cellRef].l = { Target: k.foto_url };
+      }
+    });
+  }
+
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Master Data Karyawan");
 
