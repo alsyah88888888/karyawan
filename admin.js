@@ -42,6 +42,14 @@ function checkAdminAuthOrRedirect() {
   }
 
   ADMIN_USER = { ...JSON.parse(localStorage.getItem("hris_admin_user") || "{}"), role: claims.app_role };
+
+  // Tab "Manajemen Admin" & "Audit Log" cuma untuk super_admin. Ini gating
+  // tampilan saja (UX) - akses sesungguhnya sudah dijaga RLS di database,
+  // jadi walau ada yang paksa buka tab ini lewat console, tidak akan
+  // dapat data (admin_accounts/audit_logs menolak role selain super_admin).
+  const navSuperAdmin = document.getElementById("navSuperAdminOnly");
+  if (navSuperAdmin) navSuperAdmin.style.display = claims.app_role === "super_admin" ? "block" : "none";
+
   return true;
 }
 
@@ -49,6 +57,118 @@ function logoutAdmin() {
   localStorage.removeItem("hris_token");
   localStorage.removeItem("hris_admin_user");
   window.location.href = "index.html";
+}
+
+// --- MANAJEMEN AKUN ADMIN (super_admin only - dijaga RLS + RPC di database) ---
+function showCreateAdminModal() {
+  document.getElementById("inpNewAdminNama").value = "";
+  document.getElementById("inpNewAdminUsername").value = "";
+  document.getElementById("inpNewAdminPassword").value = "";
+  document.getElementById("inpNewAdminRole").value = "admin";
+  document.getElementById("modalCreateAdmin").style.display = "flex";
+}
+
+async function createAdminAccount() {
+  const nama = document.getElementById("inpNewAdminNama").value.trim();
+  const username = document.getElementById("inpNewAdminUsername").value.trim();
+  const password = document.getElementById("inpNewAdminPassword").value;
+  const role = document.getElementById("inpNewAdminRole").value;
+
+  if (!nama || !username || !password) return alert("Harap isi semua data!");
+  if (password.length < 6) return alert("Password minimal 6 karakter!");
+
+  showLoading(true);
+  try {
+    const { error } = await supabaseClient.rpc("admin_create_account", {
+      p_username: username,
+      p_password: password,
+      p_nama: nama,
+      p_role: role,
+    });
+    if (error) throw error;
+
+    document.getElementById("modalCreateAdmin").style.display = "none";
+    showToast("Akun admin berhasil dibuat", "success");
+    logAudit("Tambah Akun Admin", `Membuat akun ${username} (${role})`);
+    renderAdminAccounts();
+  } catch (err) {
+    showToast("Gagal: " + err.message, "error");
+  } finally {
+    showLoading(false);
+  }
+}
+
+async function renderAdminAccounts() {
+  const body = document.getElementById("adminAccountsBody");
+  if (!body) return;
+
+  const { data, error } = await supabaseClient
+    .from("admin_accounts")
+    .select("id, username, nama, role, is_active, last_login_at")
+    .order("id", { ascending: true });
+
+  if (error) {
+    body.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:2rem; color:var(--text-muted);">Gagal memuat data: ${error.message}</td></tr>`;
+    return;
+  }
+
+  body.innerHTML = (data || []).map((a) => `
+    <tr>
+      <td>${a.username}</td>
+      <td>${a.nama}</td>
+      <td><span class="badge">${a.role === "super_admin" ? "SUPER ADMIN" : "ADMIN"}</span></td>
+      <td>${a.is_active ? '<span style="color:var(--success); font-weight:700;">Aktif</span>' : '<span style="color:var(--danger); font-weight:700;">Nonaktif</span>'}</td>
+      <td>${a.last_login_at ? new Date(a.last_login_at).toLocaleString("id-ID") : "-"}</td>
+      <td>
+        <button class="btn btn-outline btn-small" onclick="toggleAdminActive(${a.id}, ${!a.is_active})">
+          ${a.is_active ? "Nonaktifkan" : "Aktifkan"}
+        </button>
+      </td>
+    </tr>
+  `).join("") || `<tr><td colspan="6" style="text-align:center; padding:2rem; color:var(--text-muted);">Belum ada akun admin lain.</td></tr>`;
+}
+
+async function toggleAdminActive(id, setActive) {
+  if (ADMIN_USER && String(ADMIN_USER.id) === String(id) && !setActive) {
+    return alert("Tidak bisa menonaktifkan akun yang sedang Anda pakai sendiri.");
+  }
+  showLoading(true);
+  try {
+    const { error } = await supabaseClient.from("admin_accounts").update({ is_active: setActive }).eq("id", id);
+    if (error) throw error;
+    showToast(setActive ? "Akun diaktifkan" : "Akun dinonaktifkan", "success");
+    logAudit(setActive ? "Aktifkan Akun Admin" : "Nonaktifkan Akun Admin", `admin_accounts.id=${id}`);
+    renderAdminAccounts();
+  } catch (err) {
+    showToast("Gagal: " + err.message, "error");
+  } finally {
+    showLoading(false);
+  }
+}
+
+async function renderAuditLog() {
+  const body = document.getElementById("auditLogBody");
+  if (!body) return;
+
+  const { data, error } = await supabaseClient
+    .from("audit_logs")
+    .select("*")
+    .order("id", { ascending: false })
+    .limit(200);
+
+  if (error) {
+    body.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:2rem; color:var(--text-muted);">Gagal memuat data: ${error.message}</td></tr>`;
+    return;
+  }
+
+  body.innerHTML = (data || []).map((l) => `
+    <tr>
+      <td>${l.created_at ? new Date(l.created_at).toLocaleString("id-ID") : "-"}</td>
+      <td>${l.actor_name || "-"} <span style="color:var(--text-muted); font-size:0.7rem;">(${l.actor_type || "-"})</span></td>
+      <td>${l.action}</td>
+      <td style="color:var(--text-muted); font-size:0.8rem;">${l.details || "-"}</td>
+    </tr>
+  `).join("") || `<tr><td colspan="4" style="text-align:center; padding:2rem; color:var(--text-muted);">Belum ada aktivitas tercatat.</td></tr>`;
 }
 
 const STANDAR_MASUK = 9; // Jam 9 Pagi
@@ -264,14 +384,14 @@ function renderVisualStats() {
 }
 
 function switchTab(tab) {
-  const tabs = ["tabDashboard", "tabLog", "tabKaryawan", "tabLeave", "tabPerformance", "tabCEO", "tabCalendar"];
+  const tabs = ["tabDashboard", "tabLog", "tabKaryawan", "tabLeave", "tabPerformance", "tabCEO", "tabCalendar", "tabAccounts", "tabAudit"];
   tabs.forEach((t) => {
     const el = document.getElementById(t);
     if (el) el.style.display = t === tab ? "block" : "none";
   });
 
   // Update Sidebar Active States
-  const links = ["linkTabDashboard", "linkTabLog", "linkTabKaryawan", "linkTabLeave", "linkTabPerformance", "linkTabCEO", "linkTabCalendar"];
+  const links = ["linkTabDashboard", "linkTabLog", "linkTabKaryawan", "linkTabLeave", "linkTabPerformance", "linkTabCEO", "linkTabCalendar", "linkTabAccounts", "linkTabAudit"];
   links.forEach(l => {
     const el = document.getElementById(l);
     if (el) el.classList.toggle("active", l.includes(tab.replace('tab', '')));
@@ -279,8 +399,10 @@ function switchTab(tab) {
 
   if (tab === "tabLog") syncData();
   if (tab === "tabLeave") fetchLeaveRequests();
-  if (tab === "tabPerformance") fetchReviews();
+  if (tab === "tabPerformance") { fetchReviews(); loadKpiRollup("weekly"); }
   if (tab === "tabCalendar") renderCalendar();
+  if (tab === "tabAccounts") renderAdminAccounts();
+  if (tab === "tabAudit") renderAuditLog();
 
   // Sembunyikan Header Actions (Tambah/Export) jika di Dashboard atau CEO
 
@@ -292,6 +414,8 @@ function switchTab(tab) {
     else if (tab === "tabCEO") title.innerText = "Direksi / CEO Panel";
     else if (tab === "tabPerformance") title.innerText = "Penilaian Performa (KPI & OKR)";
     else if (tab === "tabLeave") title.innerText = "Inbox Pengajuan Cuti";
+    else if (tab === "tabAccounts") title.innerText = "Manajemen Akun Admin";
+    else if (tab === "tabAudit") title.innerText = "Audit Log";
     else title.innerText = "Manajemen Karyawan";
   }
 
@@ -781,7 +905,14 @@ function hitungDetailGaji(gapok, namaKaryawan, customStart = null, customEnd = n
   }
 
   // --- TOTAL SALARY ---
-  const telatCount = dataLogKaryawan.filter(l => l.status === 'MASUK' && l.isLate).length;
+  // Pakai startsWith MASUK/DINAS LUAR (bukan === 'MASUK' saja): status "DINAS
+  // LUAR" yang telat juga harus terhitung, sama seperti hariHadir di atas
+  // sudah menghitungnya benar - sebelumnya karyawan Dinas Luar yang telat
+  // tidak pernah tercatat telat di sini.
+  const telatCount = dataLogKaryawan.filter(l => {
+    const s = (l.status || '').toUpperCase();
+    return (s.startsWith('MASUK') || s.startsWith('DINAS LUAR')) && l.isLate;
+  }).length;
 
   // --- TOTAL SALARY ---
   const uangHKE = hariHadir * hkeRate;
@@ -2281,7 +2412,10 @@ function closeReviewModal() {
 
 async function saveReview() {
   const empId = document.getElementById("revKaryawan").value;
-  const emp = KARYAWAN.find(k => k.id === empId);
+  // Pakai == (bukan ===): revKaryawan.value selalu string dari DOM, sedangkan
+  // karyawan.id numerik - perbandingan ketat sebelumnya selalu gagal cocok,
+  // membuat "Simpan Penilaian" gagal diam-diam (emp jadi undefined).
+  const emp = KARYAWAN.find(k => k.id == empId);
 
   // Hitung Real Attendance Score untuk periode ini
   const attendanceData = hitungDetailGaji(emp.gaji, emp.nama);
@@ -2318,6 +2452,88 @@ async function saveReview() {
   } finally {
     showLoading(false);
   }
+}
+
+// KPI Otomatis: baca snapshot terakhir (harian/mingguan/bulanan) dari
+// kpi_snapshots, yang diisi cron compute-kpi-snapshots. Kalau periode
+// terbaru belum pernah dihitung cron (mis. baru di-deploy), tampilkan pesan
+// info bukannya kosong tanpa penjelasan.
+async function loadKpiRollup(periodType) {
+  ["Daily", "Weekly", "Monthly"].forEach((p) => {
+    const btn = document.getElementById(`btnKpi${p}`);
+    if (btn) btn.classList.toggle("btn-primary", p.toLowerCase() === periodType);
+  });
+
+  const summaryEl = document.getElementById("kpiRollupSummary");
+  const bodyEl = document.getElementById("kpiRollupBody");
+  if (!summaryEl || !bodyEl) return;
+
+  const { data: latestRow } = await supabaseClient
+    .from("kpi_snapshots")
+    .select("period_start")
+    .eq("period_type", periodType)
+    .order("period_start", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!latestRow) {
+    summaryEl.innerHTML = `<div style="grid-column: 1/-1; padding: 20px; color: var(--text-muted);">Belum ada data KPI ${periodType} - akan otomatis terisi setelah jadwal cron pertama jalan.</div>`;
+    bodyEl.innerHTML = "";
+    return;
+  }
+
+  const { data: snapshots } = await supabaseClient
+    .from("kpi_snapshots")
+    .select("*, karyawan(nama)")
+    .eq("period_type", periodType)
+    .eq("period_start", latestRow.period_start)
+    .order("final_score", { ascending: false });
+
+  const rows = snapshots || [];
+  const avgScore = rows.length ? rows.reduce((sum, r) => sum + Number(r.final_score), 0) / rows.length : 0;
+  const gradeCount = { A: 0, B: 0, C: 0 };
+  rows.forEach((r) => { gradeCount[r.final_grade] = (gradeCount[r.final_grade] || 0) + 1; });
+
+  const perDept = {};
+  rows.forEach((r) => {
+    const d = r.dept || "LAINNYA";
+    if (!perDept[d]) perDept[d] = { total: 0, count: 0 };
+    perDept[d].total += Number(r.final_score);
+    perDept[d].count += 1;
+  });
+  const deptRanking = Object.entries(perDept)
+    .map(([dept, v]) => ({ dept, avg: v.total / v.count }))
+    .sort((a, b) => b.avg - a.avg);
+
+  summaryEl.innerHTML = `
+    <div style="background:#f8fafc; border-radius:12px; padding:16px; text-align:center;">
+      <div style="font-size:0.7rem; color:var(--text-muted); font-weight:700; text-transform:uppercase;">Periode</div>
+      <div style="font-size:1rem; font-weight:800; color:var(--sidebar-bg);">${latestRow.period_start}</div>
+    </div>
+    <div style="background:#f8fafc; border-radius:12px; padding:16px; text-align:center;">
+      <div style="font-size:0.7rem; color:var(--text-muted); font-weight:700; text-transform:uppercase;">Rata-rata Skor</div>
+      <div style="font-size:1.5rem; font-weight:800; color:var(--primary);">${avgScore.toFixed(1)}</div>
+    </div>
+    <div style="background:#f8fafc; border-radius:12px; padding:16px; text-align:center;">
+      <div style="font-size:0.7rem; color:var(--text-muted); font-weight:700; text-transform:uppercase;">Distribusi Grade</div>
+      <div style="font-size:1rem; font-weight:800;"><span style="color:#10b981;">A:${gradeCount.A||0}</span> &nbsp;<span style="color:#f59e0b;">B:${gradeCount.B||0}</span> &nbsp;<span style="color:#ef4444;">C:${gradeCount.C||0}</span></div>
+    </div>
+    <div style="background:#f8fafc; border-radius:12px; padding:16px; text-align:center;">
+      <div style="font-size:0.7rem; color:var(--text-muted); font-weight:700; text-transform:uppercase;">Dept Terbaik</div>
+      <div style="font-size:1rem; font-weight:800; color:var(--sidebar-bg);">${deptRanking[0] ? `${deptRanking[0].dept} (${deptRanking[0].avg.toFixed(1)})` : "-"}</div>
+    </div>
+  `;
+
+  bodyEl.innerHTML = rows.map((r) => `
+    <tr>
+      <td>${r.karyawan?.nama || "-"}</td>
+      <td>${r.dept || "-"} / ${r.jabatan || "-"}</td>
+      <td>${r.hadir}</td>
+      <td>${r.telat}</td>
+      <td style="font-weight:800;">${Number(r.final_score).toFixed(1)}</td>
+      <td><span style="font-weight:800; color:${r.final_grade === 'A' ? '#10b981' : r.final_grade === 'B' ? '#f59e0b' : '#ef4444'};">${r.final_grade}</span></td>
+    </tr>
+  `).join("");
 }
 
 async function fetchReviews() {

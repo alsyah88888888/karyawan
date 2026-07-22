@@ -126,7 +126,7 @@ function switchTab(tabId) {
   event.currentTarget.classList.add("active");
 
   if (tabId === "tabLeave") renderLeaveHistory();
-  if (tabId === "tabPerformance") renderPerformance();
+  if (tabId === "tabPerformance") { renderPerformance(); renderKpiSnapshotCard(); }
   lucide.createIcons();
 }
 
@@ -303,6 +303,45 @@ async function downloadPayslip() {
   } finally {
     showLoading(false);
   }
+}
+
+// --- KPI OTOMATIS (diisi cron compute-kpi-snapshots) ---
+async function renderKpiSnapshotCard() {
+  const cont = document.getElementById("kpiSnapshotCard");
+  if (!cont) return;
+
+  const periods = [
+    { type: "daily", label: "Hari Ini" },
+    { type: "weekly", label: "Minggu Ini" },
+    { type: "monthly", label: "Bulan Ini" },
+  ];
+
+  const cards = await Promise.all(periods.map(async (p) => {
+    const { data } = await supabaseClient
+      .from("kpi_snapshots")
+      .select("final_score, final_grade, hadir, telat")
+      .eq("employee_id", CURRENT_USER.id)
+      .eq("period_type", p.type)
+      .order("period_start", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (!data) {
+      return `<div style="background:rgba(255,255,255,0.03); border-radius:12px; padding:16px; text-align:center;">
+        <div style="font-size:0.7rem; color:var(--text-muted); font-weight:700; text-transform:uppercase;">${p.label}</div>
+        <div style="font-size:0.8rem; color:var(--text-muted); margin-top:8px;">Belum ada data</div>
+      </div>`;
+    }
+
+    const color = data.final_grade === "A" ? "var(--success)" : data.final_grade === "B" ? "var(--warning)" : "var(--danger)";
+    return `<div style="background:rgba(255,255,255,0.03); border-radius:12px; padding:16px; text-align:center; border-top: 3px solid ${color};">
+      <div style="font-size:0.7rem; color:var(--text-muted); font-weight:700; text-transform:uppercase;">${p.label}</div>
+      <div style="font-size:1.6rem; font-weight:800; color:${color};">${Number(data.final_score).toFixed(1)}</div>
+      <div style="font-size:0.7rem; color:var(--text-muted);">Grade ${data.final_grade} &middot; Hadir ${data.hadir} / Telat ${data.telat}</div>
+    </div>`;
+  }));
+
+  cont.innerHTML = cards.join("");
 }
 
 // --- PERFORMANCE ---

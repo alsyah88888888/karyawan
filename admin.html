@@ -64,6 +64,16 @@
                         <span>CEO Access</span>
                     </a>
                 </li>
+                <li class="nav-item" id="navSuperAdminOnly" style="display: none;">
+                    <a href="#" class="nav-link" id="linkTabAccounts" onclick="switchTab('tabAccounts')">
+                        <i data-lucide="key-round"></i>
+                        <span>Manajemen Admin</span>
+                    </a>
+                    <a href="#" class="nav-link" id="linkTabAudit" onclick="switchTab('tabAudit')">
+                        <i data-lucide="scroll-text"></i>
+                        <span>Audit Log</span>
+                    </a>
+                </li>
             </ul>
 
             <div class="sidebar-footer">
@@ -408,6 +418,96 @@
                 </div>
             </section>
 
+            <!-- TAB: MANAJEMEN ADMIN (super_admin only) -->
+            <section id="tabAccounts" style="display: none;">
+                <div class="data-section">
+                    <div class="section-header">
+                        <div class="card-title-group">
+                            <h3>Manajemen Akun Admin</h3>
+                            <p>Hanya Super Admin yang bisa membuat/menonaktifkan akun admin lain.</p>
+                        </div>
+                        <button class="btn btn-primary btn-small" onclick="showCreateAdminModal()">
+                            <i data-lucide="user-plus"></i> Tambah Akun Admin
+                        </button>
+                    </div>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Username</th>
+                                    <th>Nama</th>
+                                    <th>Role</th>
+                                    <th>Status</th>
+                                    <th>Login Terakhir</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminAccountsBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB: AUDIT LOG (super_admin only) -->
+            <section id="tabAudit" style="display: none;">
+                <div class="data-section">
+                    <div class="section-header">
+                        <div class="card-title-group">
+                            <h3>Audit Log</h3>
+                            <p>Jejak aksi semua admin (siapa, kapan, apa) - tidak bisa diedit/dihapus siapapun.</p>
+                        </div>
+                    </div>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Waktu</th>
+                                    <th>Aktor</th>
+                                    <th>Aksi</th>
+                                    <th>Detail</th>
+                                </tr>
+                            </thead>
+                            <tbody id="auditLogBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- MODAL: TAMBAH AKUN ADMIN -->
+            <div id="modalCreateAdmin" class="modal">
+                <div class="modal-content" style="max-width: 450px;">
+                    <header class="modal-header">
+                        <h3>Tambah Akun Admin</h3>
+                        <button class="btn btn-outline btn-small" onclick="document.getElementById('modalCreateAdmin').style.display='none'">X</button>
+                    </header>
+                    <div class="modal-body">
+                        <div class="form-group" style="margin-bottom: 1rem;">
+                            <label>Nama Lengkap</label>
+                            <input type="text" id="inpNewAdminNama" class="form-input">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 1rem;">
+                            <label>Username</label>
+                            <input type="text" id="inpNewAdminUsername" class="form-input">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 1rem;">
+                            <label>Password</label>
+                            <input type="password" id="inpNewAdminPassword" class="form-input">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 1rem;">
+                            <label>Role</label>
+                            <select id="inpNewAdminRole" class="form-input">
+                                <option value="admin">Admin</option>
+                                <option value="super_admin">Super Admin</option>
+                            </select>
+                        </div>
+                        <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                            <button class="btn btn-outline" onclick="document.getElementById('modalCreateAdmin').style.display='none'">Batal</button>
+                            <button class="btn btn-primary" onclick="createAdminAccount()">Simpan</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- TAB: MANAJEMEN CUTI -->
             <section id="tabLeave" style="display: none;">
                 <div class="data-section">
@@ -439,7 +539,37 @@
             <section id="tabPerformance" style="display: none;">
                 <div class="data-section">
                     <div class="section-header">
-                        <h3>Penilaian KPI & OKR</h3>
+                        <div class="card-title-group">
+                            <h3>KPI Otomatis</h3>
+                            <p>Skor dihitung otomatis dari kehadiran & kedisiplinan, digabung penilaian manual (kalau ada)</p>
+                        </div>
+                        <div class="action-group">
+                            <button class="btn btn-outline btn-small" id="btnKpiDaily" onclick="loadKpiRollup('daily')">Harian</button>
+                            <button class="btn btn-outline btn-small" id="btnKpiWeekly" onclick="loadKpiRollup('weekly')">Mingguan</button>
+                            <button class="btn btn-outline btn-small" id="btnKpiMonthly" onclick="loadKpiRollup('monthly')">Bulanan</button>
+                        </div>
+                    </div>
+                    <div id="kpiRollupSummary" style="padding: 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px;"></div>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Nama</th>
+                                    <th>Dept / Jabatan</th>
+                                    <th>Hadir</th>
+                                    <th>Telat</th>
+                                    <th>Skor Akhir</th>
+                                    <th>Grade</th>
+                                </tr>
+                            </thead>
+                            <tbody id="kpiRollupBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="data-section">
+                    <div class="section-header">
+                        <h3>Penilaian KPI & OKR (Manual)</h3>
                         <button class="btn btn-primary btn-small" onclick="showReviewModal()">
                             <i data-lucide="plus-circle"></i> Tambah Penilaian
                         </button>

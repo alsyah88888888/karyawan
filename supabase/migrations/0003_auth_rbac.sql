@@ -58,11 +58,14 @@ returns trigger as $$
 declare
   claims jsonb;
 begin
+  -- Catatan: klaim "role" DIRESERVE oleh PostgREST (nama Postgres role untuk
+  -- SET ROLE, selalu 'authenticated' untuk token custom kita) - data role
+  -- aplikasi ada di klaim terpisah "app_role", itu yang harus dibaca di sini.
   claims := nullif(current_setting('request.jwt.claims', true), '')::jsonb;
-  if claims is null then
+  if claims is null or claims->>'app_role' is null then
     new.actor_type := 'system';
   else
-    new.actor_type := coalesce(claims->>'role', 'system');
+    new.actor_type := claims->>'app_role';
     new.actor_name := claims->>'nama';
     new.actor_id := coalesce(
       nullif(claims->>'karyawan_id', '')::bigint,
