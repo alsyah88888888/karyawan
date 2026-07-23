@@ -82,15 +82,24 @@ Deno.serve(async (req) => {
   }
 
   let periodType: PeriodType = "daily";
+  let overrideStart: string | undefined;
+  let overrideEnd: string | undefined;
   try {
     const body = await req.json();
     if (body?.periodType) periodType = body.periodType;
+    // Dipakai untuk hitung ulang periode LAMA (bukan periode "sekarang") -
+    // mis. setelah bugfix, supaya snapshot lama bisa di-refresh dengan
+    // logika yang benar tanpa menunggu jadwal cron alami berikutnya.
+    if (body?.periodStart) overrideStart = body.periodStart;
+    if (body?.periodEnd) overrideEnd = body.periodEnd;
   } catch {
-    // body kosong -> default 'daily'
+    // body kosong -> default 'daily', periode berjalan
   }
 
   const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
-  const { start, end } = getPeriodRange(periodType);
+  const { start, end } = overrideStart && overrideEnd
+    ? { start: overrideStart, end: overrideEnd }
+    : getPeriodRange(periodType);
   const totalHariKerja = hitungHariKerjaEfektif(start, end);
 
   const { data: karyawan, error: errKar } = await supabase
