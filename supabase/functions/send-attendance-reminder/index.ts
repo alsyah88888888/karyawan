@@ -46,8 +46,17 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ error: errKar.message }), { status: 500 });
   }
 
-  const startUtc = new Date(`${tanggal}T00:00:00+07:00`).toISOString();
-  const endUtc = new Date(`${tanggal}T23:59:59+07:00`).toISOString();
+  // PENTING: kolom logs.waktu disimpan sebagai teks LOKAL WIB tanpa offset
+  // zona waktu (dari toLocalISO() di script.js, mis. "2026-07-23T09:15:00"),
+  // dan karena tipe kolomnya text, filter .gte()/.lte() di bawah membanding-
+  // kannya sebagai STRING biasa, bukan tanggal sungguhan. Batasnya HARUS
+  // ditulis dalam format naive yang sama (tanpa "Z"/offset) - kalau dulu
+  // dikonversi ke UTC (+07:00 lalu toISOString()), absen jam malam WIB hari
+  // sebelumnya bisa ke-anggap "hari ini" secara tekstual dan salah dianggap
+  // sudah absen (kejadian nyata: RIANSYAH absen 22 Juli 17:04 WIB kebetulan
+  // "cocok" dengan rentang UTC 23 Juli, jadi reminder-nya tidak terkirim).
+  const startUtc = `${tanggal}T00:00:00`;
+  const endUtc = `${tanggal}T23:59:59`;
 
   // Presensi masuk dianggap sah kalau status diawali "MASUK" atau "DINAS LUAR"
   // (lihat script.js prosesAbsen: dua tombol itu yang menandai jam masuk kerja)

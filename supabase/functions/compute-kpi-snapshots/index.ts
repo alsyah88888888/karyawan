@@ -98,8 +98,14 @@ Deno.serve(async (req) => {
     .select("id, nama, dept, jabatan");
   if (errKar) return new Response(JSON.stringify({ error: errKar.message }), { status: 500 });
 
-  const startUtc = new Date(`${start}T00:00:00+07:00`).toISOString();
-  const endUtc = new Date(`${end}T23:59:59+07:00`).toISOString();
+  // PENTING: logs.waktu adalah teks LOKAL WIB tanpa offset zona waktu (kolom
+  // bertipe text) - filter .gte()/.lte() di bawah jadi perbandingan STRING
+  // biasa, bukan tanggal sungguhan. Batasnya harus format naive yang sama
+  // (tanpa "Z"/offset), kalau tidak absen malam WIB bisa salah ke-anggap
+  // masuk periode yang salah secara tekstual (bug nyata yang sama pernah
+  // membuat send-attendance-reminder salah menganggap seseorang sudah absen).
+  const startUtc = `${start}T00:00:00`;
+  const endUtc = `${end}T23:59:59`;
 
   const { data: logsPeriode, error: errLog } = await supabase
     .from("logs")
