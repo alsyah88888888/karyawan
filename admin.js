@@ -2360,35 +2360,51 @@ async function fetchLeaveRequests() {
 
   const body = document.getElementById("adminLeaveBody");
   let html = "";
-  leaves.forEach(lv => {
+  for (const lv of leaves) {
     const statusClass = lv.status === "APPROVED" ? "badge-success" : (lv.status === "REJECTED" ? "badge-danger" : "badge-warning");
     const actions = lv.status === "PENDING" ? `
             <button class="btn btn-primary btn-small" onclick="processLeave('${lv.id}', 'APPROVED', '${lv.employee_id}')">Setujui</button>
-            <button class="btn btn-danger btn-small" onclick="processLeave('${lv.id}', 'REJECTED')">Tolak</button>
-        ` : "-";
+            <button class="btn btn-danger btn-small" onclick="processLeave('${lv.id}', 'REJECTED', '${lv.employee_id}')">Tolak</button>
+        ` : (lv.status === "REJECTED" && lv.rejection_reason ? `<span style="font-size:0.8em; color:var(--text-muted);">Alasan: ${escapeHtml(lv.rejection_reason)}</span>` : "-");
+
+    let lampiranHtml = "-";
+    if (lv.attachment_url) {
+      const { data: signed } = await supabaseClient.storage.from("leave-attachments").createSignedUrl(lv.attachment_url, 3600);
+      if (signed?.signedUrl) lampiranHtml = `<a href="${signed.signedUrl}" target="_blank" rel="noopener">Lihat</a>`;
+    }
 
     html += `
             <tr>
-                <td><strong>${lv.karyawan.nama}</strong></td>
-                <td>${lv.type}</td>
+                <td><strong>${escapeHtml(lv.karyawan.nama)}</strong></td>
+                <td>${escapeHtml(lv.type)}</td>
                 <td>${lv.start_date} s/d ${lv.end_date}</td>
-                <td>${lv.reason}</td>
+                <td>${escapeHtml(lv.reason)}</td>
+                <td>${lampiranHtml}</td>
                 <td><span class="badge ${statusClass}">${lv.status}</span></td>
                 <td>${actions}</td>
             </tr>
         `;
-  });
+  }
   body.innerHTML = html;
 }
 
 async function processLeave(requestId, status, employeeId) {
-  if (!confirm(`Konfirmasi ${status} pengajuan cuti ini?`)) return;
+  let rejectionReason = null;
+  if (status === "REJECTED") {
+    rejectionReason = window.prompt("Alasan penolakan (akan dikirim ke karyawan via WA):");
+    if (rejectionReason === null) return; // batal
+  } else if (!confirm(`Konfirmasi ${status} pengajuan cuti ini?`)) {
+    return;
+  }
 
   showLoading(true);
   try {
+    const updatePayload = { status };
+    if (status === "REJECTED") updatePayload.rejection_reason = rejectionReason || null;
+
     const { error } = await supabaseClient
       .from("leave_requests")
-      .update({ status: status })
+      .update(updatePayload)
       .eq("id", requestId);
 
     if (error) throw error;
@@ -2409,7 +2425,17 @@ async function processLeave(requestId, status, employeeId) {
       await supabaseClient.from("karyawan").update({ sisa_cuti: newBalance > 0 ? newBalance : 0 }).eq("id", employeeId);
     }
 
+    // Notifikasi WA ke karyawan - kalau gagal, jangan gagalkan keputusan yang sudah tersimpan.
+    try {
+      await supabaseClient.functions.invoke("send-leave-notification", {
+        body: { leaveRequestId: requestId, event: status === "APPROVED" ? "approved" : "rejected" },
+      });
+    } catch (notifErr) {
+      console.warn("Gagal kirim notifikasi WA:", notifErr);
+    }
+
     showToast(`Cuti berhasil di-${status.toLowerCase()}`, "success");
+    logAudit(`Cuti ${status}`, `leave_requests.id=${requestId}${rejectionReason ? ` - ${rejectionReason}` : ""}`);
     fetchLeaveRequests();
   } catch (e) {
     showToast(e.message, "error");

@@ -206,23 +206,49 @@ async function submitLeave() {
   const start = document.getElementById("leaveStart").value;
   const end = document.getElementById("leaveEnd").value;
   const reason = document.getElementById("leaveReason").value;
+  const fileInput = document.getElementById("leaveAttachment");
+  const file = fileInput?.files?.[0];
 
   if (!start || !end || !reason) return alert("Harap isi semua data pengajuan!");
 
   showLoading(true);
   try {
-    const { error } = await supabaseClient.from("leave_requests").insert([{
-      employee_id: CURRENT_USER.id,
-      type: type,
-      start_date: start,
-      end_date: end,
-      reason: reason,
-      status: "PENDING"
-    }]);
+    let attachmentPath = null;
+    if (file) {
+      const path = `${CURRENT_USER.id}/${Date.now()}_${file.name}`;
+      const { error: uploadErr } = await supabaseClient.storage.from("leave-attachments").upload(path, file);
+      if (uploadErr) throw new Error("Gagal upload lampiran: " + uploadErr.message);
+      attachmentPath = path;
+    }
+
+    const { data: inserted, error } = await supabaseClient
+      .from("leave_requests")
+      .insert([{
+        employee_id: CURRENT_USER.id,
+        type: type,
+        start_date: start,
+        end_date: end,
+        reason: reason,
+        attachment_url: attachmentPath,
+        status: "PENDING"
+      }])
+      .select("id")
+      .single();
 
     if (error) throw error;
+
+    // Notifikasi WA ke admin - kalau gagal, jangan gagalkan pengajuannya sendiri.
+    try {
+      await supabaseClient.functions.invoke("send-leave-notification", {
+        body: { leaveRequestId: inserted.id, event: "new_request" },
+      });
+    } catch (notifErr) {
+      console.warn("Gagal kirim notifikasi WA:", notifErr);
+    }
+
     alert("Pengajuan cuti berhasil dikirim! Menunggu persetujuan HR.");
     document.getElementById("leaveReason").value = "";
+    if (fileInput) fileInput.value = "";
     renderLeaveHistory();
   } catch (err) {
     alert("Gagal: " + err.message);
@@ -240,17 +266,32 @@ async function renderLeaveHistory() {
     .order("id", { ascending: false });
 
   let html = "";
-  (leaves || []).forEach(lv => {
+  for (const lv of leaves || []) {
     const statusClass = lv.status === "APPROVED" ? "badge-success" : (lv.status === "REJECTED" ? "badge-danger" : "badge-warning");
+
+    let keterangan = "-";
+    if (lv.status === "REJECTED" && lv.rejection_reason) {
+      keterangan = `Ditolak: ${lv.rejection_reason}`;
+    }
+    if (lv.attachment_url) {
+      const { data: signed } = await supabaseClient.storage
+        .from("leave-attachments")
+        .createSignedUrl(lv.attachment_url, 3600);
+      if (signed?.signedUrl) {
+        keterangan += ` ${keterangan !== "-" ? "&middot;" : ""} <a href="${signed.signedUrl}" target="_blank" rel="noopener">Lihat Lampiran</a>`;
+      }
+    }
+
     html += `
       <tr>
         <td>${lv.type}</td>
         <td>${lv.start_date} s/d ${lv.end_date}</td>
         <td><span class="badge ${statusClass}">${lv.status}</span></td>
+        <td style="font-size:0.85em;">${keterangan}</td>
       </tr>
     `;
-  });
-  body.innerHTML = html || "<tr><td colspan='3'>Belum ada riwayat.</td></tr>";
+  }
+  body.innerHTML = html || "<tr><td colspan='4'>Belum ada riwayat.</td></tr>";
 }
 
 function getPayslipHtml() {

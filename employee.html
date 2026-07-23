@@ -217,6 +217,10 @@
                             <label>Alasan / Keperluan</label>
                             <textarea id="leaveReason" rows="3" placeholder="Tuliskan alasan pengajuan..."></textarea>
                         </div>
+                        <div class="form-group">
+                            <label>Lampiran (opsional - mis. surat dokter)</label>
+                            <input type="file" id="leaveAttachment" accept="image/*,.pdf">
+                        </div>
                         <button class="btn-primary" onclick="submitLeave()">AJUKAN SEKARANG</button>
                     </div>
                     <div class="leave-history data-section">
@@ -228,6 +232,7 @@
                                         <th>Jenis</th>
                                         <th>Periode</th>
                                         <th>Status</th>
+                                        <th>Keterangan</th>
                                     </tr>
                                 </thead>
                                 <tbody id="leaveHistoryBody"></tbody>
