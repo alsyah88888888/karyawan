@@ -131,6 +131,90 @@ async function renderAdminAccounts() {
   `).join("") || `<tr><td colspan="6" style="text-align:center; padding:2rem; color:var(--text-muted);">Belum ada akun admin lain.</td></tr>`;
 }
 
+// module_key -> id link sidebar yang harus disembunyikan dari role "admin"
+// kalau modulnya dimatikan (RLS di database tetap penjaga sesungguhnya - ini
+// cuma UX supaya admin tidak lihat tab yang datanya akan ditolak).
+const MODULE_NAV_LINKS = {
+  leave_management: ["linkTabLeave"],
+  performance_kpi: ["linkTabPerformance"],
+  ceo_access: ["linkTabCEO"],
+};
+
+let MODULE_SETTINGS_CACHE = [];
+
+// Dipanggil sekali saat halaman dimuat (window.onload) - untuk role "admin"
+// sembunyikan link tab yang modulnya dimatikan Super Admin. super_admin
+// selalu lihat semua link, tidak pernah disembunyikan oleh setting ini.
+async function applyModuleVisibility() {
+  if (!ADMIN_USER || ADMIN_USER.role === "super_admin") return;
+
+  const { data, error } = await supabaseClient
+    .from("admin_module_settings")
+    .select("module_key, enabled_for_admin");
+  if (error) return;
+
+  MODULE_SETTINGS_CACHE = data || [];
+  for (const row of MODULE_SETTINGS_CACHE) {
+    if (row.enabled_for_admin) continue;
+    const links = MODULE_NAV_LINKS[row.module_key] || [];
+    links.forEach((linkId) => {
+      const el = document.getElementById(linkId);
+      if (el) el.style.display = "none";
+    });
+  }
+}
+
+function isModuleEnabledForCurrentAdmin(moduleKey) {
+  if (!ADMIN_USER || ADMIN_USER.role === "super_admin") return true;
+  const row = MODULE_SETTINGS_CACHE.find((r) => r.module_key === moduleKey);
+  return row ? row.enabled_for_admin : true;
+}
+
+async function renderModuleSettings() {
+  const body = document.getElementById("moduleSettingsBody");
+  if (!body) return;
+
+  const { data, error } = await supabaseClient
+    .from("admin_module_settings")
+    .select("module_key, label, enabled_for_admin")
+    .order("module_key", { ascending: true });
+
+  if (error) {
+    body.innerHTML = `<tr><td colspan="3" style="text-align:center; padding:2rem; color:var(--text-muted);">Gagal memuat: ${error.message}</td></tr>`;
+    return;
+  }
+
+  body.innerHTML = (data || []).map((m) => `
+    <tr>
+      <td>${escapeHtml(m.label)}</td>
+      <td>${m.enabled_for_admin ? '<span style="color:var(--success); font-weight:700;">Aktif untuk Admin</span>' : '<span style="color:var(--danger); font-weight:700;">Dimatikan untuk Admin</span>'}</td>
+      <td>
+        <button class="btn btn-outline btn-small" onclick="toggleModuleSetting('${m.module_key}', ${!m.enabled_for_admin})">
+          ${m.enabled_for_admin ? "Matikan" : "Aktifkan"}
+        </button>
+      </td>
+    </tr>
+  `).join("") || `<tr><td colspan="3" style="text-align:center; padding:2rem; color:var(--text-muted);">Tidak ada modul yang bisa diatur.</td></tr>`;
+}
+
+async function toggleModuleSetting(moduleKey, setEnabled) {
+  showLoading(true);
+  try {
+    const { error } = await supabaseClient
+      .from("admin_module_settings")
+      .update({ enabled_for_admin: setEnabled, updated_at: new Date().toISOString(), updated_by: ADMIN_USER?.id || null })
+      .eq("module_key", moduleKey);
+    if (error) throw error;
+    showToast(setEnabled ? "Modul diaktifkan untuk role Admin" : "Modul dimatikan untuk role Admin", "success");
+    logAudit(setEnabled ? "Aktifkan Modul" : "Matikan Modul", `admin_module_settings.module_key=${moduleKey}`);
+    renderModuleSettings();
+  } catch (err) {
+    showToast("Gagal: " + err.message, "error");
+  } finally {
+    showLoading(false);
+  }
+}
+
 async function toggleAdminActive(id, setActive) {
   if (ADMIN_USER && String(ADMIN_USER.id) === String(id) && !setActive) {
     return alert("Tidak bisa menonaktifkan akun yang sedang Anda pakai sendiri.");
@@ -424,11 +508,24 @@ function switchTab(tab) {
     if (el) el.classList.toggle("active", l.includes(tab.replace('tab', '')));
   });
 
+  // Jaga-jaga kalau tab dibuka lewat console/URL walau linknya sudah
+  // disembunyikan - RLS/trigger di database tetap penjaga sesungguhnya,
+  // ini cuma supaya admin dapat pesan yang jelas alih-alih tabel kosong.
+  const tabModuleMap = { tabLeave: "leave_management", tabPerformance: "performance_kpi", tabCEO: "ceo_access" };
+  if (tabModuleMap[tab] && !isModuleEnabledForCurrentAdmin(tabModuleMap[tab])) {
+    showToast("Modul ini dimatikan untuk akun Anda oleh Super Admin", "error");
+    tab = "tabDashboard";
+    tabs.forEach((t) => {
+      const el = document.getElementById(t);
+      if (el) el.style.display = t === tab ? "block" : "none";
+    });
+  }
+
   if (tab === "tabLog") syncData();
   if (tab === "tabLeave") fetchLeaveRequests();
   if (tab === "tabPerformance") { fetchReviews(); loadKpiRollup("weekly"); }
   if (tab === "tabCalendar") renderCalendar();
-  if (tab === "tabAccounts") renderAdminAccounts();
+  if (tab === "tabAccounts") { renderAdminAccounts(); renderModuleSettings(); }
   if (tab === "tabAudit") renderAuditLog();
 
   // Sembunyikan Header Actions (Tambah/Export) jika di Dashboard atau CEO
@@ -2124,6 +2221,7 @@ function setPeriodeLog() {
 
 window.onload = async () => {
   if (!checkAdminAuthOrRedirect()) return;
+  await applyModuleVisibility();
 
   if (typeof syncData === 'function') {
     await syncData();

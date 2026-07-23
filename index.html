@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    
+
     <!-- PWA / ADD TO HOME SCREEN ICONS -->
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" href="logokoboi.png">
@@ -13,14 +14,16 @@
     <meta name="apple-mobile-web-app-title" content="KOBOI Absen">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#4f46e5">
-    
+
     <title>KOBOI - Intelligent Terminal</title>
     <!-- Google Fonts: Outfit for Modern Look -->
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800;900&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="style.css?v=20260502_FINAL">
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
 </head>
+
 <body>
     <div class="terminal-container">
         <!-- Status Indicator -->
@@ -34,7 +37,9 @@
                     <img src="logokoboi.png" alt="KOBOI Logo" id="terminalLogo">
                 </div>
                 <h1 id="liveClock">00:00:00</h1>
-                <p id="liveDate" style="font-size: 0.85rem; color: var(--text-muted); margin-top: -5px; margin-bottom: 15px; font-weight: 500;"></p>
+                <p id="liveDate"
+                    style="font-size: 0.85rem; color: var(--text-muted); margin-top: -5px; margin-bottom: 15px; font-weight: 500;">
+                </p>
                 <p onclick="hiddenLogin()" style="cursor: default;">PT. KOLA BORASI INDONESIA</p>
             </header>
 
@@ -67,8 +72,12 @@
                 </div>
 
                 <!-- TOMBOL MENU PORTAL KARYAWAN -->
-                <div style="margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px; text-align: center;">
-                    <a href="employee.html" style="text-decoration: none; color: var(--text-muted); font-size: 0.85rem; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.3s;" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color='var(--text-muted)'">
+                <div
+                    style="margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px; text-align: center;">
+                    <a href="employee.html"
+                        style="text-decoration: none; color: var(--text-muted); font-size: 0.85rem; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.3s;"
+                        onmouseover="this.style.color='var(--primary)'"
+                        onmouseout="this.style.color='var(--text-muted)'">
                         BUKA PORTAL KARYAWAN (CUTI & SLIP GAJI) →
                     </a>
                 </div>
@@ -99,24 +108,24 @@
 
     <!-- PWA SERVICE WORKER & INSTALL LOGIC -->
     <script>
-      let deferredPrompt;
-      
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('./sw.js')
-            .then(reg => console.log('Service Worker registered', reg))
-            .catch(err => console.error('Service Worker registration failed', err));
-        });
-      }
+        let deferredPrompt;
 
-      // Handle Install Prompt
-      window.addEventListener('beforeinstallprompt', (e) => {
-        e.preventDefault();
-        deferredPrompt = e;
-        // Tampilkan tombol instal jika belum terinstal
-        const installBtn = document.createElement('div');
-        installBtn.id = 'pwaInstallBtn';
-        installBtn.innerHTML = `
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('Service Worker registered', reg))
+                    .catch(err => console.error('Service Worker registration failed', err));
+            });
+        }
+
+        // Handle Install Prompt
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            // Tampilkan tombol instal jika belum terinstal
+            const installBtn = document.createElement('div');
+            installBtn.id = 'pwaInstallBtn';
+            installBtn.innerHTML = `
           <div style="position:fixed; bottom:20px; left:20px; right:20px; background:var(--primary); color:white; padding:15px; border-radius:15px; display:flex; align-items:center; justify-content:space-between; z-index:9999; box-shadow:0 10px 30px rgba(0,0,0,0.5); animation:slideUp 0.5s ease;">
             <div style="display:flex; align-items:center; gap:12px;">
               <img src="logokoboi.png" style="width:40px; height:40px; border-radius:10px;">
@@ -128,24 +137,25 @@
             <button onclick="triggerPwaInstall()" style="background:white; color:var(--primary); border:none; padding:8px 15px; border-radius:10px; font-weight:800; font-size:0.8rem; cursor:pointer;">INSTAL</button>
           </div>
         `;
-        document.body.appendChild(installBtn);
-      });
-
-      function triggerPwaInstall() {
-        const btn = document.getElementById('pwaInstallBtn');
-        if (btn) btn.remove();
-        if (!deferredPrompt) return;
-        deferredPrompt.prompt();
-        deferredPrompt.userChoice.then((choiceResult) => {
-          deferredPrompt = null;
+            document.body.appendChild(installBtn);
         });
-      }
 
-      window.addEventListener('appinstalled', () => {
-        const btn = document.getElementById('pwaInstallBtn');
-        if (btn) btn.remove();
-        console.log('PWA was installed');
-      });
+        function triggerPwaInstall() {
+            const btn = document.getElementById('pwaInstallBtn');
+            if (btn) btn.remove();
+            if (!deferredPrompt) return;
+            deferredPrompt.prompt();
+            deferredPrompt.userChoice.then((choiceResult) => {
+                deferredPrompt = null;
+            });
+        }
+
+        window.addEventListener('appinstalled', () => {
+            const btn = document.getElementById('pwaInstallBtn');
+            if (btn) btn.remove();
+            console.log('PWA was installed');
+        });
     </script>
 </body>
+
 </html>
