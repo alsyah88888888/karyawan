@@ -1,5 +1,5 @@
 // Edge Function: send-attendance-reminder
-// Dipanggil oleh pg_cron tiap hari jam 10:00 WIB (lihat supabase/migrations/0001_wa_automation.sql).
+// Dipanggil oleh pg_cron tiap hari jam 09:30 WIB (lihat supabase/migrations/0009_reminder_0930.sql).
 // Mengecek siapa saja karyawan yang belum presensi MASUK / DINAS LUAR hari ini,
 // lalu mengirim pesan pengingat via wa-gateway self-hosted (Baileys, lihat
 // folder wa-gateway/) ke nomor WA masing-masing.
@@ -88,7 +88,7 @@ Deno.serve(async (req) => {
 
     const pesan =
       `Halo *${k.nama}*,\n\n` +
-      `Sampai jam 10:00 WIB hari ini Anda *belum melakukan presensi masuk*.\n` +
+      `Sampai jam 09:30 WIB hari ini Anda *belum melakukan presensi masuk*.\n` +
       `Mohon segera lakukan presensi di aplikasi, atau hubungi atasan Anda bila ada kendala.\n\n` +
       `_Pesan otomatis - HRIS KOBOI_`;
 
