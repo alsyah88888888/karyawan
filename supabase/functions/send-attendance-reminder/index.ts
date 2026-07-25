@@ -87,10 +87,11 @@ Deno.serve(async (req) => {
     }
 
     const pesan =
-      `Halo *${k.nama}*,\n\n` +
-      `Sampai jam 09:30 WIB hari ini Anda *belum melakukan presensi masuk*.\n` +
-      `Mohon segera lakukan presensi di aplikasi, atau hubungi atasan Anda bila ada kendala.\n\n` +
-      `_Pesan otomatis - HRIS KOBOI_`;
+      `Yth. Bapak/Ibu *${k.nama}*,\n\n` +
+      `Kami informasikan bahwa hingga pukul 09:30 WIB hari ini, sistem mencatat Anda *belum melakukan presensi masuk*.\n\n` +
+      `Mohon segera melakukan presensi melalui aplikasi. Apabila terdapat kendala, silakan menghubungi atasan Anda.\n\n` +
+      `Atas perhatian dan kerja sama Bapak/Ibu, kami ucapkan terima kasih.\n\n` +
+      `Hormat kami,\n_HRIS KOBOI_`;
 
     try {
       const waRes = await fetch(`${WA_GATEWAY_URL}/send`, {
