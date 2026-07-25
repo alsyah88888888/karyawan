@@ -86,8 +86,14 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ error: errLog.message }), { status: 500 });
   }
 
-  const sudahMasuk = new Set((logsHariIni || []).map((l) => l.nama));
-  const belumMasuk = (karyawan || []).filter((k) => k.nomor_wa && !sudahMasuk.has(k.nama));
+  // Normalisasi (trim + lowercase) sebelum dibandingkan - data nyata pernah
+  // ditemukan ada nama dengan spasi nyasar (mis. "ANDI SETIANDI " di tabel
+  // karyawan), yang kalau dibandingkan apa adanya bisa salah anggap orang
+  // yang sudah absen sebagai "belum absen" gara-gara beda spasi/huruf besar-
+  // kecil semata, bukan karena dia benar-benar belum absen.
+  const normalisasi = (s: string | null | undefined) => (s || "").trim().toLowerCase();
+  const sudahMasuk = new Set((logsHariIni || []).map((l) => normalisasi(l.nama)));
+  const belumMasuk = (karyawan || []).filter((k) => k.nomor_wa && !sudahMasuk.has(normalisasi(k.nama)));
 
   const hasil: Array<{ nama: string; status: string; detail?: unknown }> = [];
 

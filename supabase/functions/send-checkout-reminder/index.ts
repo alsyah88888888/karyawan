@@ -85,20 +85,27 @@ Deno.serve(async (req) => {
   // kembali false setelah PULANG - menangani kasus dinas luar berkali-kali
   // dalam sehari (mis. dinas ke Solo lalu pulang dinas, dinas lagi ke
   // Bandung, dst), bukan cuma sepasang masuk-pulang tunggal.
+  // Normalisasi (trim + lowercase) sebelum dibandingkan - data nyata pernah
+  // ditemukan ada nama dengan spasi nyasar (mis. "ANDI SETIANDI " di tabel
+  // karyawan), yang kalau dibandingkan apa adanya bisa salah anggap orang
+  // yang sudah absen sebagai "belum absen" gara-gara beda spasi/huruf besar-
+  // kecil semata, bukan karena dia benar-benar belum absen.
+  const normalisasi = (s: string | null | undefined) => (s || "").trim().toLowerCase();
   const statusPerKaryawan = new Map<string, boolean>();
   for (const l of logsHariIni || []) {
+    const namaKey = normalisasi(l.nama);
     const s = (l.status || "").toUpperCase();
     if (s.startsWith("MASUK") || s.startsWith("BERANGKAT") || s.startsWith("DINAS LUAR")) {
-      statusPerKaryawan.set(l.nama, true);
+      statusPerKaryawan.set(namaKey, true);
     } else if (s.startsWith("PULANG")) {
-      statusPerKaryawan.set(l.nama, false);
+      statusPerKaryawan.set(namaKey, false);
     }
   }
 
   const belumPulang = (karyawan || []).filter((k) => {
     if (!k.nomor_wa) return false;
-    if (DIKECUALIKAN.includes((k.nama || "").trim().toLowerCase())) return false;
-    return statusPerKaryawan.get(k.nama) === true;
+    if (DIKECUALIKAN.includes(normalisasi(k.nama))) return false;
+    return statusPerKaryawan.get(normalisasi(k.nama)) === true;
   });
 
   const hasil: Array<{ nama: string; status: string; detail?: unknown }> = [];
