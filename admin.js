@@ -349,12 +349,22 @@ async function syncData() {
       : document.getElementById("filterTglSelesai")?.value;
     
     let queryAllLog = supabaseClient.from("logs").select("id, nama, dept, waktu, status, isLate");
-    
+
     // Jika ada filter tanggal, gunakan filter di level Database (Supabase)
     if (tglMulai && tglSelesai) {
+      // Periode default (H-7 s/d H-1, lihat setPeriodeSemingguTerakhir) sengaja
+      // TIDAK memasukkan hari ini - tapi renderStats() menghitung "hadir hari
+      // ini" dari allLogs yang sama. Kalau dibiarkan, widget hari ini akan
+      // selalu kosong (bukan cuma untuk edit manual - siapapun yang absen
+      // normal hari ini juga tidak akan terhitung) sampai admin ganti filter
+      // manual. Perbesar batas akhir ke hari ini kalau filter yang dipilih
+      // berakhir sebelum hari ini, supaya widget hari ini selalu akurat tanpa
+      // mengubah rentang laporan yang dipilih admin untuk keperluan lain.
+      const todayStr = toLocalISO(new Date()).split('T')[0];
+      const tglSelesaiEfektif = tglSelesai < todayStr ? todayStr : tglSelesai;
       queryAllLog = queryAllLog
         .gte("waktu", `${tglMulai}T00:00:00`)
-        .lte("waktu", `${tglSelesai}T23:59:59`);
+        .lte("waktu", `${tglSelesaiEfektif}T23:59:59`);
     } else {
       // Fallback: Ambil data 30 hari terakhir
       const now = new Date();
