@@ -39,6 +39,22 @@ Deno.serve(async (req) => {
   const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
   const tanggal = tanggalHariIniWIB();
 
+  // Hari Minggu / hari libur (lihat tabel holidays, migration 0013) - jangan
+  // kirim reminder sama sekali, konsisten dengan hitungHariKerjaEfektif() di
+  // admin.js yang juga menganggap kedua hari itu bukan hari kerja.
+  const hariWIB = new Date(`${tanggal}T00:00:00`).getUTCDay();
+  if (hariWIB === 0) {
+    return new Response(JSON.stringify({ tanggal, skip: true, alasan: "Hari Minggu" }), {
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+  const { data: liburHariIni } = await supabase.from("holidays").select("nama").eq("tgl", tanggal).maybeSingle();
+  if (liburHariIni) {
+    return new Response(JSON.stringify({ tanggal, skip: true, alasan: `Hari libur: ${liburHariIni.nama}` }), {
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
   const { data: karyawan, error: errKar } = await supabase
     .from("karyawan")
     .select("nama, nomor_wa")

@@ -2232,6 +2232,7 @@ function setPeriodeLog() {
 window.onload = async () => {
   if (!checkAdminAuthOrRedirect()) return;
   await applyModuleVisibility();
+  await fetchHolidays();
 
   if (typeof syncData === 'function') {
     await syncData();
@@ -3108,21 +3109,16 @@ async function cetakLaporanLupaAbsenPDF() {
 
 // --- KALENDER & HARI LIBUR LOGIC ---
 let currentCalendarDate = new Date();
-const DAFTAR_LIBUR = [
-  { tgl: '2026-01-01', nama: 'Tahun Baru 2026' },
-  { tgl: '2026-01-29', nama: 'Tahun Baru Imlek' },
-  { tgl: '2026-02-18', nama: 'Isra Mi\'raj' },
-  { tgl: '2026-03-20', nama: 'Hari Raya Nyepi' },
-  { tgl: '2026-03-25', nama: 'Idul Fitri 1447 H' },
-  { tgl: '2026-03-26', nama: 'Cuti Bersama Idul Fitri' },
-  { tgl: '2026-04-03', nama: 'Wafat Yesus Kristus' },
-  { tgl: '2026-05-01', nama: 'Hari Buruh Internasional' },
-  { tgl: '2026-05-14', nama: 'Kenaikan Yesus Kristus' },
-  { tgl: '2026-05-27', nama: 'Hari Raya Waisak' },
-  { tgl: '2026-06-01', nama: 'Hari Lahir Pancasila' },
-  { tgl: '2026-08-17', nama: 'Hari Kemerdekaan RI' },
-  { tgl: '2026-12-25', nama: 'Hari Raya Natal' }
-];
+// Dulu array hardcoded di sini - sekarang dibaca dari tabel holidays
+// (migration 0013) supaya jadi satu sumber data yang sama dengan yang
+// dipakai kedua reminder WA (masuk 09:30 & pulang 23:00) untuk skip hari
+// libur. Diisi oleh fetchHolidays(), dipanggil sekali saat halaman dimuat.
+let DAFTAR_LIBUR = [];
+
+async function fetchHolidays() {
+  const { data, error } = await supabaseClient.from("holidays").select("tgl, nama").order("tgl", { ascending: true });
+  if (!error) DAFTAR_LIBUR = data || [];
+}
 
 function renderCalendar() {
   const grid = document.getElementById("calendarGrid");
