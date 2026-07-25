@@ -89,7 +89,7 @@ Deno.serve(async (req) => {
     const pesan =
       `Yth. Bapak/Ibu *${k.nama}*,\n\n` +
       `Kami informasikan bahwa hingga pukul 09:30 WIB hari ini, sistem mencatat Anda *belum melakukan presensi masuk*.\n\n` +
-      `Mohon segera melakukan presensi melalui aplikasi. Apabila terdapat kendala, silakan menghubungi atasan Anda.\n\n` +
+      `Mohon segera melakukan presensi masuk melalui aplikasi. Perlu kami sampaikan bahwa *kehadiran Anda tidak akan tercatat* apabila presensi masuk tidak dilakukan.\n\n` +
       `Atas perhatian dan kerja sama Bapak/Ibu, kami ucapkan terima kasih.\n\n` +
       `Hormat kami,\n_HRIS KOBOI_`;
 
