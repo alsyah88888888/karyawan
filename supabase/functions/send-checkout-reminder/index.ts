@@ -16,6 +16,7 @@
 //          (WA_GATEWAY_URL/WA_GATEWAY_SECRET juga sudah ada dari situ)
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { normalisasiNama } from "../_shared/normalize.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -57,7 +58,7 @@ Deno.serve(async (req) => {
 
   const { data: karyawan, error: errKar } = await supabase
     .from("karyawan")
-    .select("nama, nomor_wa")
+    .select("id, nama, nomor_wa")
     .not("nomor_wa", "is", null)
     .neq("nomor_wa", "");
   if (errKar) {
@@ -72,7 +73,7 @@ Deno.serve(async (req) => {
 
   const { data: logsHariIni, error: errLog } = await supabase
     .from("logs")
-    .select("nama, status, waktu")
+    .select("karyawan_id, nama, status, waktu")
     .gte("waktu", startUtc)
     .lte("waktu", endUtc)
     .order("waktu", { ascending: true });
@@ -85,27 +86,27 @@ Deno.serve(async (req) => {
   // kembali false setelah PULANG - menangani kasus dinas luar berkali-kali
   // dalam sehari (mis. dinas ke Solo lalu pulang dinas, dinas lagi ke
   // Bandung, dst), bukan cuma sepasang masuk-pulang tunggal.
-  // Normalisasi (trim + lowercase) sebelum dibandingkan - data nyata pernah
-  // ditemukan ada nama dengan spasi nyasar (mis. "ANDI SETIANDI " di tabel
-  // karyawan), yang kalau dibandingkan apa adanya bisa salah anggap orang
-  // yang sudah absen sebagai "belum absen" gara-gara beda spasi/huruf besar-
-  // kecil semata, bukan karena dia benar-benar belum absen.
-  const normalisasi = (s: string | null | undefined) => (s || "").trim().toLowerCase();
-  const statusPerKaryawan = new Map<string, boolean>();
+  //
+  // Dilacak lewat DUA kunci - karyawan_id (FK stabil, sama seperti
+  // compute-kpi-snapshots) dan nama dinormalisasi sebagai fallback untuk
+  // baris logs lama sebelum kolom karyawan_id dibackfill - supaya dua
+  // karyawan dengan nama sama persis tidak ikut tertukar status-nya.
+  const statusById = new Map<number, boolean>();
+  const statusByNama = new Map<string, boolean>();
   for (const l of logsHariIni || []) {
-    const namaKey = normalisasi(l.nama);
     const s = (l.status || "").toUpperCase();
-    if (s.startsWith("MASUK") || s.startsWith("BERANGKAT") || s.startsWith("DINAS LUAR")) {
-      statusPerKaryawan.set(namaKey, true);
-    } else if (s.startsWith("PULANG")) {
-      statusPerKaryawan.set(namaKey, false);
-    }
+    const sedangMasuk = s.startsWith("MASUK") || s.startsWith("BERANGKAT") || s.startsWith("DINAS LUAR");
+    const sedangPulang = s.startsWith("PULANG");
+    if (!sedangMasuk && !sedangPulang) continue;
+    if (l.karyawan_id != null) statusById.set(l.karyawan_id, sedangMasuk);
+    else statusByNama.set(normalisasiNama(l.nama), sedangMasuk);
   }
 
   const belumPulang = (karyawan || []).filter((k) => {
     if (!k.nomor_wa) return false;
-    if (DIKECUALIKAN.includes(normalisasi(k.nama))) return false;
-    return statusPerKaryawan.get(normalisasi(k.nama)) === true;
+    if (DIKECUALIKAN.includes(normalisasiNama(k.nama))) return false;
+    if (statusById.has(k.id)) return statusById.get(k.id) === true;
+    return statusByNama.get(normalisasiNama(k.nama)) === true;
   });
 
   const hasil: Array<{ nama: string; status: string; detail?: unknown }> = [];

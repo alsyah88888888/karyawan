@@ -16,6 +16,7 @@
 //          (SUPABASE_URL & SUPABASE_SERVICE_ROLE_KEY otomatis tersedia di Edge Functions)
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { normalisasiNama } from "../_shared/normalize.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -55,7 +56,7 @@ Deno.serve(async (req) => {
 
   const { data: karyawan, error: errKar } = await supabase
     .from("karyawan")
-    .select("nama, nomor_wa")
+    .select("id, nama, nomor_wa")
     .not("nomor_wa", "is", null)
     .neq("nomor_wa", "");
   if (errKar) {
@@ -78,7 +79,7 @@ Deno.serve(async (req) => {
   // (lihat script.js prosesAbsen: dua tombol itu yang menandai jam masuk kerja)
   const { data: logsHariIni, error: errLog } = await supabase
     .from("logs")
-    .select("nama, status, waktu")
+    .select("karyawan_id, nama, status, waktu")
     .gte("waktu", startUtc)
     .lte("waktu", endUtc)
     .or("status.ilike.MASUK%,status.ilike.DINAS LUAR%");
@@ -86,14 +87,17 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ error: errLog.message }), { status: 500 });
   }
 
-  // Normalisasi (trim + lowercase) sebelum dibandingkan - data nyata pernah
-  // ditemukan ada nama dengan spasi nyasar (mis. "ANDI SETIANDI " di tabel
-  // karyawan), yang kalau dibandingkan apa adanya bisa salah anggap orang
-  // yang sudah absen sebagai "belum absen" gara-gara beda spasi/huruf besar-
-  // kecil semata, bukan karena dia benar-benar belum absen.
-  const normalisasi = (s: string | null | undefined) => (s || "").trim().toLowerCase();
-  const sudahMasuk = new Set((logsHariIni || []).map((l) => normalisasi(l.nama)));
-  const belumMasuk = (karyawan || []).filter((k) => k.nomor_wa && !sudahMasuk.has(normalisasi(k.nama)));
+  // Cocokkan lewat karyawan_id (FK stabil, sama seperti compute-kpi-
+  // snapshots) kalau ada, nama dinormalisasi cuma fallback untuk baris logs
+  // lama sebelum kolom karyawan_id dibackfill - supaya dua karyawan dengan
+  // nama sama persis tidak ikut tertukar status-nya.
+  const sudahMasukId = new Set((logsHariIni || []).map((l) => l.karyawan_id).filter((id) => id != null));
+  const sudahMasukNama = new Set((logsHariIni || []).map((l) => normalisasiNama(l.nama)));
+  const belumMasuk = (karyawan || []).filter((k) => {
+    if (!k.nomor_wa) return false;
+    if (sudahMasukId.has(k.id)) return false;
+    return !sudahMasukNama.has(normalisasiNama(k.nama));
+  });
 
   const hasil: Array<{ nama: string; status: string; detail?: unknown }> = [];
 
