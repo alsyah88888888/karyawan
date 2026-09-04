@@ -950,6 +950,7 @@ function hitungDetailGaji(gapok, namaKaryawan, customStart = null, customEnd = n
   const incentive = isApproved ? (parseFloat(k.incentive_approved_val) || 0) : 0;
   const incentiveLuar = 0; // Dipusatkan ke satu nilai approved_val oleh CEO
   const pinjaman = k ? (parseFloat(k.pinjaman) || 0) : 0;
+  const pph21 = k ? (parseFloat(k.pph21) || 0) : 0;
 
   let dataLogKaryawan = allLogs
     .filter((l) => (l.nama || '').trim().toLowerCase() === targetNama)
@@ -1050,7 +1051,7 @@ function hitungDetailGaji(gapok, namaKaryawan, customStart = null, customEnd = n
 
   // --- TOTAL SALARY ---
   const uangHKE = hariHadir * hkeRate;
-  const thp = g + uangHKE + incentive + incentiveLuar + uangLembur - pinjaman;
+  const thp = g + uangHKE + incentive + incentiveLuar + uangLembur - pinjaman - pph21;
 
   return {
     gapok: g,
@@ -1065,6 +1066,7 @@ function hitungDetailGaji(gapok, namaKaryawan, customStart = null, customEnd = n
     incentive,
     incentiveLuar,
     pinjaman,
+    pph21,
     thp: thp > 0 ? thp : 0
   };
 }
@@ -1194,10 +1196,10 @@ function cetakSlip(index) {
           <div class="salary-col">
             <h3>Potongan (Deductions)</h3>
             <div class="row"><span class="label">PINJAMAN KANTOR</span><span class="val">Rp ${Math.floor(d.pinjaman).toLocaleString('id-ID')}</span></div>
-            <div class="row"><span class="label">PPh21 (Estimasi)</span><span class="val">Rp 0</span></div>
+            <div class="row"><span class="label">PPh21</span><span class="val">Rp ${Math.floor(d.pph21).toLocaleString('id-ID')}</span></div>
             <div class="row" style="margin-top: 15px; border-top: 1px solid var(--slate-200); padding-top: 10px;">
                 <span class="label" style="font-weight: 800;">TOTAL POTONGAN</span>
-                <span class="val">Rp ${Math.floor(d.pinjaman).toLocaleString('id-ID')}</span>
+                <span class="val">Rp ${Math.floor(d.pinjaman + d.pph21).toLocaleString('id-ID')}</span>
             </div>
           </div>
         </section>
@@ -1336,10 +1338,10 @@ async function generateSlipGajiBlob(k, d, periodeTampil) {
           <div class="salary-col">
             <h3>Potongan (Deductions)</h3>
             <div class="row"><span class="label">PINJAMAN KANTOR</span><span class="val">Rp ${Math.floor(d.pinjaman).toLocaleString('id-ID')}</span></div>
-            <div class="row"><span class="label">PPh21 (Estimasi)</span><span class="val">Rp 0</span></div>
+            <div class="row"><span class="label">PPh21</span><span class="val">Rp ${Math.floor(d.pph21).toLocaleString('id-ID')}</span></div>
             <div class="row" style="margin-top: 15px; border-top: 1px solid #e2e8f0; padding-top: 10px;">
                 <span class="label" style="font-weight: 800;">TOTAL POTONGAN</span>
-                <span class="val">Rp ${Math.floor(d.pinjaman).toLocaleString('id-ID')}</span>
+                <span class="val">Rp ${Math.floor(d.pinjaman + d.pph21).toLocaleString('id-ID')}</span>
             </div>
           </div>
         </section>
@@ -1655,14 +1657,14 @@ function showModal() {
   document.getElementById("btnSimpanKaryawan").innerText = "Simpan Master Data";
 
   // Reset Form
-  const fields = ["inpNama", "inpNikKtp", "inpWa", "inpJabatan", "inpCuti", "inpNikKbi", "inpIsLembur", "inpLemburAdj", "inpPin", "inpGaji", "inpHkeRate", "inpIncentive", "inpIncentiveLuar", "inpRekening", "inpNpwp", "inpPinjaman"];
+  const fields = ["inpNama", "inpNikKtp", "inpWa", "inpJabatan", "inpCuti", "inpNikKbi", "inpIsLembur", "inpLemburAdj", "inpPin", "inpGaji", "inpHkeRate", "inpIncentive", "inpIncentiveLuar", "inpRekening", "inpNpwp", "inpPinjaman", "inpPph21"];
   fields.forEach(f => {
     const el = document.getElementById(f);
     if (el) {
       if (f === "inpCuti") el.value = 12;
       else if (f === "inpHkeRate") el.value = 50000;
       else if (f === "inpIsLembur") el.value = "true";
-      else if (f === "inpLemburAdj" || f === "inpPinjaman" || f === "inpIncentive" || f === "inpIncentiveLuar") el.value = 0;
+      else if (f === "inpLemburAdj" || f === "inpPinjaman" || f === "inpPph21" || f === "inpIncentive" || f === "inpIncentiveLuar") el.value = 0;
       else el.value = "";
     }
   });
@@ -1706,7 +1708,8 @@ async function simpanKaryawan() {
     rekening: document.getElementById("inpRekening").value,
     status_ptkp: document.getElementById("inpPtkp").value,
     npwp: document.getElementById("inpNpwp").value,
-    pinjaman: parseFloat(document.getElementById("inpPinjaman").value) || 0
+    pinjaman: parseFloat(document.getElementById("inpPinjaman").value) || 0,
+    pph21: parseFloat(document.getElementById("inpPph21").value) || 0
   };
 
   if (!data.nama || !data.gaji) return alert("Harap isi Nama dan Gaji Pokok!");
@@ -1773,6 +1776,7 @@ function bukaModalEditKaryawan(index) {
   document.getElementById("inpPtkp").value = k.status_ptkp || "TK/0";
   document.getElementById("inpNpwp").value = k.npwp || "";
   document.getElementById("inpPinjaman").value = k.pinjaman || 0;
+  document.getElementById("inpPph21").value = k.pph21 || 0;
 
   const inpFoto = document.getElementById("inpFoto");
   if (inpFoto) inpFoto.value = "";
