@@ -15,6 +15,24 @@ let allLogs = [];
 let bypassWiFi = false;
 let isNetworkValid = false;
 
+// --- KONFIGURASI GPS KANTOR ---
+// Diperbarui dari kode Embed Google Maps (Iframe)
+const OFFICE_LAT = -6.487233033247547;
+const OFFICE_LNG = 106.8489703644372;
+const MAX_RADIUS_METERS = 50; // Jarak maksimal (50 meter)
+
+function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
+  const R = 6371e3; 
+  const dLat = (lat2 - lat1) * (Math.PI / 180);
+  const dLon = (lon2 - lon1) * (Math.PI / 180);
+  const a = 
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * 
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c; 
+}
+
 // --- INITIALIZATION ---
 window.onload = async () => {
   await syncDataTerminal();
@@ -291,6 +309,31 @@ async function prosesAbsen(tipe) {
       const lokasi = await showModernPrompt("Dinas Luar", `Masukkan lokasi/tujuan ${tipe} Anda:`, "text");
       if (!lokasi || lokasi.trim() === "") return;
       finalTipe = `${tipe} - ${lokasi.trim().toUpperCase()} [GPS: ${lat}, ${lng}]`;
+    } else {
+      // --- VALIDASI GPS UNTUK ABSEN KANTOR (NON-DINAS) ---
+      if (!navigator.geolocation) {
+        throw new Error("Browser Anda tidak mendukung fitur GPS/Lokasi.");
+      }
+      
+      let lat, lng;
+      try {
+        const position = await new Promise((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
+          });
+        });
+        lat = position.coords.latitude;
+        lng = position.coords.longitude;
+      } catch (err) {
+        throw new Error("Izin lokasi (GPS) wajib diaktifkan & diizinkan di browser untuk absen!");
+      }
+      
+      const jarak = getDistanceFromLatLonInMeters(lat, lng, OFFICE_LAT, OFFICE_LNG);
+      if (jarak > MAX_RADIUS_METERS) {
+        throw new Error(`Anda berada di luar jangkauan kantor!\nJarak Anda: ${Math.round(jarak)} meter\n(Maksimal: ${MAX_RADIUS_METERS} meter)`);
+      }
     }
 
     const sekarang = new Date();
