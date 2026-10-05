@@ -338,15 +338,24 @@ async function prosesAbsen(tipe) {
 
     const sekarang = new Date();
     const tglHariIni = getISODate(sekarang);
+    const isAbsenMasuk = tipe === 'MASUK' || tipe === 'DINAS LUAR';
+
+    // Fungsi helper untuk ngecek duplikasi tipe absen di hari yang sama
+    const cekDuplikasi = (log) => {
+      if (getISODate(new Date(log.waktu)) !== tglHariIni) return false;
+      const statusUpper = (log.status || '').toUpperCase();
+      const logAdalahMasuk = statusUpper.startsWith('MASUK') || statusUpper.startsWith('DINAS LUAR') || statusUpper.startsWith('BERANGKAT');
+      const logAdalahPulang = statusUpper.startsWith('PULANG');
+      
+      if (isAbsenMasuk && logAdalahMasuk) return true;
+      if (!isAbsenMasuk && logAdalahPulang) return true;
+      return false;
+    };
 
     // 1. Cek di antrean offline lokal dulu untuk menghindari duplikasi
     const offlineLogs = getOfflineLogs();
-    const sudahAbsenOffline = offlineLogs.find(l =>
-      l.nama === nama &&
-      getISODate(new Date(l.waktu)) === tglHariIni &&
-      l.status.startsWith(tipe)
-    );
-    if (sudahAbsenOffline) throw new Error(`Anda SUDAH absen ${tipe} hari ini (dalam antrean offline)!`);
+    const sudahAbsenOffline = offlineLogs.find(l => l.nama === nama && cekDuplikasi(l));
+    if (sudahAbsenOffline) throw new Error(`Anda SUDAH absen ${isAbsenMasuk ? 'MASUK' : 'PULANG'} hari ini!`);
 
     // 2. Cek di database server jika online
     if (navigator.onLine) {
@@ -359,11 +368,8 @@ async function prosesAbsen(tipe) {
           .limit(10);
 
         if (!fetchErr && latestLogs) {
-          const sudahAbsen = latestLogs.find(l =>
-            getISODate(new Date(l.waktu)) === tglHariIni &&
-            l.status.startsWith(tipe)
-          );
-          if (sudahAbsen) throw new Error(`Anda SUDAH absen ${tipe} hari ini!`);
+          const sudahAbsen = latestLogs.find(l => cekDuplikasi(l));
+          if (sudahAbsen) throw new Error(`Anda SUDAH absen ${isAbsenMasuk ? 'MASUK' : 'PULANG'} hari ini!`);
         }
       } catch (e) {
         console.warn("Gagal menghubungi server untuk cek duplikasi, melanjutkan absen offline-first.", e);
