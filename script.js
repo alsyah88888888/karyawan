@@ -9,7 +9,7 @@ const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
 
 // Tambahkan IP baru ke dalam daftar (Array) agar lebih fleksibel
-const OFFICE_IPS = ["103.108.130.44", "103.108.130.45", "103.108.130.43", "124.158.189.235", "114.124.238.252", "202.51.197.78"];
+const OFFICE_IPS = ["202.51.197.77", "103.108.130.45", "103.108.130.43", "124.158.189.235", "114.124.238.252", "202.51.197.78"];
 let KARYAWAN = [];
 let allLogs = [];
 let bypassWiFi = false;
@@ -22,15 +22,15 @@ const OFFICE_LNG = 106.8489703644372;
 const MAX_RADIUS_METERS = 50; // Jarak maksimal (50 meter)
 
 function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
-  const R = 6371e3; 
+  const R = 6371e3;
   const dLat = (lat2 - lat1) * (Math.PI / 180);
   const dLon = (lon2 - lon1) * (Math.PI / 180);
-  const a = 
+  const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * 
+    Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
     Math.sin(dLon / 2) * Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c; 
+  return R * c;
 }
 
 // --- INITIALIZATION ---
@@ -314,7 +314,7 @@ async function prosesAbsen(tipe) {
       if (!navigator.geolocation) {
         throw new Error("Browser Anda tidak mendukung fitur GPS/Lokasi.");
       }
-      
+
       let lat, lng;
       try {
         const position = await new Promise((resolve, reject) => {
@@ -329,7 +329,7 @@ async function prosesAbsen(tipe) {
       } catch (err) {
         throw new Error("Izin lokasi (GPS) wajib diaktifkan & diizinkan di browser untuk absen!");
       }
-      
+
       const jarak = getDistanceFromLatLonInMeters(lat, lng, OFFICE_LAT, OFFICE_LNG);
       if (jarak > MAX_RADIUS_METERS) {
         throw new Error(`Anda berada di luar jangkauan kantor!\nJarak Anda: ${Math.round(jarak)} meter\n(Maksimal: ${MAX_RADIUS_METERS} meter)`);
@@ -346,7 +346,7 @@ async function prosesAbsen(tipe) {
       const statusUpper = (log.status || '').toUpperCase();
       const logAdalahMasuk = statusUpper.startsWith('MASUK') || statusUpper.startsWith('DINAS LUAR') || statusUpper.startsWith('BERANGKAT');
       const logAdalahPulang = statusUpper.startsWith('PULANG');
-      
+
       if (isAbsenMasuk && logAdalahMasuk) return true;
       if (!isAbsenMasuk && logAdalahPulang) return true;
       return false;
