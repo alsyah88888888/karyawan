@@ -1003,6 +1003,12 @@ function hitungDetailGaji(gapok, namaKaryawan, customStart = null, customEnd = n
       .filter(d => d !== null)
   )].length;
 
+  // Deteksi peran Jabatan Admin untuk aturan batasan lembur
+  const isAdminRole = k && (
+    (k.jabatan || '').toUpperCase().includes('ADMIN') ||
+    (k.dept || '').toUpperCase().includes('ADMIN')
+  );
+
   let totalLembur = 0;
   let totalJamKerja = 0; // Tambahan kalkulasi Total Jam Kerja Riil
   let i = 0;
@@ -1012,9 +1018,11 @@ function hitungDetailGaji(gapok, namaKaryawan, customStart = null, customEnd = n
     if (statusUpper.startsWith('MASUK') || statusUpper.startsWith('BERANGKAT') || statusUpper.startsWith('DINAS LUAR')) {
       const actualMasuk = new Date(l.waktu);
       const thresholdMasuk = getWIBThreshold(actualMasuk, STANDAR_MASUK);
+      let lemburHariIni = 0; // Akumulasi lembur khusus untuk shift/hari ini
+
       if (actualMasuk < thresholdMasuk) {
         let jamPagi = (thresholdMasuk - actualMasuk) / (1000 * 60 * 60);
-        if (jamPagi > 0) totalLembur += jamPagi;
+        if (jamPagi > 0) lemburHariIni += jamPagi;
       }
       let shiftEnd = null;
       let j = i + 1;
@@ -1023,8 +1031,11 @@ function hitungDetailGaji(gapok, namaKaryawan, customStart = null, customEnd = n
         j++;
       }
       // Penentuan Standar Pulang Dinamis Berdasarkan Departemen
-      const isOffice = k && k.dept && k.dept.toUpperCase().includes("OFFICE");
-      const currentStdPulang = isOffice ? 18 : 17; // Office 9 jam (18:00), Operasional 8 jam (17:00)
+      const isOffice = k && (
+        (k.dept && (k.dept.toUpperCase().includes("OFFICE") || k.dept.toUpperCase().includes("FINANCE"))) ||
+        isAdminRole
+      );
+      const currentStdPulang = isOffice ? 18 : 17; // Office/Finance/Admin 9 jam (18:00), Operasional 8 jam (17:00)
 
       if (shiftEnd) {
         // Kalkulasi Total Jam Kerja (Dari Masuk hingga Pulang)
@@ -1034,10 +1045,17 @@ function hitungDetailGaji(gapok, namaKaryawan, customStart = null, customEnd = n
         // Kalkulasi Lembur Sore
         const thresholdPulang = getWIBThreshold(actualMasuk, currentStdPulang);
         let jamSore = (shiftEnd - thresholdPulang) / (1000 * 60 * 60);
-        if (jamSore > 0) totalLembur += jamSore;
+        if (jamSore > 0) lemburHariIni += jamSore;
         
         i = j;
       } else { i++; }
+
+      // ATURAN KHUSUS JABATAN ADMIN: DIBATASI MAKSIMAL 1 JAM LEMBUR PER HARI
+      if (isAdminRole && lemburHariIni > 1) {
+        lemburHariIni = 1;
+      }
+
+      totalLembur += lemburHariIni;
     } else { i++; }
   }
 
@@ -1048,7 +1066,8 @@ function hitungDetailGaji(gapok, namaKaryawan, customStart = null, customEnd = n
   let jamLemburBulat = jamLemburFinal;
 
   // CEK APAKAH LEMBUR AKTIF UNTUK KARYAWAN INI
-  const isLemburAktif = k ? (k.is_lembur !== false) : true;
+  // Jabatan Admin sekarang mendapatkan lemburan (otomatis aktif & dibatasi 1 jam per hari)
+  const isLemburAktif = isAdminRole ? true : (k ? (k.is_lembur !== false) : true);
 
   if (isLemburAktif) {
     jamLemburBulat = Math.round(jamLemburFinal * 10) / 10;
@@ -2142,6 +2161,18 @@ function exportData() {
         const actualMasuk = waktu;
         const thresholdMasuk = getWIBThreshold(actualMasuk, STANDAR_MASUK);
 
+        // Cari data karyawan untuk cek apakah Admin
+        const karObj = KARYAWAN.find(x => (x.nama || '').trim().toLowerCase() === (l.nama || '').trim().toLowerCase());
+        const isAdminRole = karObj && (
+          (karObj.jabatan || '').toUpperCase().includes('ADMIN') ||
+          (karObj.dept || '').toUpperCase().includes('ADMIN')
+        );
+        const isOffice = karObj && (
+          (karObj.dept && (karObj.dept.toUpperCase().includes("OFFICE") || karObj.dept.toUpperCase().includes("FINANCE"))) ||
+          isAdminRole
+        );
+        const currentStdPulangExport = isOffice ? 18 : 17;
+
         // Cari index PULANG terakhir untuk shift ini
         let j = i + 1;
         while (j < userLogs.length && userLogs[j].status.toUpperCase() === 'PULANG') {
@@ -2152,32 +2183,54 @@ function exportData() {
           jamLembur = (thresholdMasuk - actualMasuk) / (1000 * 60 * 60);
         }
 
+        let jamSore = 0;
+        let lastPulangIdx = -1;
+        for (let k = i + 1; k < j; k++) {
+          if (k === j - 1) {
+            const lp = userLogs[k];
+            const wp = new Date(lp.waktu);
+            const thresholdPulang = getWIBThreshold(actualMasuk, currentStdPulangExport);
+            const diffSore = (wp - thresholdPulang) / (1000 * 60 * 60);
+            if (diffSore > 0) jamSore = diffSore;
+            lastPulangIdx = k;
+          }
+        }
+
+        let lemburPagiVal = jamLembur > 0 ? jamLembur : 0;
+        let lemburSoreVal = jamSore > 0 ? jamSore : 0;
+        let totalShiftLembur = lemburPagiVal + lemburSoreVal;
+
+        // Capping untuk Admin: maksimal 1 jam per hari
+        if (isAdminRole && totalShiftLembur > 1) {
+          if (lemburPagiVal >= 1) {
+            lemburPagiVal = 1;
+            lemburSoreVal = 0;
+          } else {
+            lemburSoreVal = 1 - lemburPagiVal;
+          }
+        }
+
         dataLogs.push({
           "NAMA": l.nama,
           "TANGGAL SHIFT": getShiftDateStrExport(waktu),
           "WAKTU": waktu.toLocaleString("id-ID"),
           "STATUS": l.status,
           "TELAT": l.isLate || l.is_late ? "YA" : "TIDAK",
-          "JAM LEMBUR": jamLembur > 0 ? jamLembur.toFixed(2) : 0
+          "JAM LEMBUR": lemburPagiVal > 0 ? lemburPagiVal.toFixed(2) : 0
         });
 
         // Proses PULANG-nya
         for (let k = i + 1; k < j; k++) {
           const lp = userLogs[k];
           const wp = new Date(lp.waktu);
-          let jamSore = 0;
-          if (k === j - 1) {
-            const thresholdPulang = getWIBThreshold(actualMasuk, STANDAR_PULANG);
-            const diffSore = (wp - thresholdPulang) / (1000 * 60 * 60);
-            if (diffSore > 0) jamSore = diffSore;
-          }
+          const lemburRow = (k === lastPulangIdx) ? lemburSoreVal : 0;
           dataLogs.push({
             "NAMA": lp.nama,
             "TANGGAL SHIFT": getShiftDateStrExport(wp),
             "WAKTU": wp.toLocaleString("id-ID"),
             "STATUS": lp.status,
             "TELAT": "-",
-            "JAM LEMBUR": jamSore > 0 ? jamSore.toFixed(2) : 0
+            "JAM LEMBUR": lemburRow > 0 ? lemburRow.toFixed(2) : 0
           });
         }
         i = j;
