@@ -316,6 +316,25 @@ const KPI_LIBRARY = {
 let punctualityChartInstance = null;
 let attendanceChartInstance = null;
 
+// Daftar NIK yang memiliki file ID card fisik statis di direktori image/
+const EXISTING_CARD_NIKS = new Set([
+  'KBI-000001', 'KBI-101109', 'KBI-108647', 'KBI-110626', 'KBI-131504',
+  'KBI-158977', 'KBI-199021', 'KBI-290326', 'KBI-318648', 'KBI-352053',
+  'KBI-365053', 'KBI-409184', 'KBI-438007', 'KBI-513115', 'KBI-543833',
+  'KBI-546731', 'KBI-600830', 'KBI-732248'
+]);
+
+function getEmployeeAvatar(k) {
+  if (!k) return 'https://ui-avatars.com/api/?name=?&background=e2e8f0&color=94a3b8';
+  if (k.foto_url) return k.foto_url;
+  const nik = (k.nik || '').trim();
+  if (nik && EXISTING_CARD_NIKS.has(nik)) {
+    return `image/NAME CARD KOLA BORASI INDONESIA/${nik}.png`;
+  }
+  const name = encodeURIComponent((k.nama || 'User').trim());
+  return `https://ui-avatars.com/api/?name=${name}&background=4f46e5&color=fff&bold=true`;
+}
+
 // --- CORE SYNC ---
 async function syncData() {
   // Set Default Periode: Seminggu Terakhir (H-7 s/d H-1)
@@ -831,8 +850,8 @@ function renderKaryawanTable() {
         <td>
           <div style="display: flex; align-items: center; gap: 15px;">
             <div style="width: 48px; height: 48px; border-radius: 14px; overflow: hidden; border: 2.5px solid #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.1); background: #f1f5f9;">
-              <img src="${k.foto_url || 'image/NAME CARD KOLA BORASI INDONESIA/' + k.nik + '.png'}" 
-                   onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(k.nama)}&background=4f46e5&color=fff&bold=true'"
+              <img src="${getEmployeeAvatar(k)}" 
+                   onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(k.nama)}&background=4f46e5&color=fff&bold=true'"
                    style="width: 100%; height: 100%; object-fit: cover;">
             </div>
             <div>
@@ -1171,8 +1190,8 @@ function cetakSlip(index) {
 
         <section class="info-box">
           <div class="info-photo">
-            <img src="${k.foto_url || 'image/NAME CARD KOLA BORASI INDONESIA/' + k.nik + '.png'}" 
-                 onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(k.nama)}&background=4f46e5&color=fff'">
+            <img src="${getEmployeeAvatar(k)}" 
+                 onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(k.nama)}&background=4f46e5&color=fff'">
           </div>
           <div class="info-details">
             <div class="info-item"><span class="label">Nama Karyawan</span><span class="val">${k.nama}</span></div>
@@ -1313,8 +1332,8 @@ async function generateSlipGajiBlob(k, d, periodeTampil) {
 
         <section class="info-box">
           <div class="info-photo">
-            <img src="${k.foto_url || 'image/NAME CARD KOLA BORASI INDONESIA/' + k.nik + '.png'}"
-                 onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(k.nama)}&background=4f46e5&color=fff'">
+            <img src="${getEmployeeAvatar(k)}"
+                 onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(k.nama)}&background=4f46e5&color=fff'">
           </div>
           <div class="info-details">
             <div class="info-item"><span class="label">Nama Karyawan</span><span class="val">${k.nama}</span></div>
@@ -1782,7 +1801,7 @@ function bukaModalEditKaryawan(index) {
   if (inpFoto) inpFoto.value = "";
   const previewFoto = document.getElementById("previewFotoKaryawan");
   if (previewFoto) {
-    previewFoto.src = k.foto_url || `image/NAME CARD KOLA BORASI INDONESIA/${k.nik}.png`;
+    previewFoto.src = getEmployeeAvatar(k);
     previewFoto.onerror = () => { previewFoto.onerror = null; previewFoto.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(k.nama)}&background=4f46e5&color=fff`; };
   }
 
@@ -1790,17 +1809,32 @@ function bukaModalEditKaryawan(index) {
 }
 
 async function hapusKaryawan(id) {
-  if (!confirm("Hapus karyawan ini secara permanen?")) return;
+  const k = KARYAWAN.find(x => String(x.id) === String(id));
+  const namaKaryawan = k ? k.nama : `ID ${id}`;
+  if (!confirm(`Hapus karyawan "${namaKaryawan}" secara permanen?`)) return;
 
   showLoading(true);
   try {
-    const k = KARYAWAN.find(x => x.id == id);
+    // 1. Lepas relasi foreign key di tabel logs agar tidak melanggar constraint logs_karyawan_id_fkey (HTTP 409)
+    // Menjadikan karyawan_id null tetap mempertahankan riwayat absensi historis tanpa error constraint
+    const { error: errLogs } = await supabaseClient
+      .from("logs")
+      .update({ karyawan_id: null })
+      .eq("karyawan_id", id);
+    if (errLogs) console.warn("Peringatan unbind logs:", errLogs);
+
+    // 2. Bersihkan referensi cuti & review performa jika ada
+    await supabaseClient.from("leave_requests").delete().eq("employee_id", id);
+    await supabaseClient.from("performance_reviews").delete().eq("employee_id", id);
+    await supabaseClient.from("kpi_snapshots").delete().eq("employee_id", id);
+
+    // 3. Hapus data master karyawan
     const { error } = await supabaseClient.from("karyawan").delete().eq("id", id);
     if (error) throw error;
 
-    showToast("Karyawan berhasil dihapus", "success");
-    logAudit("Hapus Karyawan", `Menghapus karyawan: ${k ? k.nama : id}`);
-    syncData();
+    showToast(`Karyawan ${namaKaryawan} berhasil dihapus`, "success");
+    logAudit("Hapus Karyawan", `Menghapus karyawan: ${namaKaryawan}`);
+    await syncData();
   } catch (err) {
     showToast("Gagal menghapus: " + err.message, "error");
   } finally {
