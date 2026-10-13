@@ -60,7 +60,7 @@ Deno.serve(async (req) => {
 
     const { data: acc } = await supabase
       .from("admin_accounts")
-      .select("id, username, nama, role, is_active, password_hash")
+      .select("id, username, nama, role, company_access, is_active, password_hash")
       .eq("username", username)
       .maybeSingle();
 
@@ -84,6 +84,7 @@ Deno.serve(async (req) => {
       app_role: acc.role, // 'admin' | 'super_admin'
       admin_id: acc.id,
       nama: acc.nama,
+      company_access: acc.company_access || "ALL",
     })
       .setProtectedHeader({ alg: "RS256", kid: JWT_KID })
       .setIssuedAt()
@@ -93,7 +94,7 @@ Deno.serve(async (req) => {
       .setExpirationTime("8h")
       .sign(privateKey);
 
-    return json({ token, user: { id: acc.id, nama: acc.nama, role: acc.role } });
+    return json({ token, user: { id: acc.id, nama: acc.nama, role: acc.role, company_access: acc.company_access || "ALL" } });
   } catch (err) {
     return json({ error: err instanceof Error ? err.message : String(err) }, 500);
   }

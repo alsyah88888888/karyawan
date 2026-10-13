@@ -26,7 +26,10 @@
         <aside class="sidebar" id="mainSidebar">
             <div class="brand">
                 <img src="logokoboi.png" alt="Logo">
-                <h1>KOBOI</h1>
+                <div>
+                    <h1 style="line-height: 1; margin: 0;">KOBOI</h1>
+                    <span id="sidebarCompanyBadge" style="font-size: 0.65rem; color: #818cf8; font-weight: 700; text-transform: uppercase;">HOLDING GROUP</span>
+                </div>
             </div>
             
             <ul class="nav-menu">
@@ -102,6 +105,23 @@
                     <h2 id="pageTitle">Manajemen Karyawan</h2>
                     <p>Pantau kehadiran dan kalkulasi payroll otomatis.</p>
                 </div>
+
+                <!-- COMPANY SELECTOR / DEDICATED ENTITY BADGE -->
+                <div id="companySelectorContainer" style="display: flex; align-items: center; gap: 12px; background: white; padding: 8px 16px; border-radius: 16px; border: 1.5px solid var(--border); box-shadow: var(--shadow-sm);">
+                    <div style="width: 36px; height: 36px; border-radius: 10px; background: #eef2ff; color: #4f46e5; display: flex; align-items: center; justify-content: center; font-weight: 800;">
+                        <i data-lucide="building-2" style="width: 20px;"></i>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.65rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Badan Usaha / Perusahaan</div>
+                        <select id="selectActiveCompany" style="font-weight: 800; color: var(--sidebar-bg); border: none; background: transparent; padding: 0; outline: none; font-size: 0.92rem; cursor: pointer;" onchange="onCompanyChange(this.value)">
+                            <option value="ALL">🌐 Semua Perusahaan (Holding)</option>
+                            <option value="PT. Kola Borasi Indonesia">🏢 PT. Kola Borasi Indonesia</option>
+                            <option value="PT. Fortune Reef Zona">🏢 PT. Fortune Reef Zona</option>
+                            <option value="Mitra Belanja">🏪 Mitra Belanja</option>
+                        </select>
+                    </div>
+                </div>
+
                 <div class="header-clock" style="text-align: right; background: white; padding: 10px 20px; border-radius: 15px; border: 1px solid var(--border); box-shadow: var(--shadow-sm);">
                     <div id="liveClockTime" style="font-size: 1.25rem; font-weight: 800; color: var(--sidebar-bg); font-family: 'JetBrains Mono', monospace; line-height: 1;">00:00:00</div>
                     <div id="liveClockDate" style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; margin-top: 4px;">Kamis, 16 Mei 2026</div>
@@ -437,6 +457,7 @@
                                     <th>Username</th>
                                     <th>Nama</th>
                                     <th>Role</th>
+                                    <th>Akses Perusahaan</th>
                                     <th>Status</th>
                                     <th>Login Terakhir</th>
                                     <th>Aksi</th>
@@ -519,6 +540,15 @@
                             <select id="inpNewAdminRole" class="form-input">
                                 <option value="admin">Admin</option>
                                 <option value="super_admin">Super Admin</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 1rem;">
+                            <label>Akses Perusahaan</label>
+                            <select id="inpNewAdminCompany" class="form-input">
+                                <option value="ALL">🌐 Semua Perusahaan (Holding)</option>
+                                <option value="PT. Kola Borasi Indonesia">🏢 PT. Kola Borasi Indonesia</option>
+                                <option value="PT. Fortune Reef Zona">🏢 PT. Fortune Reef Zona</option>
+                                <option value="Mitra Belanja">🏪 Mitra Belanja</option>
                             </select>
                         </div>
                         <div style="display: flex; gap: 12px; justify-content: flex-end;">
@@ -750,6 +780,14 @@
                     <h4><i data-lucide="briefcase"></i> Penugasan & Absensi</h4>
                     <div class="form-grid">
                         <div class="form-group">
+                            <label>Perusahaan / Entitas</label>
+                            <select id="inpPerusahaan" class="form-input">
+                                <option value="PT. Kola Borasi Indonesia">PT. Kola Borasi Indonesia</option>
+                                <option value="PT. Fortune Reef Zona">PT. Fortune Reef Zona</option>
+                                <option value="Mitra Belanja">Mitra Belanja</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
                             <label>Departemen</label>
                             <select id="inpDept" class="form-input">
                                 <option value="OFFICE">OFFICE</option>
@@ -770,7 +808,7 @@
                             <input type="number" id="inpCuti" class="form-input" value="12">
                         </div>
                         <div class="form-group">
-                            <label>NIK KBI (Internal)</label>
+                            <label>NIK (ID Internal)</label>
                             <input type="text" id="inpNikKbi" class="form-input">
                         </div>
                         <div class="form-group">

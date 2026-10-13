@@ -18,6 +18,7 @@ const supabaseClient = supabase.createClient(SB_URL, SB_KEY, {
 // Sebelumnya admin.html bisa dibuka langsung tanpa password sama sekali.
 // Sekarang wajib ada token valid (dari login-admin) sebelum halaman dipakai.
 let ADMIN_USER = null;
+let ACTIVE_COMPANY = localStorage.getItem("hris_active_company") || "ALL";
 
 function decodeJwtPayload(token) {
   try {
@@ -26,6 +27,39 @@ function decodeJwtPayload(token) {
   } catch {
     return null;
   }
+}
+
+function updateCompanyUI() {
+  const compSelect = document.getElementById("selectActiveCompany");
+  if (compSelect) {
+    compSelect.value = ACTIVE_COMPANY;
+  }
+
+  const badge = document.getElementById("sidebarCompanyBadge");
+  if (badge) {
+    if (ACTIVE_COMPANY === "PT. Kola Borasi Indonesia") {
+      badge.innerText = "PT. Kola Borasi Indonesia";
+    } else if (ACTIVE_COMPANY === "PT. Fortune Reef Zona") {
+      badge.innerText = "PT. Fortune Reef Zona";
+    } else if (ACTIVE_COMPANY === "Mitra Belanja") {
+      badge.innerText = "Mitra Belanja";
+    } else {
+      badge.innerText = "Holding (Semua PT)";
+    }
+    badge.style.display = "inline-block";
+  }
+}
+
+function onCompanyChange(comp) {
+  if (ADMIN_USER?.company_access && ADMIN_USER.company_access !== "ALL") {
+    ACTIVE_COMPANY = ADMIN_USER.company_access;
+    updateCompanyUI();
+    return;
+  }
+  ACTIVE_COMPANY = comp || "ALL";
+  localStorage.setItem("hris_active_company", ACTIVE_COMPANY);
+  updateCompanyUI();
+  refreshUI();
 }
 
 function checkAdminAuthOrRedirect() {
@@ -41,12 +75,31 @@ function checkAdminAuthOrRedirect() {
     return false;
   }
 
-  ADMIN_USER = { ...JSON.parse(localStorage.getItem("hris_admin_user") || "{}"), role: claims.app_role };
+  const storedAdmin = JSON.parse(localStorage.getItem("hris_admin_user") || "{}");
+  ADMIN_USER = {
+    ...storedAdmin,
+    role: claims.app_role,
+    company_access: claims.company_access || storedAdmin.company_access || "ALL"
+  };
 
-  // Tab "Manajemen Admin" & "Audit Log" cuma untuk super_admin. Ini gating
-  // tampilan saja (UX) - akses sesungguhnya sudah dijaga RLS di database,
-  // jadi walau ada yang paksa buka tab ini lewat console, tidak akan
-  // dapat data (admin_accounts/audit_logs menolak role selain super_admin).
+  // Konfigurasi akses perusahaan berdasarkan hak akses akun
+  const compSelect = document.getElementById("selectActiveCompany");
+  if (ADMIN_USER.company_access && ADMIN_USER.company_access !== "ALL") {
+    ACTIVE_COMPANY = ADMIN_USER.company_access;
+    if (compSelect) {
+      compSelect.value = ACTIVE_COMPANY;
+      compSelect.disabled = true;
+      compSelect.title = `Akses akun Anda dibatasi khusus untuk ${ACTIVE_COMPANY}`;
+    }
+  } else {
+    if (compSelect) {
+      compSelect.disabled = false;
+      compSelect.value = ACTIVE_COMPANY;
+    }
+  }
+  updateCompanyUI();
+
+  // Tab "Manajemen Admin" & "Audit Log" cuma untuk super_admin.
   const navSuperAdmin = document.getElementById("navSuperAdminOnly");
   if (navSuperAdmin) navSuperAdmin.style.display = claims.app_role === "super_admin" ? "block" : "none";
 
@@ -65,6 +118,8 @@ function showCreateAdminModal() {
   document.getElementById("inpNewAdminUsername").value = "";
   document.getElementById("inpNewAdminPassword").value = "";
   document.getElementById("inpNewAdminRole").value = "admin";
+  const compEl = document.getElementById("inpNewAdminCompany");
+  if (compEl) compEl.value = "ALL";
   document.getElementById("modalCreateAdmin").style.display = "flex";
 }
 
@@ -73,23 +128,35 @@ async function createAdminAccount() {
   const username = document.getElementById("inpNewAdminUsername").value.trim();
   const password = document.getElementById("inpNewAdminPassword").value;
   const role = document.getElementById("inpNewAdminRole").value;
+  const companyAccess = document.getElementById("inpNewAdminCompany")?.value || "ALL";
 
   if (!nama || !username || !password) return alert("Harap isi semua data!");
   if (password.length < 6) return alert("Password minimal 6 karakter!");
 
   showLoading(true);
   try {
-    const { error } = await supabaseClient.rpc("admin_create_account", {
+    let { error } = await supabaseClient.rpc("admin_create_account", {
       p_username: username,
       p_password: password,
       p_nama: nama,
       p_role: role,
+      p_company_access: companyAccess,
     });
+    // Fallback jika migration Postgres belum dijalankan
+    if (error && (error.message.includes("p_company_access") || error.code === "42883")) {
+      const resFallback = await supabaseClient.rpc("admin_create_account", {
+        p_username: username,
+        p_password: password,
+        p_nama: nama,
+        p_role: role,
+      });
+      error = resFallback.error;
+    }
     if (error) throw error;
 
     document.getElementById("modalCreateAdmin").style.display = "none";
     showToast("Akun admin berhasil dibuat", "success");
-    logAudit("Tambah Akun Admin", `Membuat akun ${username} (${role})`);
+    logAudit("Tambah Akun Admin", `Membuat akun ${username} (${role}, ${companyAccess})`);
     renderAdminAccounts();
   } catch (err) {
     showToast("Gagal: " + err.message, "error");
@@ -102,21 +169,29 @@ async function renderAdminAccounts() {
   const body = document.getElementById("adminAccountsBody");
   if (!body) return;
 
-  const { data, error } = await supabaseClient
+  let { data, error } = await supabaseClient
     .from("admin_accounts")
-    .select("id, username, nama, role, is_active, last_login_at")
+    .select("id, username, nama, role, company_access, is_active, last_login_at")
     .order("id", { ascending: true });
 
   if (error) {
-    body.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:2rem; color:var(--text-muted);">Gagal memuat data: ${error.message}</td></tr>`;
-    return;
+    const fb = await supabaseClient
+      .from("admin_accounts")
+      .select("id, username, nama, role, is_active, last_login_at")
+      .order("id", { ascending: true });
+    if (fb.error) {
+      body.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:2rem; color:var(--text-muted);">Gagal memuat data: ${error.message}</td></tr>`;
+      return;
+    }
+    data = fb.data;
   }
 
   body.innerHTML = (data || []).map((a) => `
     <tr>
-      <td>${a.username}</td>
-      <td>${a.nama}</td>
+      <td>${escapeHtml(a.username)}</td>
+      <td>${escapeHtml(a.nama)}</td>
       <td><span class="badge">${a.role === "super_admin" ? "SUPER ADMIN" : "ADMIN"}</span></td>
+      <td><span class="badge" style="background:#eef2ff; color:#4f46e5; font-weight:700;">${a.company_access || "ALL"}</span></td>
       <td>${a.is_active ? '<span style="color:var(--success); font-weight:700;">Aktif</span>' : '<span style="color:var(--danger); font-weight:700;">Nonaktif</span>'}</td>
       <td>${a.last_login_at ? new Date(a.last_login_at).toLocaleString("id-ID") : "-"}</td>
       <td>
@@ -128,7 +203,7 @@ async function renderAdminAccounts() {
         </button>
       </td>
     </tr>
-  `).join("") || `<tr><td colspan="6" style="text-align:center; padding:2rem; color:var(--text-muted);">Belum ada akun admin lain.</td></tr>`;
+  `).join("") || `<tr><td colspan="7" style="text-align:center; padding:2rem; color:var(--text-muted);">Belum ada akun admin lain.</td></tr>`;
 }
 
 // module_key -> id link sidebar yang harus disembunyikan dari role "admin"
@@ -335,6 +410,58 @@ function getEmployeeAvatar(k) {
   return `https://ui-avatars.com/api/?name=${name}&background=4f46e5&color=fff&bold=true`;
 }
 
+function getCompanyOfKaryawan(k) {
+  if (k && k.perusahaan && typeof k.perusahaan === "string" && k.perusahaan.trim()) {
+    return k.perusahaan.trim();
+  }
+  const nik = (k?.nik || "").trim().toUpperCase();
+  const nama = (k?.nama || "").trim().toUpperCase();
+  if (nik.startsWith("FRZ-") || ["LUTVI ABDULAH", "SELI MARYANI", "JOSAFAT TEGUH IMAN SINAGA"].includes(nama)) {
+    return "PT. Fortune Reef Zona";
+  }
+  if (nik.startsWith("MB-")) {
+    return "Mitra Belanja";
+  }
+  return "PT. Kola Borasi Indonesia";
+}
+
+function getCompanyBranding(k) {
+  const comp = getCompanyOfKaryawan(k);
+  if (comp === "PT. Fortune Reef Zona") {
+    return {
+      name: "PT. FORTUNE REEF ZONA",
+      address: "Sentra Bisnis Fortune, Kawasan Niaga & Distribusi, Bogor",
+      logo: "logokoboi.png"
+    };
+  } else if (comp === "Mitra Belanja") {
+    return {
+      name: "MITRA BELANJA",
+      address: "Pusat Distribusi & Retail Mitra Belanja",
+      logo: "logokoboi.png"
+    };
+  }
+  return {
+    name: "PT. KOLA BORASI INDONESIA",
+    address: "Green Kartika Residence Blok EE No.2, Cibinong, Bogor",
+    logo: "logokoboi.png"
+  };
+}
+
+function getFilteredKaryawan() {
+  if (!ACTIVE_COMPANY || ACTIVE_COMPANY === "ALL") {
+    return KARYAWAN;
+  }
+  return KARYAWAN.filter(k => getCompanyOfKaryawan(k) === ACTIVE_COMPANY);
+}
+
+function getFilteredLogs() {
+  if (!ACTIVE_COMPANY || ACTIVE_COMPANY === "ALL") {
+    return allLogs;
+  }
+  const allowedNames = new Set(getFilteredKaryawan().map(k => (k.nama || "").trim().toLowerCase()));
+  return allLogs.filter(l => allowedNames.has((l.nama || "").trim().toLowerCase()));
+}
+
 // --- CORE SYNC ---
 async function syncData() {
   // Set Default Periode: Seminggu Terakhir (H-7 s/d H-1)
@@ -371,14 +498,6 @@ async function syncData() {
 
     // Jika ada filter tanggal, gunakan filter di level Database (Supabase)
     if (tglMulai && tglSelesai) {
-      // Periode default (H-7 s/d H-1, lihat setPeriodeSemingguTerakhir) sengaja
-      // TIDAK memasukkan hari ini - tapi renderStats() menghitung "hadir hari
-      // ini" dari allLogs yang sama. Kalau dibiarkan, widget hari ini akan
-      // selalu kosong (bukan cuma untuk edit manual - siapapun yang absen
-      // normal hari ini juga tidak akan terhitung) sampai admin ganti filter
-      // manual. Perbesar batas akhir ke hari ini kalau filter yang dipilih
-      // berakhir sebelum hari ini, supaya widget hari ini selalu akurat tanpa
-      // mengubah rentang laporan yang dipilih admin untuk keperluan lain.
       const todayStr = toLocalISO(new Date()).split('T')[0];
       const tglSelesaiEfektif = tglSelesai < todayStr ? todayStr : tglSelesai;
       queryAllLog = queryAllLog
@@ -395,8 +514,8 @@ async function syncData() {
     if (errA) throw errA;
     allLogs = dataAllLog || [];
 
-    // logs untuk tampilan tabel log (limit 200 untuk kecepatan render)
-    logs = allLogs.slice(0, 200);
+    // logs untuk tampilan tabel log
+    logs = allLogs;
 
     refreshUI();
     showToast("Data berhasil disinkronkan", "success");
@@ -408,6 +527,7 @@ async function syncData() {
 }
 
 function refreshUI() {
+  updateCompanyUI();
   renderStats();
   renderLogTable();
   renderKaryawanTable();
@@ -415,6 +535,8 @@ function refreshUI() {
   renderVisualStats();
   renderKPITable();
   renderCalendar();
+  if (document.getElementById("tabLeave")?.style.display === "block") fetchLeaveRequests();
+  if (document.getElementById("tabPerformance")?.style.display === "block") { fetchReviews(); loadKpiRollup("weekly"); }
 }
 
 // --- DASHBOARD UI ---
@@ -424,34 +546,39 @@ function renderStats() {
   const terlambatEl = document.getElementById("statTerlambat");
   const avgAttEl = document.getElementById("statAvgAttendance");
 
-  if (manpowerEl) manpowerEl.innerText = KARYAWAN.length;
+  const filteredK = getFilteredKaryawan();
+  const fLogs = getFilteredLogs();
+
+  if (manpowerEl) manpowerEl.innerText = filteredK.length;
 
   const todayStr = new Date().toLocaleDateString();
-  const logsToday = allLogs.filter(l => new Date(l.waktu).toLocaleDateString() === todayStr);
+  const logsToday = fLogs.filter(l => new Date(l.waktu).toLocaleDateString() === todayStr);
 
   const uniqueHadir = [...new Set(logsToday.filter(l => isMasukStatus(l.status)).map(l => l.nama))].length;
-  const totalTelat = logsToday.filter(l => isMasukStatus(l.status) && l.isLate).length;
+  const totalTelat = logsToday.filter(l => isMasukStatus(l.status) && (l.isLate === true || l.isLate === "true")).length;
 
   if (hadirEl) hadirEl.innerText = uniqueHadir;
   if (terlambatEl) terlambatEl.innerText = totalTelat;
 
   // Rata-rata Kehadiran Perusahaan Periode Ini
   let totalRate = 0;
-  KARYAWAN.forEach(k => {
+  filteredK.forEach(k => {
     const d = hitungDetailGaji(k.gaji, k.nama);
     const rate = ((d.hadir / d.totalHariKerja) * 100) || 0;
     totalRate += rate;
   });
-  const avgRate = KARYAWAN.length > 0 ? (totalRate / KARYAWAN.length) : 0;
+  const avgRate = filteredK.length > 0 ? (totalRate / filteredK.length) : 0;
   if (avgAttEl) avgAttEl.innerText = avgRate.toFixed(1) + "%";
 }
 
 function renderVisualStats() {
+  const fLogs = getFilteredLogs();
+
   // 1. Chart Analisis Kedisiplinan (Punctuality)
   const punctCtx = document.getElementById('punctualityChart')?.getContext('2d');
   if (punctCtx) {
-    const onTime = allLogs.filter(l => isMasukStatus(l.status) && !l.isLate).length;
-    const late = allLogs.filter(l => isMasukStatus(l.status) && l.isLate).length;
+    const onTime = fLogs.filter(l => isMasukStatus(l.status) && !l.isLate).length;
+    const late = fLogs.filter(l => isMasukStatus(l.status) && (l.isLate === true || l.isLate === "true")).length;
 
     if (punctualityChartInstance) punctualityChartInstance.destroy();
     punctualityChartInstance = new Chart(punctCtx, {
@@ -485,7 +612,7 @@ function renderVisualStats() {
       const dateStr = d.toLocaleDateString();
       days.push(d.toLocaleDateString('id-ID', { weekday: 'short' }));
 
-      const uniqueAtDay = [...new Set(allLogs.filter(l =>
+      const uniqueAtDay = [...new Set(fLogs.filter(l =>
         new Date(l.waktu).toLocaleDateString() === dateStr && isMasukStatus(l.status)
       ).map(l => l.nama))].length;
 
@@ -537,9 +664,6 @@ function switchTab(tab) {
     if (el) el.classList.toggle("active", l.includes(tab.replace('tab', '')));
   });
 
-  // Jaga-jaga kalau tab dibuka lewat console/URL walau linknya sudah
-  // disembunyikan - RLS/trigger di database tetap penjaga sesungguhnya,
-  // ini cuma supaya admin dapat pesan yang jelas alih-alih tabel kosong.
   const tabModuleMap = { tabLeave: "leave_management", tabPerformance: "performance_kpi", tabCEO: "ceo_access" };
   if (tabModuleMap[tab] && !isModuleEnabledForCurrentAdmin(tabModuleMap[tab])) {
     showToast("Modul ini dimatikan untuk akun Anda oleh Super Admin", "error");
@@ -557,9 +681,6 @@ function switchTab(tab) {
   if (tab === "tabAccounts") { renderAdminAccounts(); renderModuleSettings(); }
   if (tab === "tabAudit") renderAuditLog();
 
-  // Sembunyikan Header Actions (Tambah/Export) jika di Dashboard atau CEO
-
-
   const title = document.getElementById("pageTitle");
   if (title) {
     if (tab === "tabDashboard") title.innerText = "Executive Dashboard";
@@ -572,12 +693,10 @@ function switchTab(tab) {
     else title.innerText = "Manajemen Karyawan";
   }
 
-  // FORCE RESIZE untuk mencegah tampilan "ketarik" atau grafik gepeng
   setTimeout(() => { window.dispatchEvent(new Event('resize')); }, 50);
 
   if (typeof lucide !== 'undefined') lucide.createIcons();
 
-  // Tutup sidebar di mobile setelah klik menu
   const sidebar = document.getElementById("mainSidebar");
   if (sidebar) sidebar.classList.remove("active");
 }
@@ -588,15 +707,17 @@ function renderKPITable() {
 
   const customStart = document.getElementById("kpiFilterTglMulai")?.value;
   const customEnd = document.getElementById("kpiFilterTglSelesai")?.value;
+  const fLogs = getFilteredLogs();
 
   let htmlRows = "";
-  KARYAWAN.forEach(k => {
+  const filteredK = getFilteredKaryawan();
+  filteredK.forEach(k => {
     const d = hitungDetailGaji(k.gaji, k.nama, customStart, customEnd);
 
     // Perhitungan KPI
     const attendanceRate = ((d.hadir / d.totalHariKerja) * 100) || 0;
 
-    let logsKar = allLogs.filter(l => (l.nama || '').trim().toLowerCase() === k.nama.trim().toLowerCase() && isMasukStatus(l.status));
+    let logsKar = fLogs.filter(l => (l.nama || '').trim().toLowerCase() === k.nama.trim().toLowerCase() && isMasukStatus(l.status));
 
     // Filter logs berdasarkan tanggal dashboard
     if (customStart && customEnd) {
@@ -608,7 +729,7 @@ function renderKPITable() {
       });
     }
 
-    const lateCount = logsKar.filter(l => l.isLate).length;
+    const lateCount = logsKar.filter(l => l.isLate === true || l.isLate === "true").length;
 
     // Status Performa
     let statusLabel = "GOOD";
@@ -632,7 +753,7 @@ function renderKPITable() {
       <tr>
         <td>
           <div style="font-weight: 700;">${k.nama}</div>
-          <div style="font-size: 0.7rem; color: var(--text-muted);">${k.jabatan || "-"}</div>
+          <div style="font-size: 0.7rem; color: var(--text-muted);">${k.jabatan || "-"} <span style="color:var(--primary); font-weight:600;">(${getCompanyOfKaryawan(k)})</span></div>
         </td>
         <td><span class="badge" style="background: #f1f5f9; color: #475569;">${k.dept}</span></td>
         <td>
@@ -658,7 +779,8 @@ function renderCEOTable() {
   if (!body) return;
 
   let htmlRows = "";
-  KARYAWAN.forEach((k, index) => {
+  const filteredK = getFilteredKaryawan();
+  filteredK.forEach((k) => {
     const masterInsentif = (parseFloat(k.incentive) || 0) + (parseFloat(k.incentive_luar) || 0);
     const approvedVal = parseFloat(k.incentive_approved_val) || 0;
     const isApproved = k.is_incentive_approved === true;
@@ -667,13 +789,13 @@ function renderCEOTable() {
       <tr>
         <td>
           <div style="font-weight: 700;">${k.nama}</div>
-          <div style="font-size: 0.75rem; color: var(--text-muted);">${k.dept}</div>
+          <div style="font-size: 0.75rem; color: var(--text-muted);">${k.dept} <span style="font-size:0.7rem; color:var(--primary); font-weight:700;">• ${getCompanyOfKaryawan(k)}</span></div>
         </td>
         <td>Rp ${masterInsentif.toLocaleString('id-ID')}</td>
         <td>
           <div style="display: flex; align-items: center; gap: 10px;">
             <span style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted);">Rp</span>
-            <input type="number" id="valInsentifCEO_${index}" class="form-input" 
+            <input type="number" id="valInsentifCEO_${k.id}" class="form-input" 
                    value="${isApproved ? approvedVal : masterInsentif}" 
                    style="width: 150px; padding: 5px 10px; font-weight: 800; color: var(--primary);">
           </div>
@@ -685,10 +807,10 @@ function renderCEOTable() {
         </td>
         <td>
           <div style="display: flex; gap: 8px;">
-            <button class="btn btn-primary btn-small" onclick="simpanIncentiveCEO(${index})">
+            <button class="btn btn-primary btn-small" onclick="simpanIncentiveCEO('${k.id}')">
                 Setujui Nominal
             </button>
-            ${isApproved ? `<button class="btn btn-danger btn-small" onclick="batalkanIncentiveCEO(${index})">Batalkan</button>` : ''}
+            ${isApproved ? `<button class="btn btn-danger btn-small" onclick="batalkanIncentiveCEO('${k.id}')">Batalkan</button>` : ''}
           </div>
         </td>
       </tr>`;
@@ -696,9 +818,10 @@ function renderCEOTable() {
   body.innerHTML = htmlRows;
 }
 
-async function simpanIncentiveCEO(index) {
-  const k = KARYAWAN[index];
-  const inputVal = document.getElementById(`valInsentifCEO_${index}`).value;
+async function simpanIncentiveCEO(kId) {
+  const k = KARYAWAN.find(x => String(x.id) === String(kId));
+  if (!k) return;
+  const inputVal = document.getElementById(`valInsentifCEO_${k.id}`)?.value;
   const nominal = parseFloat(inputVal) || 0;
 
   if (nominal < 0) return alert("Nominal tidak boleh negatif!");
@@ -713,14 +836,15 @@ async function simpanIncentiveCEO(index) {
 
   if (!error) {
     alert(`Insentif ${k.nama} disetujui sebesar Rp ${nominal.toLocaleString('id-ID')}`);
-    syncData(); // Sinkronkan data agar tabel payroll ikut update
+    syncData();
   } else {
     alert("Gagal menyimpan: " + error.message);
   }
 }
 
-async function batalkanIncentiveCEO(index) {
-  const k = KARYAWAN[index];
+async function batalkanIncentiveCEO(kId) {
+  const k = KARYAWAN.find(x => String(x.id) === String(kId));
+  if (!k) return;
   const { error } = await supabaseClient
     .from("karyawan")
     .update({ is_incentive_approved: false })
@@ -739,8 +863,10 @@ function renderLogTable() {
   if (!body) return;
 
   let htmlRows = "";
+  const fLogs = getFilteredLogs();
   // Filter logs berdasarkan input pencarian
-  const filteredLogs = logs.filter(l => (l.nama || '').toLowerCase().includes(searchInput));
+  const filteredLogs = fLogs.filter(l => (l.nama || '').toLowerCase().includes(searchInput));
+  const displayLogs = filteredLogs.slice(0, 200);
 
   let total = 0;
   let tepat = 0;
@@ -750,7 +876,10 @@ function renderLogTable() {
     total++;
     const isLate = l.isLate === true || l.isLate === "true";
     if (isLate) telat++; else tepat++;
+  });
 
+  displayLogs.forEach((l) => {
+    const isLate = l.isLate === true || l.isLate === "true";
     const s = l.status.toUpperCase();
     let badgeClass = "badge-masuk";
     let icon = "log-in";
@@ -771,7 +900,7 @@ function renderLogTable() {
     if (l.status.includes("[GPS:")) {
         const gpsMatch = l.status.match(/\[GPS:\s*([^\]]+)\]/);
         if (gpsMatch) {
-            const coords = gpsMatch[1]; // e.g. "-6.22, 106.88"
+            const coords = gpsMatch[1];
             gpsLink = `<a href="https://maps.google.com/?q=${coords}" target="_blank" style="display:inline-block; margin-top:4px; color:#2563eb; text-decoration:none; font-size:0.75rem; font-weight:700;"><i data-lucide="map-pin" style="width:12px; height:12px; vertical-align:middle;"></i> Buka di Maps</a>`;
             displayStatus = l.status.replace(/\[GPS:.*?\]/, "").trim();
         }
@@ -841,22 +970,27 @@ function renderKaryawanTable() {
   if (!body) return;
 
   let htmlRows = "";
-  KARYAWAN.forEach((k, index) => {
+  const filteredK = getFilteredKaryawan();
+  filteredK.forEach((k) => {
     const d = hitungDetailGaji(k.gaji || 0, k.nama);
     const kpi = calculateLiveKPI(d.hadir, d.telat);
+    const compName = getCompanyOfKaryawan(k);
 
     htmlRows += `
       <tr>
         <td>
           <div style="display: flex; align-items: center; gap: 15px;">
-            <div style="width: 48px; height: 48px; border-radius: 14px; overflow: hidden; border: 2.5px solid #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.1); background: #f1f5f9;">
+            <div style="width: 48px; height: 48px; border-radius: 14px; overflow: hidden; border: 2.5px solid #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.1); background: #f1f5f9; flex-shrink: 0;">
               <img src="${getEmployeeAvatar(k)}" 
                    onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(k.nama)}&background=4f46e5&color=fff&bold=true'"
                    style="width: 100%; height: 100%; object-fit: cover;">
             </div>
             <div>
               <div style="font-weight: 800; color: var(--sidebar-bg); font-size: 0.95rem;">${k.nama}</div>
-              <div style="font-size: 0.7rem; color: var(--text-muted); font-weight: 600;">ID: ${k.nik}</div>
+              <div style="display: flex; align-items: center; gap: 6px; margin-top: 2px;">
+                <span style="font-size: 0.7rem; color: var(--text-muted); font-weight: 600;">ID: ${k.nik}</span>
+                <span class="badge" style="font-size: 0.65rem; padding: 2px 6px; background: #e0e7ff; color: #4338ca; font-weight: 700;">${compName}</span>
+              </div>
             </div>
           </div>
         </td>
@@ -891,13 +1025,13 @@ function renderKaryawanTable() {
         </td>
         <td>
           <div style="display: flex; gap: 6px; flex-wrap: nowrap;">
-            <button class="btn btn-outline btn-small" style="padding: 6px;" onclick="cetakSlip(${index})" title="Cetak Slip">
+            <button class="btn btn-outline btn-small" style="padding: 6px;" onclick="cetakSlip('${k.id}')" title="Cetak Slip">
                 <i data-lucide="printer" style="width:14px;"></i>
             </button>
-            <button class="btn btn-primary btn-small" style="background:#25d366; border:none; padding: 6px;" onclick="kirimSlipOtomatis(KARYAWAN[${index}])" title="Kirim Otomatis via WhatsApp">
+            <button class="btn btn-primary btn-small" style="background:#25d366; border:none; padding: 6px;" onclick="kirimSlipOtomatisById('${k.id}')" title="Kirim Otomatis via WhatsApp">
                 <i data-lucide="message-circle" style="width:14px;"></i>
             </button>
-            <button class="btn btn-outline btn-small" style="padding: 6px;" onclick="bukaModalEditKaryawan(${index})" title="Edit Data">
+            <button class="btn btn-outline btn-small" style="padding: 6px;" onclick="bukaModalEditKaryawan('${k.id}')" title="Edit Data">
                 <i data-lucide="edit-3" style="width:14px;"></i>
             </button>
             <button class="btn btn-danger btn-small" style="padding: 6px;" onclick="hapusKaryawan('${k.id}')" title="Hapus">
@@ -909,6 +1043,11 @@ function renderKaryawanTable() {
   });
   body.innerHTML = htmlRows;
   if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+async function kirimSlipOtomatisById(id) {
+  const k = KARYAWAN.find(x => String(x.id) === String(id));
+  if (k) return kirimSlipOtomatis(k);
 }
 
 // --- PAYROLL & OVERTIME LOGIC ---
@@ -1123,14 +1262,22 @@ function calculateLiveKPI(hadir, telat) {
   return { score: finalScore > 100 ? 100 : finalScore, grade, color };
 }
 
-function cetakSlip(index) {
-  const k = KARYAWAN[index];
+function cetakSlip(idOrIndex) {
+  let k;
+  if (typeof idOrIndex === "object" && idOrIndex !== null) {
+    k = idOrIndex;
+  } else if (typeof idOrIndex === "string" || typeof idOrIndex === "number") {
+    k = KARYAWAN.find(x => String(x.id) === String(idOrIndex)) || KARYAWAN[idOrIndex];
+  }
+  if (!k) return;
+
   const d = hitungDetailGaji(k.gaji, k.nama);
   const tglMulai = document.getElementById("filterTglMulai")?.value;
   const tglSelesai = document.getElementById("filterTglSelesai")?.value;
 
   const fmt = (d) => d ? d.split('-').reverse().join('/') : '-';
   const periodeTampil = (tglMulai && tglSelesai) ? `${fmt(tglMulai)} - ${fmt(tglSelesai)}` : "Bulan Berjalan";
+  const branding = getCompanyBranding(k);
 
   const html = `
     <html>
@@ -1195,10 +1342,10 @@ function cetakSlip(index) {
         
         <header class="header">
           <div class="logo-section">
-            <img src="logokoboi.png" alt="Logo KBI">
+            <img src="${branding.logo}" alt="Logo">
             <div class="company-name">
-              <h1>PT. KOLA BORASI INDONESIA</h1>
-              <p>Green Kartika Residence Blok EE No.2, Cibinong, Bogor</p>
+              <h1>${branding.name}</h1>
+              <p>${branding.address}</p>
             </div>
           </div>
           <div class="doc-title">
@@ -1215,6 +1362,7 @@ function cetakSlip(index) {
           <div class="info-details">
             <div class="info-item"><span class="label">Nama Karyawan</span><span class="val">${k.nama}</span></div>
             <div class="info-item"><span class="label">NIK / ID</span><span class="val">${k.nik}</span></div>
+            <div class="info-item"><span class="label">Perusahaan</span><span class="val" style="color:var(--primary); font-weight:700;">${getCompanyOfKaryawan(k)}</span></div>
             <div class="info-item"><span class="label">Jabatan / Dept</span><span class="val">${k.jabatan || k.dept}</span></div>
             <div class="info-item"><span class="label">No. Rekening</span><span class="val">${k.rekening || '-'}</span></div>
             <div class="info-item"><span class="label">Hadir / Hari Kerja</span><span class="val">${d.hadir} / ${d.totalHariKerja} Hari</span></div>
@@ -1248,7 +1396,7 @@ function cetakSlip(index) {
             <span class="val">Rp ${Math.floor(d.thp).toLocaleString('id-ID')}</span>
           </div>
           <div class="thp-message">
-            "Semoga bermanfaat untuk keluarga. Terus berkarya bersama KOLA BORASI."
+            "Semoga bermanfaat untuk keluarga. Terus berkarya bersama ${branding.name}."
           </div>
         </section>
 
@@ -1258,8 +1406,8 @@ function cetakSlip(index) {
             <p class="name">${k.nama}</p>
           </div>
           <div class="sign-box">
-            <p class="label">HRD Manager,</p>
-            <p class="name">PT. Kola Borasi Indonesia</p>
+            <p class="label">HRD / Management,</p>
+            <p class="name">${branding.name}</p>
           </div>
         </footer>
       </div>
@@ -1273,8 +1421,6 @@ function cetakSlip(index) {
   win.document.close();
 }
 
-// Menghitung periode tampilan (dari filter tanggal aktif di halaman) dipakai
-// bareng oleh alur kirim manual (wa.me) dan kirim otomatis (Fonnte).
 function getPeriodeTampilAktif() {
   const tglMulai = document.getElementById("filterTglMulai")?.value;
   const tglSelesai = document.getElementById("filterTglSelesai")?.value;
@@ -1282,11 +1428,8 @@ function getPeriodeTampilAktif() {
   return (tglMulai && tglSelesai) ? `${fmt(tglMulai)} - ${fmt(tglSelesai)}` : "Bulan Berjalan";
 }
 
-// Merender slip gaji karyawan `k` menjadi PNG blob. Dipakai baik oleh alur
-// kirim manual (wa.me, minta klik Send) maupun kirim otomatis (upload ke
-// storage lalu dikirim via Edge Function + Fonnte).
 async function generateSlipGajiBlob(k, d, periodeTampil) {
-  // 1. Generate Hidden Container for Render
+  const branding = getCompanyBranding(k);
   const renderContainer = document.createElement("div");
   renderContainer.style.position = "absolute";
   renderContainer.style.top = "-9999px";
@@ -1294,8 +1437,6 @@ async function generateSlipGajiBlob(k, d, periodeTampil) {
   renderContainer.style.backgroundColor = "white";
   document.body.appendChild(renderContainer);
 
-  // Template identik dengan cetakSlip() (tombol Cetak/Print) - dipakai juga
-  // untuk gambar yang dikirim via WhatsApp supaya hasilnya sama persis.
   const slipHtml = `
       <style>
         #slip-to-share { font-family: 'Outfit', sans-serif; }
@@ -1337,10 +1478,10 @@ async function generateSlipGajiBlob(k, d, periodeTampil) {
 
         <header class="header">
           <div class="logo-section">
-            <img src="logokoboi.png" alt="Logo KBI">
+            <img src="${branding.logo}" alt="Logo">
             <div class="company-name">
-              <h1>PT. KOLA BORASI INDONESIA</h1>
-              <p>Green Kartika Residence Blok EE No.2, Cibinong, Bogor</p>
+              <h1>${branding.name}</h1>
+              <p>${branding.address}</p>
             </div>
           </div>
           <div class="doc-title">
@@ -1357,6 +1498,7 @@ async function generateSlipGajiBlob(k, d, periodeTampil) {
           <div class="info-details">
             <div class="info-item"><span class="label">Nama Karyawan</span><span class="val">${k.nama}</span></div>
             <div class="info-item"><span class="label">NIK / ID</span><span class="val">${k.nik}</span></div>
+            <div class="info-item"><span class="label">Perusahaan</span><span class="val" style="color:#4f46e5; font-weight:700;">${getCompanyOfKaryawan(k)}</span></div>
             <div class="info-item"><span class="label">Jabatan / Dept</span><span class="val">${k.jabatan || k.dept}</span></div>
             <div class="info-item"><span class="label">No. Rekening</span><span class="val">${k.rekening || '-'}</span></div>
             <div class="info-item"><span class="label">Hadir / Hari Kerja</span><span class="val">${d.hadir} / ${d.totalHariKerja} Hari</span></div>
@@ -1390,7 +1532,7 @@ async function generateSlipGajiBlob(k, d, periodeTampil) {
             <span class="val">Rp ${Math.floor(d.thp).toLocaleString('id-ID')}</span>
           </div>
           <div class="thp-message">
-            "Semoga bermanfaat untuk keluarga. Terus berkarya bersama KOLA BORASI."
+            "Semoga bermanfaat untuk keluarga. Terus berkarya bersama ${branding.name}."
           </div>
         </section>
 
@@ -1400,24 +1542,22 @@ async function generateSlipGajiBlob(k, d, periodeTampil) {
             <p class="name">${k.nama}</p>
           </div>
           <div class="sign-box">
-            <p class="label">HRD Manager,</p>
-            <p class="name">PT. Kola Borasi Indonesia</p>
+            <p class="label">HRD / Management,</p>
+            <p class="name">${branding.name}</p>
           </div>
         </footer>
       </div>
     `;
   renderContainer.innerHTML = slipHtml;
 
-  // Beri sedikit waktu agar foto karyawan & font sempat dimuat sebelum di-render ke canvas
   await new Promise((r) => setTimeout(r, 200));
 
-  // 2. Convert to Image (Optimized for speed)
   const canvas = await html2canvas(renderContainer.querySelector("#slip-to-share"), {
-    scale: 1.2, // Slightly reduced scale for much faster processing on mobile
+    scale: 1.2,
     useCORS: true,
     backgroundColor: "#ffffff",
-    logging: false, // Disable logging to save resources
-    removeContainer: true // Faster cleanup
+    logging: false,
+    removeContainer: true
   });
 
   document.body.removeChild(renderContainer);
@@ -1427,8 +1567,15 @@ async function generateSlipGajiBlob(k, d, periodeTampil) {
   return { imageBlob, fileName };
 }
 
-async function kirimSlipWA(index) {
-  const k = KARYAWAN[index];
+async function kirimSlipWA(idOrIndex) {
+  let k;
+  if (typeof idOrIndex === "object" && idOrIndex !== null) {
+    k = idOrIndex;
+  } else if (typeof idOrIndex === "string" || typeof idOrIndex === "number") {
+    k = KARYAWAN.find(x => String(x.id) === String(idOrIndex)) || KARYAWAN[idOrIndex];
+  }
+  if (!k) return;
+
   const d = hitungDetailGaji(k.gaji, k.nama);
 
   if (!k.nomor_wa) return alert("Nomor WhatsApp tidak ditemukan!");
@@ -1445,7 +1592,7 @@ async function kirimSlipWA(index) {
     if (noWa.startsWith("0")) noWa = "62" + noWa.slice(1);
     else if (!noWa.startsWith("62")) noWa = "62" + noWa;
 
-    const pesan = `Halo *${k.nama}*,\n\nBerikut adalah *Slip Gaji Digital* Anda untuk periode *${periodeTampil}*.\n\nTotal THP: *Rp ${Math.floor(d.thp).toLocaleString('id-ID')}*\n\n_(Mohon tempel/paste gambar slip gaji yang sudah tersalin otomatis ke chat ini)_`;
+    const pesan = `Halo *${k.nama}*,\n\nBerikut adalah *Slip Gaji Digital* Anda dari *${getCompanyOfKaryawan(k)}* untuk periode *${periodeTampil}*.\n\nTotal THP: *Rp ${Math.floor(d.thp).toLocaleString('id-ID')}*\n\n_(Mohon tempel/paste gambar slip gaji yang sudah tersalin otomatis ke chat ini)_`;
     const waUrl = `https://wa.me/${noWa}?text=${encodeURIComponent(pesan)}`;
 
     // STEP 1: Try Native Share (Best for Mobile)
@@ -1464,7 +1611,6 @@ async function kirimSlipWA(index) {
     }
 
     // STEP 2: Copy to Clipboard (Best for Desktop/PC)
-    // Most modern browsers support copying images to clipboard
     try {
       if (navigator.clipboard && window.ClipboardItem) {
         const item = new ClipboardItem({ "image/png": imageBlob });
@@ -1528,7 +1674,7 @@ async function kirimSlipOtomatis(k, { silent = false } = {}) {
     if (fnRes?.error) throw new Error(fnRes.error);
 
     if (!silent) showToast(`Slip gaji ${k.nama} berhasil dikirim otomatis ke WhatsApp!`, "success");
-    logAudit("Kirim Slip Otomatis", `${k.nama} (${k.nik}) - periode ${periodeTampil}`);
+    logAudit("Kirim Slip Otomatis", `${k.nama} (${k.nik}) - periode ${periodeTampil} (${getCompanyOfKaryawan(k)})`);
     return { ok: true };
   } catch (err) {
     console.error(err);
@@ -1539,14 +1685,13 @@ async function kirimSlipOtomatis(k, { silent = false } = {}) {
   }
 }
 
-// Kirim slip gaji otomatis ke SEMUA karyawan yang punya nomor WA, satu per
-// satu dengan jeda antar pesan (supaya tidak dianggap spam oleh WhatsApp dan
-// device Fonnte tidak diblokir).
+// Kirim slip gaji otomatis ke SEMUA karyawan yang punya nomor WA dalam lingkup perusahaan aktif
 async function kirimSemuaSlipOtomatis() {
-  const target = KARYAWAN.filter((k) => k.nomor_wa);
-  if (target.length === 0) return showToast("Tidak ada karyawan dengan nomor WhatsApp.", "info");
+  const target = getFilteredKaryawan().filter((k) => k.nomor_wa);
+  if (target.length === 0) return showToast("Tidak ada karyawan dengan nomor WhatsApp pada lingkup aktif.", "info");
 
-  if (!confirm(`Kirim slip gaji otomatis ke ${target.length} karyawan via WhatsApp sekarang?`)) return;
+  const entitasLabel = ACTIVE_COMPANY === "ALL" ? "Semua Perusahaan" : ACTIVE_COMPANY;
+  if (!confirm(`Kirim slip gaji otomatis ke ${target.length} karyawan (${entitasLabel}) via WhatsApp sekarang?`)) return;
 
   showLoading(true);
   let sukses = 0;
@@ -1567,19 +1712,18 @@ async function kirimSemuaSlipOtomatis() {
   const ringkasan = `Selesai: ${sukses}/${target.length} terkirim${gagalList.length ? `, ${gagalList.length} gagal` : ""}.`;
   showToast(ringkasan, gagalList.length ? "warning" : "success");
   if (gagalList.length) console.warn("Gagal kirim slip ke:", gagalList);
-  logAudit("Kirim Semua Slip Otomatis", `${sukses} sukses, ${gagalList.length} gagal dari ${target.length} karyawan`);
+  logAudit("Kirim Semua Slip Otomatis", `${sukses} sukses, ${gagalList.length} gagal dari ${target.length} karyawan (${entitasLabel})`);
 }
 
-// Cari karyawan berdasarkan "nomor" (NIK KBI, mis. KBI-108647 / 108647) atau
-// nomor WhatsApp, lalu kirim slip gaji otomatis via Fonnte. Dipakai oleh
-// kolom pencarian di tab Karyawan (lihat admin.html).
+// Cari karyawan berdasarkan NIK atau WA dalam lingkup perusahaan aktif
 function cariDanKirimSlip() {
   const inputEl = document.getElementById("inputCariNomorSlip");
   const raw = (inputEl?.value || "").trim();
   if (!raw) return showToast("Masukkan nomor karyawan (NIK) atau nomor WhatsApp.", "info");
 
+  const filteredK = getFilteredKaryawan();
   const normalizedDigits = raw.replace(/\D/g, "");
-  const cocok = KARYAWAN.filter((k) => {
+  const cocok = filteredK.filter((k) => {
     const nik = (k.nik || "").toUpperCase();
     const waDigits = (k.nomor_wa || "").replace(/\D/g, "");
     return (
@@ -1588,7 +1732,7 @@ function cariDanKirimSlip() {
     );
   });
 
-  if (cocok.length === 0) return showToast(`Karyawan dengan nomor "${raw}" tidak ditemukan.`, "error");
+  if (cocok.length === 0) return showToast(`Karyawan dengan nomor "${raw}" tidak ditemukan di ${ACTIVE_COMPANY === 'ALL' ? 'database' : ACTIVE_COMPANY}.`, "error");
   if (cocok.length > 1) return showToast(`Ditemukan ${cocok.length} karyawan cocok, perjelas nomornya.`, "info");
 
   kirimSlipOtomatis(cocok[0]);
@@ -1648,14 +1792,14 @@ function notifikasiCEOPayroll(deptFilter = "ALL") {
   let rincianKaryawan = "";
   let count = 0;
 
-  // Filter Karyawan berdasarkan Departemen
+  const baseKar = getFilteredKaryawan();
   const filteredKar = deptFilter === "ALL"
-    ? KARYAWAN
-    : KARYAWAN.filter(k => k.dept.toUpperCase() === deptFilter.toUpperCase());
+    ? baseKar
+    : baseKar.filter(k => k.dept.toUpperCase() === deptFilter.toUpperCase());
 
   if (filteredKar.length === 0) return showToast(`Tidak ada data karyawan ${deptFilter} untuk periode ini.`, "info");
 
-  filteredKar.forEach((k, index) => {
+  filteredKar.forEach((k) => {
     const d = hitungDetailGaji(k.gaji, k.nama);
     const isApproved = k.is_incentive_approved === true;
     const insentifVal = isApproved ? (parseFloat(k.incentive_approved_val) || 0) : 0;
@@ -1663,7 +1807,7 @@ function notifikasiCEOPayroll(deptFilter = "ALL") {
     totalTHP += d.thp;
     count++;
 
-    rincianKaryawan += `${count}. *${k.nama}* (${k.dept})\n`;
+    rincianKaryawan += `${count}. *${k.nama}* (${k.dept} - ${getCompanyOfKaryawan(k)})\n`;
     rincianKaryawan += `   - GAJI POKOK: Rp ${Math.floor(d.gapok).toLocaleString('id-ID')}\n`;
     rincianKaryawan += `   - PINJAMAN KANTOR: Rp ${Math.floor(d.pinjaman).toLocaleString('id-ID')}\n`;
     rincianKaryawan += `   - HKE (${d.hadir} hari): Rp ${Math.floor(d.uangHKE).toLocaleString('id-ID')}\n`;
@@ -1673,8 +1817,9 @@ function notifikasiCEOPayroll(deptFilter = "ALL") {
     rincianKaryawan += `   - *Total THP: Rp ${Math.floor(d.thp).toLocaleString('id-ID')}*\n\n`;
   });
 
+  const entitasTitle = ACTIVE_COMPANY === "ALL" ? "HOLDING (MULTI-COMPANY)" : ACTIVE_COMPANY.toUpperCase();
   let pesan = `*LAPORAN REKAP PAYROLL - ${deptFilter.toUpperCase()}*\n`;
-  pesan += `PT. KOLA BORASI INDONESIA\n`;
+  pesan += `${entitasTitle}\n`;
   pesan += `Periode: ${periodeTampil}\n`;
   pesan += `----------------------------------\n\n`;
   pesan += `*DETAIL PER KARYAWAN:*\n`;
@@ -1682,12 +1827,12 @@ function notifikasiCEOPayroll(deptFilter = "ALL") {
   pesan += `----------------------------------\n`;
   pesan += `*TOTAL ESTIMASI DANA: Rp ${Math.floor(totalTHP).toLocaleString('id-ID')}*\n`;
   pesan += `----------------------------------\n`;
-  pesan += `_Laporan disesuaikan dengan departemen ${deptFilter}_.\n\n`;
+  pesan += `_Laporan disesuaikan dengan entitas ${entitasTitle} & departemen ${deptFilter}_.\n\n`;
   pesan += `Review Detail: ${window.location.href}`;
 
   const url = `https://wa.me/${CEO_PHONE}?text=${encodeURIComponent(pesan)}`;
   window.open(url, '_blank');
-  logAudit(`Notif CEO ${deptFilter}`, `Mengirim rekap payroll ${deptFilter} periode ${periodeTampil}`);
+  logAudit(`Notif CEO ${deptFilter}`, `Mengirim rekap payroll ${deptFilter} periode ${periodeTampil} (${entitasTitle})`);
 }
 function showModal() {
   document.getElementById("modalTitle").innerText = "Tambah Karyawan (Master Data)";
@@ -1709,6 +1854,20 @@ function showModal() {
   document.getElementById("inpDept").value = "OFFICE";
   document.getElementById("inpPtkp").value = "TK/0";
 
+  const inpPerusahaan = document.getElementById("inpPerusahaan");
+  if (inpPerusahaan) {
+    if (ACTIVE_COMPANY && ACTIVE_COMPANY !== "ALL") {
+      inpPerusahaan.value = ACTIVE_COMPANY;
+    } else {
+      inpPerusahaan.value = "PT. Kola Borasi Indonesia";
+    }
+    if (ADMIN_USER?.company_access && ADMIN_USER.company_access !== "ALL") {
+      inpPerusahaan.disabled = true;
+    } else {
+      inpPerusahaan.disabled = false;
+    }
+  }
+
   const inpFoto = document.getElementById("inpFoto");
   if (inpFoto) inpFoto.value = "";
   const previewFoto = document.getElementById("previewFotoKaryawan");
@@ -1728,6 +1887,7 @@ function previewFotoKaryawanInput(event) {
 
 async function simpanKaryawan() {
   const id = document.getElementById("editKaryawanId").value;
+  const targetPerusahaan = document.getElementById("inpPerusahaan")?.value || "PT. Kola Borasi Indonesia";
   const data = {
     nama: document.getElementById("inpNama").value.toUpperCase(),
     nik_ktp: document.getElementById("inpNikKtp").value,
@@ -1736,6 +1896,7 @@ async function simpanKaryawan() {
     jabatan: document.getElementById("inpJabatan").value.toUpperCase(),
     sisa_cuti: parseInt(document.getElementById("inpCuti").value) || 0,
     nik: document.getElementById("inpNikKbi").value,
+    perusahaan: targetPerusahaan,
     is_lembur: document.getElementById("inpIsLembur").value === "true",
     lembur_adj: parseFloat(document.getElementById("inpLemburAdj").value) || 0,
     pin: document.getElementById("inpPin").value,
@@ -1770,13 +1931,18 @@ async function simpanKaryawan() {
       const { error } = await supabaseClient.from("karyawan").update(data).eq("id", id);
       if (error) throw error;
       showToast("Data karyawan berhasil diperbarui", "success");
-      logAudit("Edit Karyawan", `Mengubah data karyawan: ${data.nama}`);
+      logAudit("Edit Karyawan", `Mengubah data karyawan: ${data.nama} (${data.perusahaan})`);
     } else {
-      if (!data.nik) data.nik = "KBI-" + Date.now().toString().slice(-6);
+      if (!data.nik) {
+        let prefix = "KBI-";
+        if (data.perusahaan === "PT. Fortune Reef Zona") prefix = "FRZ-";
+        else if (data.perusahaan === "Mitra Belanja") prefix = "MB-";
+        data.nik = prefix + Date.now().toString().slice(-6);
+      }
       const { error } = await supabaseClient.from("karyawan").insert([data]);
       if (error) throw error;
       showToast("Karyawan baru berhasil ditambahkan", "success");
-      logAudit("Tambah Karyawan", `Menambahkan karyawan baru: ${data.nama}`);
+      logAudit("Tambah Karyawan", `Menambahkan karyawan baru: ${data.nama} (${data.perusahaan})`);
     }
     hideModal();
     syncData();
@@ -1787,8 +1953,13 @@ async function simpanKaryawan() {
   }
 }
 
-function bukaModalEditKaryawan(index) {
-  const k = KARYAWAN[index];
+function bukaModalEditKaryawan(idOrIndex) {
+  let k;
+  if (typeof idOrIndex === "object" && idOrIndex !== null) {
+    k = idOrIndex;
+  } else if (typeof idOrIndex === "string" || typeof idOrIndex === "number") {
+    k = KARYAWAN.find(x => String(x.id) === String(idOrIndex)) || KARYAWAN[idOrIndex];
+  }
   if (!k) return;
 
   document.getElementById("modalTitle").innerText = "Edit Master Data: " + k.nama;
@@ -1815,6 +1986,16 @@ function bukaModalEditKaryawan(index) {
   document.getElementById("inpNpwp").value = k.npwp || "";
   document.getElementById("inpPinjaman").value = k.pinjaman || 0;
   document.getElementById("inpPph21").value = k.pph21 || 0;
+
+  const inpPerusahaan = document.getElementById("inpPerusahaan");
+  if (inpPerusahaan) {
+    inpPerusahaan.value = k.perusahaan || getCompanyOfKaryawan(k);
+    if (ADMIN_USER?.company_access && ADMIN_USER.company_access !== "ALL") {
+      inpPerusahaan.disabled = true;
+    } else {
+      inpPerusahaan.disabled = false;
+    }
+  }
 
   const inpFoto = document.getElementById("inpFoto");
   if (inpFoto) inpFoto.value = "";
@@ -2063,28 +2244,30 @@ function exportData() {
   const searchInputRaw = (document.getElementById("logSearchInput")?.value || "").trim();
   const searchKeyword = isLogTab ? searchInputRaw.toLowerCase() : "";
 
-  if (allLogs.length === 0) return alert("Belum ada data untuk di-export!");
+  const activeLogs = getFilteredLogs();
+  const activeKaryawan = getFilteredKaryawan();
+  if (activeLogs.length === 0 && activeKaryawan.length === 0) return alert("Belum ada data untuk di-export!");
 
   showLoading(true);
 
   // --- FILTER KARYAWAN UNTUK SHEET 1 (Rekap Gaji & Lembur) ---
-  let targetKaryawan = KARYAWAN;
+  let targetKaryawan = activeKaryawan;
   if (searchKeyword) {
-    targetKaryawan = KARYAWAN.filter(k => 
+    targetKaryawan = activeKaryawan.filter(k => 
       (k.nama || "").toLowerCase().includes(searchKeyword) ||
       (k.nik || "").toLowerCase().includes(searchKeyword)
     );
 
-    // Jika di master KARYAWAN tidak ditemukan, cari dari nama unik di logs
+    // Jika di master targetKaryawan tidak ditemukan, cari dari nama unik di logs
     if (targetKaryawan.length === 0) {
       const matchingLogNames = [...new Set(
-        allLogs
+        activeLogs
           .filter(l => (l.nama || "").toLowerCase().includes(searchKeyword))
           .map(l => (l.nama || "").trim())
       )];
       targetKaryawan = matchingLogNames.map(name => {
         const existingK = KARYAWAN.find(x => x.nama.trim().toLowerCase() === name.toLowerCase());
-        return existingK || { nama: name, nik: "-", jabatan: "-", dept: "-", gaji: 0 };
+        return existingK || { nama: name, nik: "-", jabatan: "-", dept: "-", gaji: 0, perusahaan: ACTIVE_COMPANY !== 'ALL' ? ACTIVE_COMPANY : '-' };
       });
     }
   }
@@ -2093,6 +2276,7 @@ function exportData() {
   const dataSummary = targetKaryawan.map(k => {
     const d = hitungDetailGaji(k.gaji || 0, k.nama, tglMulai, tglSelesai);
     return {
+      "PERUSAHAAN": getCompanyOfKaryawan(k),
       "NAMA KARYAWAN": k.nama,
       "NIK": k.nik || "-",
       "JABATAN/DEPT": k.jabatan || k.dept,
@@ -2109,11 +2293,11 @@ function exportData() {
   });
 
   // --- SHEET 2: DETAIL LOG ABSENSI (Filtered by Period & Search) ---
-  let filteredLogs = allLogs;
+  let filteredLogs = activeLogs;
   if (tglMulai && tglSelesai) {
     const start = new Date(tglMulai + "T00:00:00");
     const end = new Date(tglSelesai + "T23:59:59");
-    filteredLogs = allLogs.filter(l => {
+    filteredLogs = activeLogs.filter(l => {
       const w = new Date(l.waktu);
       return w >= start && w <= end;
     });
@@ -2157,12 +2341,14 @@ function exportData() {
       let jamLembur = 0;
       const statusUpper = l.status.toUpperCase();
 
+      // Cari data karyawan untuk cek apakah Admin & perusahaan
+      const karObj = KARYAWAN.find(x => (x.nama || '').trim().toLowerCase() === (l.nama || '').trim().toLowerCase());
+      const compName = karObj ? getCompanyOfKaryawan(karObj) : (ACTIVE_COMPANY !== 'ALL' ? ACTIVE_COMPANY : '-');
+
       if (statusUpper === 'MASUK' || statusUpper === 'BERANGKAT') {
         const actualMasuk = waktu;
         const thresholdMasuk = getWIBThreshold(actualMasuk, STANDAR_MASUK);
 
-        // Cari data karyawan untuk cek apakah Admin
-        const karObj = KARYAWAN.find(x => (x.nama || '').trim().toLowerCase() === (l.nama || '').trim().toLowerCase());
         const isAdminRole = karObj && (
           (karObj.jabatan || '').toUpperCase().includes('ADMIN') ||
           (karObj.dept || '').toUpperCase().includes('ADMIN')
@@ -2211,6 +2397,7 @@ function exportData() {
         }
 
         dataLogs.push({
+          "PERUSAHAAN": compName,
           "NAMA": l.nama,
           "TANGGAL SHIFT": getShiftDateStrExport(waktu),
           "WAKTU": waktu.toLocaleString("id-ID"),
@@ -2225,6 +2412,7 @@ function exportData() {
           const wp = new Date(lp.waktu);
           const lemburRow = (k === lastPulangIdx) ? lemburSoreVal : 0;
           dataLogs.push({
+            "PERUSAHAAN": compName,
             "NAMA": lp.nama,
             "TANGGAL SHIFT": getShiftDateStrExport(wp),
             "WAKTU": wp.toLocaleString("id-ID"),
@@ -2236,6 +2424,7 @@ function exportData() {
         i = j;
       } else {
         dataLogs.push({
+          "PERUSAHAAN": compName,
           "NAMA": l.nama,
           "TANGGAL SHIFT": getShiftDateStrExport(waktu),
           "WAKTU": waktu.toLocaleString("id-ID"),
@@ -2257,10 +2446,11 @@ function exportData() {
   XLSX.utils.book_append_sheet(wb, wsLogs, "Detail Log Absensi");
 
   const dateStr = new Date().toLocaleDateString("id-ID").replace(/\//g, "-");
+  const compSuffix = (ACTIVE_COMPANY && ACTIVE_COMPANY !== "ALL") ? `_${ACTIVE_COMPANY.replace(/[^a-zA-Z0-9]/g, '_')}` : "";
   const cleanNameSuffix = searchKeyword ? `_${searchInputRaw.toUpperCase().replace(/\s+/g, '_')}` : "";
-  let fileName = `Payroll_Report${cleanNameSuffix}_${dateStr}.xlsx`;
+  let fileName = `Payroll_Report${compSuffix}${cleanNameSuffix}_${dateStr}.xlsx`;
   if (tglMulai && tglSelesai) {
-    fileName = `Payroll_Report${cleanNameSuffix}_${tglMulai}_to_${tglSelesai}.xlsx`;
+    fileName = `Payroll_Report${compSuffix}${cleanNameSuffix}_${tglMulai}_to_${tglSelesai}.xlsx`;
   }
 
   XLSX.writeFile(wb, fileName);
@@ -2294,10 +2484,12 @@ async function hapusSatuLog(id) {
 }
 
 function exportMasterKaryawan() {
-  if (KARYAWAN.length === 0) return alert("Belum ada data karyawan!");
+  const targetKaryawan = getFilteredKaryawan();
+  if (targetKaryawan.length === 0) return alert("Belum ada data karyawan!");
 
-  const dataExcel = KARYAWAN.map(k => ({
-    "NIK KBI": k.nik || "-",
+  const dataExcel = targetKaryawan.map(k => ({
+    "PERUSAHAAN": getCompanyOfKaryawan(k),
+    "NIK": k.nik || "-",
     "NAMA LENGKAP": k.nama,
     "FOTO": k.foto_url || "-",
     "NIK KTP": k.nik_ktp || "-",
@@ -2318,7 +2510,7 @@ function exportMasterKaryawan() {
   // Jadikan kolom FOTO hyperlink yang bisa langsung diklik untuk lihat gambarnya
   const fotoColIndex = Object.keys(dataExcel[0] || {}).indexOf("FOTO");
   if (fotoColIndex >= 0) {
-    KARYAWAN.forEach((k, i) => {
+    targetKaryawan.forEach((k, i) => {
       if (k.foto_url) {
         const cellRef = XLSX.utils.encode_cell({ r: i + 1, c: fotoColIndex });
         if (ws[cellRef]) ws[cellRef].l = { Target: k.foto_url };
@@ -2329,7 +2521,8 @@ function exportMasterKaryawan() {
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Master Data Karyawan");
 
-  const fileName = `Master_Data_Karyawan_${new Date().toLocaleDateString("id-ID").replace(/\//g, "-")}.xlsx`;
+  const compSuffix = (ACTIVE_COMPANY && ACTIVE_COMPANY !== "ALL") ? `_${ACTIVE_COMPANY.replace(/[^a-zA-Z0-9]/g, '_')}` : "";
+  const fileName = `Master_Data_Karyawan${compSuffix}_${new Date().toLocaleDateString("id-ID").replace(/\//g, "-")}.xlsx`;
   XLSX.writeFile(wb, fileName);
 }
 
@@ -2451,7 +2644,8 @@ function toggleSidebar() {
 }
 
 async function cetakSemuaSlipJPG() {
-  if (KARYAWAN.length === 0) {
+  const targetKaryawan = getFilteredKaryawan();
+  if (targetKaryawan.length === 0) {
     if (typeof showToast === 'function') showToast("Tidak ada data karyawan.", "error");
     return;
   }
@@ -2477,9 +2671,10 @@ async function cetakSemuaSlipJPG() {
   document.body.appendChild(renderContainer);
 
   try {
-    for (let i = 0; i < KARYAWAN.length; i++) {
-      const k = KARYAWAN[i];
+    for (let i = 0; i < targetKaryawan.length; i++) {
+      const k = targetKaryawan[i];
       const d = hitungDetailGaji(k.gaji, k.nama);
+      const branding = getCompanyBranding(k);
 
       const slipHtml = `
         <div style="font-family: 'Outfit', sans-serif; color: #1e293b; background: white; padding: 40px; border: 1px solid #e2e8f0; position: relative;">
@@ -2487,10 +2682,10 @@ async function cetakSemuaSlipJPG() {
           
           <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 2px solid #1e293b; padding-bottom: 20px;">
             <div style="display: flex; align-items: center; gap: 15px;">
-              <img src="logokoboi.png" alt="Logo KBI" style="width: 50px; border-radius: 8px;">
+              <img src="${branding.logo}" alt="Logo" style="width: 50px; border-radius: 8px;">
               <div>
-                <h1 style="font-size: 1.2rem; font-weight: 800; margin-bottom: 4px;">PT. KOLA BORASI INDONESIA</h1>
-                <p style="font-size: 0.75rem; color: #64748b;">Human Resource Information System</p>
+                <h1 style="font-size: 1.2rem; font-weight: 800; margin-bottom: 4px;">${branding.name}</h1>
+                <p style="font-size: 0.75rem; color: #64748b;">${branding.address}</p>
               </div>
             </div>
             <div style="text-align: right;">
@@ -2535,7 +2730,7 @@ async function cetakSemuaSlipJPG() {
               <span style="font-size: 1.75rem; font-weight: 800;">Rp ${Math.floor(d.thp).toLocaleString('id-ID')}</span>
             </div>
             <div style="text-align: right; font-size: 0.75rem; font-style: italic; opacity: 0.8; max-width: 250px;">
-              "Semoga bermanfaat untuk keluarga. Terus berkarya bersama KOLA BORASI."
+              "Semoga bermanfaat untuk keluarga. Terus berkarya bersama ${branding.name}."
             </div>
           </section>
 
@@ -2548,7 +2743,7 @@ async function cetakSemuaSlipJPG() {
             <div style="text-align: center; width: 180px;">
               <p style="font-size: 0.7rem; font-weight: 700; color: #64748b; margin-bottom: 60px; text-transform: uppercase;">Disetujui Oleh,</p>
               <p style="font-size: 0.85rem; font-weight: 800; border-bottom: 1.5px solid #1e293b; padding-bottom: 3px;">Manajemen</p>
-              <p style="font-size: 0.65rem; color: #64748b; margin-top: 4px;">PT. Kola Borasi Indonesia</p>
+              <p style="font-size: 0.65rem; color: #64748b; margin-top: 4px;">${branding.name}</p>
             </div>
           </footer>
         </div>
@@ -2590,7 +2785,7 @@ async function cetakSemuaSlipJPG() {
 async function fetchLeaveRequests() {
   const { data: leaves, error } = await supabaseClient
     .from("leave_requests")
-    .select("*, karyawan(nama, sisa_cuti)")
+    .select("*, karyawan(id, nama, nik, sisa_cuti, perusahaan)")
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -2602,9 +2797,17 @@ async function fetchLeaveRequests() {
     return;
   }
 
+  const allowedEmpIds = (ACTIVE_COMPANY && ACTIVE_COMPANY !== "ALL")
+    ? new Set(getFilteredKaryawan().map(k => String(k.id)))
+    : null;
+
+  const filteredLeaves = allowedEmpIds
+    ? (leaves || []).filter(lv => allowedEmpIds.has(String(lv.employee_id)))
+    : (leaves || []);
+
   const body = document.getElementById("adminLeaveBody");
   let html = "";
-  for (const lv of leaves) {
+  for (const lv of filteredLeaves) {
     const statusClass = lv.status === "APPROVED" ? "badge-success" : (lv.status === "REJECTED" ? "badge-danger" : "badge-warning");
     const actions = lv.status === "PENDING" ? `
             <button class="btn btn-primary btn-small" onclick="processLeave('${lv.id}', 'APPROVED', '${lv.employee_id}')">Setujui</button>
@@ -2619,7 +2822,7 @@ async function fetchLeaveRequests() {
 
     html += `
             <tr>
-                <td><strong>${escapeHtml(lv.karyawan.nama)}</strong></td>
+                <td><strong>${escapeHtml(lv.karyawan?.nama || "-")}</strong></td>
                 <td>${escapeHtml(lv.type)}</td>
                 <td>${lv.start_date} s/d ${lv.end_date}</td>
                 <td>${escapeHtml(lv.reason)}</td>
@@ -2691,7 +2894,8 @@ async function processLeave(requestId, status, employeeId) {
 // --- PENILAIAN PERFORMA (ADMIN) ---
 function showReviewModal() {
   const sel = document.getElementById("revKaryawan");
-  sel.innerHTML = KARYAWAN.map(k => `<option value="${k.id}">${k.nama}</option>`).join("");
+  const targetKaryawan = getFilteredKaryawan();
+  sel.innerHTML = targetKaryawan.map(k => `<option value="${k.id}">${k.nama}</option>`).join("");
 
   // Trigger metrik update saat ganti karyawan
   sel.onchange = () => updateKpiMetrics();
@@ -2808,12 +3012,19 @@ async function loadKpiRollup(periodType) {
 
   const { data: snapshots } = await supabaseClient
     .from("kpi_snapshots")
-    .select("*, karyawan(nama)")
+    .select("*, karyawan(id, nama)")
     .eq("period_type", periodType)
     .eq("period_start", latestRow.period_start)
     .order("final_score", { ascending: false });
 
-  const rows = snapshots || [];
+  const allowedEmpIds = (ACTIVE_COMPANY && ACTIVE_COMPANY !== "ALL")
+    ? new Set(getFilteredKaryawan().map(k => String(k.id)))
+    : null;
+
+  const rows = allowedEmpIds
+    ? (snapshots || []).filter(r => allowedEmpIds.has(String(r.employee_id)))
+    : (snapshots || []);
+
   const avgScore = rows.length ? rows.reduce((sum, r) => sum + Number(r.final_score), 0) / rows.length : 0;
   const gradeCount = { A: 0, B: 0, C: 0 };
   rows.forEach((r) => { gradeCount[r.final_grade] = (gradeCount[r.final_grade] || 0) + 1; });
@@ -2863,15 +3074,23 @@ async function loadKpiRollup(periodType) {
 async function fetchReviews() {
   const { data: reviews, error } = await supabaseClient
     .from("performance_reviews")
-    .select("*, karyawan(nama)")
+    .select("*, karyawan(id, nama)")
     .order("id", { ascending: false });
 
   if (error) return;
 
+  const allowedEmpIds = (ACTIVE_COMPANY && ACTIVE_COMPANY !== "ALL")
+    ? new Set(getFilteredKaryawan().map(k => String(k.id)))
+    : null;
+
+  const filteredReviews = allowedEmpIds
+    ? (reviews || []).filter(r => allowedEmpIds.has(String(r.employee_id)))
+    : (reviews || []);
+
   const body = document.getElementById("adminPerformanceBody");
-  body.innerHTML = reviews.map(r => `
+  body.innerHTML = filteredReviews.map(r => `
         <tr>
-            <td>${r.karyawan.nama}</td>
+            <td>${r.karyawan?.nama || "-"}</td>
             <td>${r.period}</td>
             <td>${r.attendance_score}</td>
             <td>${r.kpi_score}</td>
