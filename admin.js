@@ -2030,22 +2030,49 @@ function exportData() {
   let tglSelesai = document.getElementById("filterTglSelesai")?.value;
 
   const activeTab = document.querySelector('section:not([style*="display: none"])')?.id;
+  const isLogTab = activeTab === 'tabLog' || document.getElementById("tabLog")?.style.display !== 'none';
 
-  if (activeTab === 'tabLog') {
-    tglMulai = document.getElementById("logFilterTglMulai")?.value;
-    tglSelesai = document.getElementById("logFilterTglSelesai")?.value;
+  if (isLogTab) {
+    tglMulai = document.getElementById("logFilterTglMulai")?.value || tglMulai;
+    tglSelesai = document.getElementById("logFilterTglSelesai")?.value || tglSelesai;
   } else if (activeTab === 'tabDashboard') {
-    tglMulai = document.getElementById("kpiFilterTglMulai")?.value;
-    tglSelesai = document.getElementById("kpiFilterTglSelesai")?.value;
+    tglMulai = document.getElementById("kpiFilterTglMulai")?.value || tglMulai;
+    tglSelesai = document.getElementById("kpiFilterTglSelesai")?.value || tglSelesai;
   }
+
+  // Filter pencarian nama karyawan jika sedang berada di tab Log Absensi
+  const searchInputRaw = (document.getElementById("logSearchInput")?.value || "").trim();
+  const searchKeyword = isLogTab ? searchInputRaw.toLowerCase() : "";
 
   if (allLogs.length === 0) return alert("Belum ada data untuk di-export!");
 
   showLoading(true);
 
+  // --- FILTER KARYAWAN UNTUK SHEET 1 (Rekap Gaji & Lembur) ---
+  let targetKaryawan = KARYAWAN;
+  if (searchKeyword) {
+    targetKaryawan = KARYAWAN.filter(k => 
+      (k.nama || "").toLowerCase().includes(searchKeyword) ||
+      (k.nik || "").toLowerCase().includes(searchKeyword)
+    );
+
+    // Jika di master KARYAWAN tidak ditemukan, cari dari nama unik di logs
+    if (targetKaryawan.length === 0) {
+      const matchingLogNames = [...new Set(
+        allLogs
+          .filter(l => (l.nama || "").toLowerCase().includes(searchKeyword))
+          .map(l => (l.nama || "").trim())
+      )];
+      targetKaryawan = matchingLogNames.map(name => {
+        const existingK = KARYAWAN.find(x => x.nama.trim().toLowerCase() === name.toLowerCase());
+        return existingK || { nama: name, nik: "-", jabatan: "-", dept: "-", gaji: 0 };
+      });
+    }
+  }
+
   // --- SHEET 1: REKAP GAJI & LEMBUR (Summary per Employee) ---
-  const dataSummary = KARYAWAN.map(k => {
-    const d = hitungDetailGaji(k.gaji || 0, k.nama);
+  const dataSummary = targetKaryawan.map(k => {
+    const d = hitungDetailGaji(k.gaji || 0, k.nama, tglMulai, tglSelesai);
     return {
       "NAMA KARYAWAN": k.nama,
       "NIK": k.nik || "-",
@@ -2057,12 +2084,12 @@ function exportData() {
       "GAJI POKOK (RP)": k.gaji || 0,
       "INCENTIVE (RP)": d.incentive || 0,
       "INCENTIVE LUAR (RP)": d.incentiveLuar || 0,
-      "POTONGAN (RP)": Math.floor(d.totalPotongan || d.pinjaman),
+      "POTONGAN (RP)": Math.floor(d.totalPotongan || d.pinjaman || 0),
       "TOTAL GAJI BERSIH / THP (RP)": Math.floor(d.thp)
     };
   });
 
-  // --- SHEET 2: DETAIL LOG ABSENSI (Filtered by Period) ---
+  // --- SHEET 2: DETAIL LOG ABSENSI (Filtered by Period & Search) ---
   let filteredLogs = allLogs;
   if (tglMulai && tglSelesai) {
     const start = new Date(tglMulai + "T00:00:00");
@@ -2071,6 +2098,18 @@ function exportData() {
       const w = new Date(l.waktu);
       return w >= start && w <= end;
     });
+  }
+
+  // Filter pencarian nama karyawan pada Sheet 2
+  if (searchKeyword) {
+    filteredLogs = filteredLogs.filter(l => 
+      (l.nama || "").toLowerCase().includes(searchKeyword)
+    );
+  }
+
+  if (searchKeyword && filteredLogs.length === 0 && dataSummary.length === 0) {
+    showLoading(false);
+    return alert(`Tidak ditemukan data absensi untuk "${searchInputRaw}" pada periode ini!`);
   }
 
   const logGroups = {};
@@ -2165,15 +2204,20 @@ function exportData() {
   XLSX.utils.book_append_sheet(wb, wsLogs, "Detail Log Absensi");
 
   const dateStr = new Date().toLocaleDateString("id-ID").replace(/\//g, "-");
-  let fileName = `Payroll_Report_${dateStr}.xlsx`;
+  const cleanNameSuffix = searchKeyword ? `_${searchInputRaw.toUpperCase().replace(/\s+/g, '_')}` : "";
+  let fileName = `Payroll_Report${cleanNameSuffix}_${dateStr}.xlsx`;
   if (tglMulai && tglSelesai) {
-    fileName = `Payroll_Report_${tglMulai}_to_${tglSelesai}.xlsx`;
+    fileName = `Payroll_Report${cleanNameSuffix}_${tglMulai}_to_${tglSelesai}.xlsx`;
   }
 
   XLSX.writeFile(wb, fileName);
 
   showLoading(false);
-  showToast("Payroll Report Berhasil Diunduh", "success");
+  if (searchKeyword) {
+    showToast(`Data "${searchInputRaw.toUpperCase()}" Berhasil Diunduh (${filteredLogs.length} Log)`, "success");
+  } else {
+    showToast("Payroll Report Berhasil Diunduh", "success");
+  }
 }
 
 async function hapusSemuaLog() {
