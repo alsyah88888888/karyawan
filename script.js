@@ -19,7 +19,7 @@ let isNetworkValid = false;
 // Diperbarui dari kode Embed Google Maps (Iframe)
 const OFFICE_LAT = -6.487233033247547;
 const OFFICE_LNG = 106.8489703644372;
-const MAX_RADIUS_METERS = 50; // Jarak maksimal (50 meter)
+const MAX_RADIUS_METERS = 500; // Jarak maksimal diperluas menjadi 500 meter (toleransi drift GPS perangkat di dalam gedung/gudang)
 
 function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
   const R = 6371e3;
@@ -315,7 +315,7 @@ async function prosesAbsen(tipe) {
         throw new Error("Browser Anda tidak mendukung fitur GPS/Lokasi.");
       }
 
-      let lat, lng;
+      let lat, lng, accuracy = 0;
       try {
         const position = await new Promise((resolve, reject) => {
           navigator.geolocation.getCurrentPosition(resolve, reject, {
@@ -326,12 +326,15 @@ async function prosesAbsen(tipe) {
         });
         lat = position.coords.latitude;
         lng = position.coords.longitude;
+        accuracy = position.coords.accuracy || 0;
       } catch (err) {
         throw new Error("Izin lokasi (GPS) wajib diaktifkan & diizinkan di browser untuk absen!");
       }
 
       const jarak = getDistanceFromLatLonInMeters(lat, lng, OFFICE_LAT, OFFICE_LNG);
-      if (jarak > MAX_RADIUS_METERS) {
+      // Toleransi deviasi akurasi GPS HP di dalam ruangan/gudang
+      const jarakEfektif = Math.max(0, jarak - Math.min(accuracy, 150));
+      if (jarakEfektif > MAX_RADIUS_METERS) {
         throw new Error(`Anda berada di luar jangkauan kantor!\nJarak Anda: ${Math.round(jarak)} meter\n(Maksimal: ${MAX_RADIUS_METERS} meter)`);
       }
     }
