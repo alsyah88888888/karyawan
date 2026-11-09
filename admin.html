@@ -163,6 +163,15 @@
                         </div>
                     </div>
                     <div class="stat-card">
+                        <div class="stat-icon" style="background: #fef2f2; color: #dc2626;">
+                            <i data-lucide="user-x"></i>
+                        </div>
+                        <div>
+                            <div class="stat-val" id="statTidakMasuk">0</div>
+                            <div class="stat-label">Tidak Masuk Hari Ini</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
                         <div class="stat-icon" style="background: #fff7ed; color: #f59e0b;">
                             <i data-lucide="clock"></i>
                         </div>
@@ -348,10 +357,21 @@
                             </div>
                             
                             <div class="btn-group">
+                                <button class="btn btn-outline btn-small" onclick="setPeriodeLog('hari_ini')">Hari Ini</button>
                                 <button class="btn btn-outline btn-small" onclick="setPeriodeLog('ytd')">Jan s/d Sekarang</button>
                                 <button class="btn btn-outline btn-small" onclick="setPeriodeLog('ini')">Bulan Ini</button>
                                 <button class="btn btn-outline btn-small" onclick="setPeriodeLog('lalu')">Bulan Lalu</button>
                                 <button class="btn btn-outline btn-small" onclick="setPeriodeSemingguTerakhir(); syncData();">Seminggu</button>
+                            </div>
+
+                            <div style="display: flex; align-items: center; background: white; border-radius: 12px; padding: 4px 10px; border: 1px solid var(--border);">
+                                <label style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted); margin-right: 6px;">Status:</label>
+                                <select id="logFilterStatus" class="form-input" style="border:none; padding:4px 8px; font-size:0.8rem; font-weight:700;" onchange="renderLogTable()">
+                                    <option value="ALL">🔍 Semua Status</option>
+                                    <option value="TEPAT">✅ Tepat Waktu</option>
+                                    <option value="TELAT">⏰ Terlambat</option>
+                                    <option value="TIDAK_MASUK">❌ Tidak Masuk (Alpha / Belum Absen)</option>
+                                </select>
                             </div>
 
                             <div class="search-box" style="position: relative; display: flex; align-items: center; background: white; border-radius: 12px; padding: 0 12px; border: 1px solid var(--border); flex-grow: 1; max-width: 300px;">
@@ -378,25 +398,32 @@
 
                     <!-- LOG SUMMARY CARDS -->
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; padding: 0 2rem 1.5rem 2rem;">
-                        <div style="background: white; padding: 15px; border-radius: 16px; border: 1px solid var(--border); display: flex; align-items: center; gap: 12px;">
+                        <div style="background: white; padding: 15px; border-radius: 16px; border: 1px solid var(--border); display: flex; align-items: center; gap: 12px; cursor: pointer;" onclick="filterLogByCard('ALL')" title="Klik untuk menampilkan semua log">
                             <div style="background: #eef2ff; color: #4f46e5; width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center;"><i data-lucide="list"></i></div>
                             <div>
                                 <div style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Total Log</div>
                                 <div id="logStatTotal" style="font-size: 1.25rem; font-weight: 800; color: var(--sidebar-bg);">0</div>
                             </div>
                         </div>
-                        <div style="background: white; padding: 15px; border-radius: 16px; border: 1px solid var(--border); display: flex; align-items: center; gap: 12px;">
+                        <div style="background: white; padding: 15px; border-radius: 16px; border: 1px solid var(--border); display: flex; align-items: center; gap: 12px; cursor: pointer;" onclick="filterLogByCard('TEPAT')" title="Klik untuk menampilkan yang Tepat Waktu">
                             <div style="background: #f0fdf4; color: #16a34a; width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center;"><i data-lucide="check-circle"></i></div>
                             <div>
                                 <div style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Tepat Waktu</div>
                                 <div id="logStatTepat" style="font-size: 1.25rem; font-weight: 800; color: #16a34a;">0</div>
                             </div>
                         </div>
-                        <div style="background: white; padding: 15px; border-radius: 16px; border: 1px solid var(--border); display: flex; align-items: center; gap: 12px;">
-                            <div style="background: #fef2f2; color: #dc2626; width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center;"><i data-lucide="clock"></i></div>
+                        <div style="background: white; padding: 15px; border-radius: 16px; border: 1px solid var(--border); display: flex; align-items: center; gap: 12px; cursor: pointer;" onclick="filterLogByCard('TELAT')" title="Klik untuk menampilkan yang Terlambat">
+                            <div style="background: #fff7ed; color: #f59e0b; width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center;"><i data-lucide="clock"></i></div>
                             <div>
                                 <div style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Terlambat</div>
-                                <div id="logStatTelat" style="font-size: 1.25rem; font-weight: 800; color: #dc2626;">0</div>
+                                <div id="logStatTelat" style="font-size: 1.25rem; font-weight: 800; color: #f59e0b;">0</div>
+                            </div>
+                        </div>
+                        <div style="background: white; padding: 15px; border-radius: 16px; border: 1px solid var(--border); display: flex; align-items: center; gap: 12px; cursor: pointer;" onclick="filterLogByCard('TIDAK_MASUK')" title="Klik untuk menampilkan karyawan yang Tidak Masuk (Alpha / Belum Absen)">
+                            <div style="background: #fef2f2; color: #dc2626; width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center;"><i data-lucide="user-x"></i></div>
+                            <div>
+                                <div style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Tidak Masuk</div>
+                                <div id="logStatTidakMasuk" style="font-size: 1.25rem; font-weight: 800; color: #dc2626;">0</div>
                             </div>
                         </div>
                     </div>
@@ -1000,6 +1027,12 @@
                     <select id="editStatus" class="form-input">
                         <option value="MASUK">MASUK</option>
                         <option value="PULANG">PULANG</option>
+                        <option value="DINAS LUAR">DINAS LUAR</option>
+                        <option value="PULANG DINAS">PULANG DINAS</option>
+                        <option value="TIDAK MASUK (ALPHA)">TIDAK MASUK (ALPHA)</option>
+                        <option value="IZIN">IZIN</option>
+                        <option value="SAKIT">SAKIT</option>
+                        <option value="CUTI">CUTI</option>
                     </select>
                 </div>
                 <div class="form-group" style="margin-bottom: 1rem;">
@@ -1110,7 +1143,15 @@
                         <option value="PULANG">PULANG</option>
                         <option value="DINAS LUAR">DINAS LUAR</option>
                         <option value="PULANG DINAS">PULANG DINAS</option>
+                        <option value="TIDAK MASUK (ALPHA)">TIDAK MASUK (ALPHA)</option>
+                        <option value="IZIN">IZIN</option>
+                        <option value="SAKIT">SAKIT</option>
+                        <option value="CUTI">CUTI</option>
                     </select>
+                </div>
+                <div class="form-group" style="margin-top: 15px;">
+                    <label>Catatan / Keterangan (Opsional)</label>
+                    <input type="text" id="manLogKeterangan" class="form-input" placeholder="Alasan izin, sakit, cuti, atau catatan khusus">
                 </div>
                 <div style="margin-top:25px; display:flex; gap:10px;">
                     <button class="btn btn-primary" onclick="saveManualLog()" style="flex:2;">SIMPAN DATA</button>

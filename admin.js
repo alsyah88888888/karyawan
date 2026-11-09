@@ -558,6 +558,7 @@ function refreshUI() {
 function renderStats() {
   const manpowerEl = document.getElementById("statManpower");
   const hadirEl = document.getElementById("statHadir");
+  const tidakMasukEl = document.getElementById("statTidakMasuk");
   const terlambatEl = document.getElementById("statTerlambat");
   const avgAttEl = document.getElementById("statAvgAttendance");
 
@@ -571,8 +572,10 @@ function renderStats() {
 
   const uniqueHadir = [...new Set(logsToday.filter(l => isMasukStatus(l.status)).map(l => l.nama))].length;
   const totalTelat = logsToday.filter(l => isMasukStatus(l.status) && (l.isLate === true || l.isLate === "true")).length;
+  const totalTidakMasuk = Math.max(0, filteredK.length - uniqueHadir);
 
   if (hadirEl) hadirEl.innerText = uniqueHadir;
+  if (tidakMasukEl) tidakMasukEl.innerText = totalTidakMasuk;
   if (terlambatEl) terlambatEl.innerText = totalTelat;
 
   // Rata-rata Kehadiran Perusahaan Periode Ini
@@ -875,13 +878,15 @@ function toggleSidebar() { document.getElementById("sidebar").classList.toggle("
 function renderLogTable() {
   const body = document.getElementById("logTableBody");
   const searchInput = document.getElementById("logSearchInput")?.value.toLowerCase() || "";
+  const statusFilter = document.getElementById("logFilterStatus")?.value || "ALL";
   if (!body) return;
 
   let htmlRows = "";
   const fLogs = getFilteredLogs();
-  // Filter logs berdasarkan input pencarian
+  const targetKaryawan = getFilteredKaryawan();
+
+  // Filter logs berdasarkan input pencarian nama
   const filteredLogs = fLogs.filter(l => (l.nama || '').toLowerCase().includes(searchInput));
-  const displayLogs = filteredLogs.slice(0, 200);
 
   let total = 0;
   let tepat = 0;
@@ -889,13 +894,102 @@ function renderLogTable() {
 
   filteredLogs.forEach((l) => {
     total++;
-    const isLate = l.isLate === true || l.isLate === "true";
-    if (isLate) telat++; else tepat++;
+    const isLate = l.isLate === true || l.isLate === "true" || l.is_late === true;
+    const isMasuk = isMasukStatus(l.status);
+    if (isMasuk) {
+      if (isLate) telat++; else tepat++;
+    }
   });
 
+  // Tentukan karyawan yang belum absen (Tidak Masuk)
+  const tglMulai = document.getElementById("logFilterTglMulai")?.value;
+  const todayStr = toLocalISO(new Date()).split('T')[0];
+  const activeDate = tglMulai || todayStr;
+
+  const hadirNames = new Set(
+    fLogs
+      .filter(l => isMasukStatus(l.status))
+      .map(l => (l.nama || "").trim().toLowerCase())
+  );
+
+  const absentEmployees = targetKaryawan.filter(k => 
+    !hadirNames.has((k.nama || "").trim().toLowerCase()) &&
+    (!searchInput || (k.nama || "").toLowerCase().includes(searchInput))
+  );
+
+  const totalTidakMasuk = absentEmployees.length;
+
+  // Update Summary Cards
+  const totalEl = document.getElementById("logStatTotal");
+  const tepatEl = document.getElementById("logStatTepat");
+  const telatEl = document.getElementById("logStatTelat");
+  const tidakMasukEl = document.getElementById("logStatTidakMasuk");
+  if (totalEl) totalEl.innerText = total;
+  if (tepatEl) tepatEl.innerText = tepat;
+  if (telatEl) telatEl.innerText = telat;
+  if (tidakMasukEl) tidakMasukEl.innerText = totalTidakMasuk;
+
+  // Filter log yang akan ditampilkan ke tabel sesuai dropdown Status
+  let logsToRender = filteredLogs;
+  if (statusFilter === "TEPAT") {
+    logsToRender = filteredLogs.filter(l => isMasukStatus(l.status) && !(l.isLate === true || l.isLate === "true" || l.is_late === true));
+  } else if (statusFilter === "TELAT") {
+    logsToRender = filteredLogs.filter(l => (l.isLate === true || l.isLate === "true" || l.is_late === true));
+  } else if (statusFilter === "TIDAK_MASUK") {
+    logsToRender = filteredLogs.filter(l => {
+      const s = (l.status || "").toUpperCase();
+      return s.includes("TIDAK MASUK") || s.includes("ALPHA") || s.includes("IZIN") || s.includes("SAKIT") || s.includes("CUTI");
+    });
+  }
+
+  const displayLogs = logsToRender.slice(0, 200);
+
+  // Jika status filter TIDAK_MASUK, sertakan karyawan yang belum absen sama sekali
+  if (statusFilter === "TIDAK_MASUK") {
+    absentEmployees.forEach((k) => {
+      const initials = (k.nama || "").split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase();
+      const compName = getCompanyOfKaryawan(k);
+      htmlRows += `
+        <tr class="row-absent" style="background: #fff8f8;">
+          <td>
+            <div class="emp-info">
+              <div class="emp-avatar" style="background: #fee2e2; color: #dc2626; font-weight: 800;">${escapeHtml(initials)}</div>
+              <div>
+                <div style="font-weight: 700; color: #991b1b; font-size: 0.9rem;">${escapeHtml(k.nama)}</div>
+                <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500;">${escapeHtml(compName)} • ${escapeHtml(k.dept || "GENERAL")} • ${escapeHtml(k.jabatan || "-")}</div>
+              </div>
+            </div>
+          </td>
+          <td>
+            <div class="log-status-cell">
+              <span class="badge badge-danger">
+                <i data-lucide="user-x" style="width:12px; height:12px;"></i>
+                TIDAK MASUK (ALPHA)
+              </span>
+            </div>
+          </td>
+          <td>
+            <div class="log-time" style="color: #dc2626; font-weight: 700;">Belum Absen</div>
+            <div class="log-date">${escapeHtml(activeDate)}</div>
+          </td>
+          <td>
+            <div style="display:flex; align-items:center; gap:6px; color:#dc2626; font-size:0.75rem; font-weight:700;">
+              <i data-lucide="alert-triangle" style="width:14px; height:14px; flex-shrink:0;"></i> Belum ada rekaman absensi masuk
+            </div>
+            <div style="font-size:0.7rem; color:var(--text-muted); margin-top:2px;">Karyawan belum tap absen / Alpha untuk shift ini</div>
+          </td>
+          <td>
+            <button class="btn btn-primary btn-small" style="padding: 5px 12px; font-size: 0.75rem; background: #dc2626; border-color: #dc2626;" onclick="bukaInputManualKaryawan('${escapeHtml(k.nama)}', '${activeDate}')">
+              <i data-lucide="plus-circle" style="width:13px; height:13px; vertical-align:middle; margin-right:3px;"></i> Catat
+            </button>
+          </td>
+        </tr>`;
+    });
+  }
+
   displayLogs.forEach((l) => {
-    const isLate = l.isLate === true || l.isLate === "true";
-    const s = l.status.toUpperCase();
+    const isLate = l.isLate === true || l.isLate === "true" || l.is_late === true;
+    const s = (l.status || "").toUpperCase();
     let badgeClass = "badge-masuk";
     let icon = "log-in";
 
@@ -905,16 +999,22 @@ function renderLogTable() {
     } else if (s.includes("DINAS")) {
       badgeClass = "badge-dinas";
       icon = "briefcase";
+    } else if (s.includes("TIDAK MASUK") || s.includes("ALPHA")) {
+      badgeClass = "badge-danger";
+      icon = "user-x";
+    } else if (s.includes("IZIN") || s.includes("SAKIT") || s.includes("CUTI")) {
+      badgeClass = "badge-warning";
+      icon = "file-text";
     }
 
     const tgl = new Date(l.waktu);
-    const initials = l.nama.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase();
+    const initials = (l.nama || "").split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase();
     const lateInfo = hitungDetailKeterlambatan(l);
     const isMasuk = isMasukStatus(l.status);
 
     let displayStatus = l.status;
     let gpsLink = "";
-    if (l.status.includes("[GPS:")) {
+    if (l.status && l.status.includes("[GPS:")) {
         const gpsMatch = l.status.match(/\[GPS:\s*([^\]]+)\]/);
         if (gpsMatch) {
             const coords = gpsMatch[1];
@@ -923,8 +1023,10 @@ function renderLogTable() {
         }
     }
 
+    const isNonMasukState = s.includes("TIDAK MASUK") || s.includes("ALPHA") || s.includes("IZIN") || s.includes("SAKIT") || s.includes("CUTI");
+
     htmlRows += `
-      <tr class="${lateInfo.isLate ? 'row-late' : ''}">
+      <tr class="${lateInfo.isLate ? 'row-late' : (isNonMasukState ? 'row-absent' : '')}">
         <td>
           <div class="emp-info">
             <div class="emp-avatar">${escapeHtml(initials)}</div>
@@ -948,7 +1050,21 @@ function renderLogTable() {
           <div class="log-date">${tgl.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</div>
         </td>
         <td>
-          ${lateInfo.isLate ? `
+          ${(s.includes("TIDAK MASUK") || s.includes("ALPHA")) ? `
+            <div style="display:flex; align-items:center; gap:6px; color:var(--danger); font-size:0.75rem; font-weight:800;">
+              <i data-lucide="user-x" style="width:14px; height:14px; flex-shrink:0;"></i> ${escapeHtml(lateInfo.ringkasan)}
+            </div>
+            <div style="font-size:0.72rem; color:#dc2626; font-weight:600; margin-top:3px; line-height:1.3;">
+              ${escapeHtml(lateInfo.detail)}
+            </div>
+          ` : (s.includes("IZIN") || s.includes("SAKIT") || s.includes("CUTI")) ? `
+            <div style="display:flex; align-items:center; gap:6px; color:#d97706; font-size:0.75rem; font-weight:800;">
+              <i data-lucide="file-text" style="width:14px; height:14px; flex-shrink:0;"></i> ${escapeHtml(lateInfo.ringkasan)}
+            </div>
+            <div style="font-size:0.72rem; color:#b45309; font-weight:600; margin-top:3px; line-height:1.3;">
+              ${escapeHtml(lateInfo.detail)}
+            </div>
+          ` : lateInfo.isLate ? `
             <div style="display:flex; align-items:center; gap:6px; color:var(--danger); font-size:0.75rem; font-weight:800;">
               <i data-lucide="alert-circle" style="width:14px; height:14px; flex-shrink:0;"></i> ${escapeHtml(lateInfo.ringkasan)}
             </div>
@@ -982,21 +1098,39 @@ function renderLogTable() {
       </tr>`;
   });
 
-  // Update Summary Cards
-  const totalEl = document.getElementById("logStatTotal");
-  const tepatEl = document.getElementById("logStatTepat");
-  const telatEl = document.getElementById("logStatTelat");
-  if (totalEl) totalEl.innerText = total;
-  if (tepatEl) tepatEl.innerText = tepat;
-  if (telatEl) telatEl.innerText = telat;
-
-  if (filteredLogs.length === 0) {
-    body.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:3rem; color:var(--text-muted);">Tidak ada log absensi dalam periode ini.</td></tr>';
+  if (!htmlRows) {
+    if (statusFilter === "TIDAK_MASUK") {
+      body.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:3rem; color:#16a34a; font-weight:700;"><i data-lucide="check-circle" style="width:20px; height:20px; vertical-align:middle; margin-right:6px;"></i> Seluruh karyawan telah hadir / tidak ada yang berstatus Alpha.</td></tr>';
+    } else {
+      body.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:3rem; color:var(--text-muted);">Tidak ada log absensi dalam periode ini.</td></tr>';
+    }
   } else {
     body.innerHTML = htmlRows;
   }
 
   if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+function filterLogByCard(status) {
+  const sel = document.getElementById("logFilterStatus");
+  if (sel) {
+    sel.value = status;
+  }
+  renderLogTable();
+}
+
+function bukaInputManualKaryawan(nama, tglStr) {
+  showManualLogModal();
+  if (nama) {
+    const sel = document.getElementById("manLogNama");
+    if (sel) sel.value = nama;
+  }
+  if (tglStr) {
+    const tglEl = document.getElementById("manLogTgl");
+    if (tglEl) tglEl.value = tglStr;
+  }
+  const statusEl = document.getElementById("manLogStatus");
+  if (statusEl) statusEl.value = "TIDAK MASUK (ALPHA)";
 }
 
 function renderKaryawanTable() {
@@ -1200,6 +1334,27 @@ function hitungDetailKeterlambatan(log) {
 
   const isLate = log.isLate === true || log.isLate === "true" || log.is_late === true;
   const statusUpper = (log.status || "").toUpperCase();
+
+  if (statusUpper.includes("TIDAK MASUK") || statusUpper.includes("ALPHA")) {
+    return {
+      isLate: false,
+      menitTelat: 0,
+      durasiStr: "-",
+      ringkasan: "TIDAK MASUK (ALPHA)",
+      detail: log.keterangan ? `Tidak Hadir / Alpha: ${log.keterangan}` : "Tidak hadir / belum ada rekaman absensi masuk"
+    };
+  }
+
+  if (statusUpper.includes("IZIN") || statusUpper.includes("SAKIT") || statusUpper.includes("CUTI")) {
+    return {
+      isLate: false,
+      menitTelat: 0,
+      durasiStr: "-",
+      ringkasan: statusUpper,
+      detail: log.keterangan ? `${statusUpper}: ${log.keterangan}` : `Status ${statusUpper}`
+    };
+  }
+
   const isMasukType = statusUpper.startsWith("MASUK") || statusUpper.startsWith("DINAS LUAR") || statusUpper.startsWith("BERANGKAT");
 
   if (!isMasukType) {
@@ -1923,7 +2078,10 @@ function cariDanKirimSlip() {
 // dari statistik kehadiran/keterlambatan padahal tetap dibayar hari itu.
 function isMasukStatus(status) {
   const s = (status || "").toUpperCase();
-  return s.startsWith("MASUK") || s.startsWith("DINAS LUAR");
+  if (s.includes("TIDAK MASUK") || s.includes("ALPHA") || s.includes("IZIN") || s.includes("SAKIT") || s.includes("CUTI") || s.includes("PULANG")) {
+    return false;
+  }
+  return s.startsWith("MASUK") || s.startsWith("DINAS LUAR") || s.startsWith("BERANGKAT");
 }
 
 function escapeHtml(str) {
@@ -2736,6 +2894,7 @@ async function jalankanTarikanExcel(customParams = {}) {
     const dataSummary = targetKaryawanList.map((k, idx) => {
       const d = hitungDetailGaji(k.gaji || 0, k.nama, tglMulai, tglSelesai, fetchedLogs);
       const persentaseHadir = totalHariKerja > 0 ? ((d.hadir / totalHariKerja) * 100).toFixed(1) + "%" : "0%";
+      const hariTidakMasuk = Math.max(0, totalHariKerja - (d.hadir || 0));
       return {
         "NO": idx + 1,
         "PERUSAHAAN": getCompanyOfKaryawan(k),
@@ -2747,6 +2906,7 @@ async function jalankanTarikanExcel(customParams = {}) {
         "PERIODE LAPORAN": `${tglMulai} s/d ${tglSelesai}`,
         "HARI KERJA EFEKTIF": totalHariKerja,
         "HARI HADIR": d.hadir,
+        "HARI TIDAK MASUK (ALPHA)": hariTidakMasuk,
         "% KEHADIRAN": persentaseHadir,
         "TOTAL JAM KERJA (JAM)": d.totalJamKerja || 0,
         "HARI TERLAMBAT": d.telat || 0,
@@ -2906,6 +3066,21 @@ async function jalankanTarikanExcel(customParams = {}) {
         } else {
           const lateInfo = hitungDetailKeterlambatan(l);
           const tarifLemburKaryawan = getTarifLemburKaryawan(karObj);
+          const sUpper = (l.status || "").toUpperCase();
+          let statusKehadiran = "-";
+          let terlambatStr = "-";
+
+          if (sUpper.includes("TIDAK MASUK") || sUpper.includes("ALPHA")) {
+            statusKehadiran = "TIDAK MASUK (ALPHA)";
+            terlambatStr = "TIDAK";
+          } else if (sUpper.includes("IZIN") || sUpper.includes("SAKIT") || sUpper.includes("CUTI")) {
+            statusKehadiran = sUpper;
+            terlambatStr = "TIDAK";
+          } else if (isMasukStatus(l.status)) {
+            statusKehadiran = lateInfo.isLate ? "TERLAMBAT" : "TEPAT WAKTU";
+            terlambatStr = lateInfo.isLate ? "YA" : "TIDAK";
+          }
+
           dataLogs.push({
             "NO": logSeq++,
             "PERUSAHAAN": compName,
@@ -2917,8 +3092,8 @@ async function jalankanTarikanExcel(customParams = {}) {
             "HARI": getHariIndonesia(waktu),
             "WAKTU ABSEN": waktu.toLocaleString("id-ID"),
             "STATUS ABSEN": l.status,
-            "STATUS KEHADIRAN": lateInfo.isLate ? "TERLAMBAT" : (isMasukStatus(l.status) ? "TEPAT WAKTU" : "-"),
-            "TERLAMBAT": lateInfo.isLate ? "YA" : (isMasukStatus(l.status) ? "TIDAK" : "-"),
+            "STATUS KEHADIRAN": statusKehadiran,
+            "TERLAMBAT": terlambatStr,
             "MENIT TERLAMBAT": lateInfo.isLate ? lateInfo.menitTelat : 0,
             "KETERANGAN KETERLAMBATAN": lateInfo.detail,
             "JAM LEMBUR (JAM)": 0,
@@ -2968,6 +3143,9 @@ async function jalankanTarikanExcel(customParams = {}) {
     });
 
     // --- SHEET 4: TIMESHEET MATRIKS KEHADIRAN (1 s/d 31) ---
+    const [startYearNum, startMonthNum] = tglMulai.split("-").map(Number);
+    const todayDateOnly = toLocalISO(new Date()).split("T")[0];
+
     const dataTimesheet = targetKaryawanList.map(k => {
       const row = {
         "PERUSAHAAN": getCompanyOfKaryawan(k),
@@ -2985,19 +3163,53 @@ async function jalankanTarikanExcel(customParams = {}) {
           })
       );
 
-      for (let day = 1; day <= 31; day++) {
-        row[`TGL_${String(day).padStart(2, "0")}`] = "-";
-      }
-
-      presentDays.forEach(pDate => {
-        const parts = pDate.split("-");
-        if (parts.length === 3) {
-          const dNum = parseInt(parts[2], 10);
-          if (dNum >= 1 && dNum <= 31) {
-            row[`TGL_${String(dNum).padStart(2, "0")}`] = "H";
-          }
+      const leaveDays = {};
+      userLogs.forEach(l => {
+        const s = (l.status || "").toUpperCase();
+        if (s.includes("IZIN") || s.includes("SAKIT") || s.includes("CUTI")) {
+          const d = new Date(new Date(l.waktu).getTime() - 4 * 3600000);
+          const dStr = toLocalISO(d).split("T")[0];
+          leaveDays[dStr] = s.includes("SAKIT") ? "S" : (s.includes("IZIN") ? "I" : "C");
         }
       });
+
+      let countHadir = 0;
+      let countAlpha = 0;
+      let countLibur = 0;
+
+      for (let day = 1; day <= 31; day++) {
+        const dayStr = String(day).padStart(2, "0");
+        const monthStr = String(startMonthNum || (now.getMonth() + 1)).padStart(2, "0");
+        const curYearStr = String(startYearNum || year);
+        const curDateStr = `${curYearStr}-${monthStr}-${dayStr}`;
+
+        const dateObj = new Date(Number(curYearStr), Number(monthStr) - 1, day);
+        if (dateObj.getMonth() !== (Number(monthStr) - 1)) {
+          row[`TGL_${dayStr}`] = "";
+          continue;
+        }
+
+        const isSunday = dateObj.getDay() === 0;
+
+        if (presentDays.has(curDateStr)) {
+          row[`TGL_${dayStr}`] = "H";
+          countHadir++;
+        } else if (leaveDays[curDateStr]) {
+          row[`TGL_${dayStr}`] = leaveDays[curDateStr];
+        } else if (isSunday) {
+          row[`TGL_${dayStr}`] = "L";
+          countLibur++;
+        } else if (curDateStr <= todayDateOnly) {
+          row[`TGL_${dayStr}`] = "A";
+          countAlpha++;
+        } else {
+          row[`TGL_${dayStr}`] = "-";
+        }
+      }
+
+      row["TOTAL HADIR (H)"] = countHadir;
+      row["TOTAL TIDAK MASUK (A)"] = countAlpha;
+      row["TOTAL LIBUR (L)"] = countLibur;
 
       return row;
     });
@@ -3149,7 +3361,11 @@ function setPeriodeLog(mode = 'ini') {
   let startStr = "";
   let endStr = "";
 
-  if (mode === "ytd" || mode === "jan") {
+  if (mode === "hari_ini") {
+    // Hari ini saja
+    startStr = toLocalISO(now).split("T")[0];
+    endStr = startStr;
+  } else if (mode === "ytd" || mode === "jan") {
     // 1 Januari tahun berjalan s/d hari ini
     startStr = `${year}-01-01`;
     endStr = toLocalISO(now).split("T")[0];
@@ -3888,17 +4104,20 @@ function exportAIReportPDF() {
 }
 
 
-// --- MANUAL LOG (LUPA ABSEN) ---
+// --- MANUAL LOG (LUPA ABSEN / STATUS TIDAK MASUK) ---
 function showManualLogModal() {
   const sel = document.getElementById("manLogNama");
   if (sel) {
-    sel.innerHTML = KARYAWAN.map(k => `<option value="${k.nama}">${k.nama}</option>`).join("");
+    const list = getFilteredKaryawan().length > 0 ? getFilteredKaryawan() : KARYAWAN;
+    sel.innerHTML = list.map(k => `<option value="${escapeHtml(k.nama)}">${escapeHtml(k.nama)} (${escapeHtml(getCompanyOfKaryawan(k))})</option>`).join("");
   }
 
   // Set default date & time to now
   const now = new Date();
-  document.getElementById("manLogTgl").value = now.toISOString().split('T')[0];
+  document.getElementById("manLogTgl").value = toLocalISO(now).split('T')[0];
   document.getElementById("manLogJam").value = now.toTimeString().split(' ')[0].substring(0, 5);
+  const ketEl = document.getElementById("manLogKeterangan");
+  if (ketEl) ketEl.value = "";
 
   document.getElementById("modalManualLog").style.display = "flex";
   if (typeof lucide !== 'undefined') lucide.createIcons();
@@ -3909,16 +4128,25 @@ function closeManualLogModal() {
 }
 
 async function saveManualLog() {
-  const nama = document.getElementById("manLogNama").value;
-  const tgl = document.getElementById("manLogTgl").value;
-  const jam = document.getElementById("manLogJam").value;
-  const status = document.getElementById("manLogStatus").value;
+  const nama = document.getElementById("manLogNama")?.value;
+  const tgl = document.getElementById("manLogTgl")?.value;
+  const jam = document.getElementById("manLogJam")?.value || "09:00";
+  const status = document.getElementById("manLogStatus")?.value || "MASUK";
+  const keterangan = document.getElementById("manLogKeterangan")?.value?.trim() || null;
 
-  if (!nama || !tgl || !jam) return alert("Harap isi semua data!");
+  if (!nama || !tgl) return alert("Harap lengkapi nama dan tanggal!");
 
   const localDate = new Date(`${tgl}T${jam}:00`);
   const isoWaktu = toLocalISO(localDate);
   const info = KARYAWAN.find(k => k.nama === nama);
+
+  const statusUpper = status.toUpperCase();
+  let isLate = false;
+  if (statusUpper.startsWith("MASUK") || statusUpper.startsWith("DINAS LUAR") || statusUpper.startsWith("BERANGKAT")) {
+    const hh = localDate.getHours();
+    const mm = localDate.getMinutes();
+    if (hh > STANDAR_MASUK || (hh === STANDAR_MASUK && mm > TOLERANSI_MASUK_MENIT)) isLate = true;
+  }
 
   showLoading(true);
   try {
@@ -3927,14 +4155,17 @@ async function saveManualLog() {
       dept: info ? info.dept : "-",
       waktu: isoWaktu,
       status: status,
-      foto: null, // Manual input has no photo
-      isLate: false // Manual input assumed regular or handled by admin
+      foto: null,
+      isLate: isLate,
+      keterangan: keterangan
     }]);
 
     if (error) throw error;
 
-    if (typeof showToast === 'function') showToast("Presensi manual berhasil disimpan!", "success");
+    if (typeof showToast === 'function') showToast("Presensi / status manual berhasil disimpan!", "success");
     closeManualLogModal();
+    const ketEl = document.getElementById("manLogKeterangan");
+    if (ketEl) ketEl.value = "";
     await syncData(); // Refresh all data
   } catch (err) {
     alert("Gagal menyimpan data: " + err.message);
