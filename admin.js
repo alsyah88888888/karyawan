@@ -35,6 +35,17 @@ function updateCompanyUI() {
     compSelect.value = ACTIVE_COMPANY;
   }
 
+  const expComp = document.getElementById("exportSelectCompany");
+  if (expComp) {
+    if (ADMIN_USER?.company_access && ADMIN_USER.company_access !== "ALL") {
+      expComp.value = ADMIN_USER.company_access;
+      expComp.disabled = true;
+    } else {
+      expComp.value = ACTIVE_COMPANY;
+      expComp.disabled = false;
+    }
+  }
+
   const badge = document.getElementById("sidebarCompanyBadge");
   if (badge) {
     if (ACTIVE_COMPANY === "PT. Kola Borasi Indonesia") {
@@ -474,6 +485,15 @@ async function syncData() {
     document.getElementById("logFilterTglMulai").value = start.toISOString().split('T')[0];
     document.getElementById("logFilterTglSelesai").value = end.toISOString().split('T')[0];
   }
+
+  // Inisialisasi default filter ekspor (Januari s/d Sekarang)
+  const nowYear = new Date().getFullYear();
+  const todayDateStr = toLocalISO(new Date()).split('T')[0];
+  const expMulaiEl = document.getElementById("exportTglMulai");
+  const expSelesaiEl = document.getElementById("exportTglSelesai");
+  if (expMulaiEl && !expMulaiEl.value) expMulaiEl.value = `${nowYear}-01-01`;
+  if (expSelesaiEl && !expSelesaiEl.value) expSelesaiEl.value = todayDateStr;
+
   // Set default tab to dashboard if none active
   if (!document.querySelector(".nav-link.active")) switchTab('tabDashboard');
 
@@ -493,26 +513,21 @@ async function syncData() {
     const tglSelesai = isLogTab 
       ? document.getElementById("logFilterTglSelesai")?.value 
       : document.getElementById("filterTglSelesai")?.value;
-    
-    let queryAllLog = supabaseClient.from("logs").select("id, nama, dept, waktu, status, isLate");
 
-    // Jika ada filter tanggal, gunakan filter di level Database (Supabase)
     if (tglMulai && tglSelesai) {
       const todayStr = toLocalISO(new Date()).split('T')[0];
       const tglSelesaiEfektif = tglSelesai < todayStr ? todayStr : tglSelesai;
-      queryAllLog = queryAllLog
-        .gte("waktu", `${tglMulai}T00:00:00`)
-        .lte("waktu", `${tglSelesaiEfektif}T23:59:59`);
+
+      // Ambil seluruh log dengan batch pagination agar tidak terpotong 1.000 limit Supabase
+      const fetched = await fetchAllLogsInRange(tglMulai, tglSelesaiEfektif);
+      allLogs = fetched.sort((a, b) => new Date(b.waktu) - new Date(a.waktu));
     } else {
       // Fallback: Ambil data 30 hari terakhir
       const now = new Date();
       const thirtyDaysAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
-      queryAllLog = queryAllLog.gte("waktu", toLocalISO(thirtyDaysAgo));
+      const fetched = await fetchAllLogsInRange(toLocalISO(thirtyDaysAgo).split('T')[0], toLocalISO(now).split('T')[0]);
+      allLogs = fetched.sort((a, b) => new Date(b.waktu) - new Date(a.waktu));
     }
-
-    const { data: dataAllLog, error: errA } = await queryAllLog.order("id", { ascending: false });
-    if (errA) throw errA;
-    allLogs = dataAllLog || [];
 
     // logs untuk tampilan tabel log
     logs = allLogs;
@@ -1092,7 +1107,7 @@ function hitungHariKerjaEfektif(startStr, endStr) {
   return count;
 }
 
-function hitungDetailGaji(gapok, namaKaryawan, customStart = null, customEnd = null) {
+function hitungDetailGaji(gapok, namaKaryawan, customStart = null, customEnd = null, customLogs = null) {
   const targetNama = namaKaryawan.trim().toLowerCase();
   const k = KARYAWAN.find(item => item.nama.trim().toLowerCase() === targetNama);
 
@@ -1110,7 +1125,8 @@ function hitungDetailGaji(gapok, namaKaryawan, customStart = null, customEnd = n
   const pinjaman = k ? (parseFloat(k.pinjaman) || 0) : 0;
   const pph21 = k ? (parseFloat(k.pph21) || 0) : 0;
 
-  let dataLogKaryawan = allLogs
+  const sourceLogs = (customLogs && Array.isArray(customLogs)) ? customLogs : allLogs;
+  let dataLogKaryawan = sourceLogs
     .filter((l) => (l.nama || '').trim().toLowerCase() === targetNama)
     .sort((a, b) => new Date(a.waktu) - new Date(b.waktu));
 
@@ -2224,243 +2240,595 @@ function zoomFoto(url) {
   document.body.appendChild(v);
 }
 
-function exportData() {
-  // Ambil filter yang aktif berdasarkan tab yang sedang dibuka
-  let tglMulai = document.getElementById("filterTglMulai")?.value;
-  let tglSelesai = document.getElementById("filterTglSelesai")?.value;
+// --- BATCH FETCHER SELURUH LOG TANPA BATAS 1000 BARIS ---
+async function fetchAllLogsInRange(startDateStr, endDateStr, onProgress = null) {
+  let allResults = [];
+  let from = 0;
+  const batchSize = 1000;
+  
+  // Kecualikan kolom 'foto' (base64) agar transfer data ultra-ringan & cepat (<3 detik untuk 5.500+ log)
+  const selectCols = "id, nama, dept, waktu, status, isLate, is_late, keterangan, latitude, longitude, karyawan_id";
 
-  const activeTab = document.querySelector('section:not([style*="display: none"])')?.id;
-  const isLogTab = activeTab === 'tabLog' || document.getElementById("tabLog")?.style.display !== 'none';
+  while (true) {
+    let q = supabaseClient
+      .from("logs")
+      .select(selectCols)
+      .order("waktu", { ascending: true })
+      .range(from, from + batchSize - 1);
 
-  if (isLogTab) {
-    tglMulai = document.getElementById("logFilterTglMulai")?.value || tglMulai;
-    tglSelesai = document.getElementById("logFilterTglSelesai")?.value || tglSelesai;
-  } else if (activeTab === 'tabDashboard') {
-    tglMulai = document.getElementById("kpiFilterTglMulai")?.value || tglMulai;
-    tglSelesai = document.getElementById("kpiFilterTglSelesai")?.value || tglSelesai;
+    if (startDateStr && endDateStr) {
+      q = q.gte("waktu", `${startDateStr}T00:00:00`).lte("waktu", `${endDateStr}T23:59:59`);
+    } else if (startDateStr) {
+      q = q.gte("waktu", `${startDateStr}T00:00:00`);
+    }
+
+    const { data, error } = await q;
+    if (error) {
+      console.error("Error fetching logs batch:", error);
+      throw error;
+    }
+    if (!data || data.length === 0) break;
+
+    allResults = allResults.concat(data);
+    if (typeof onProgress === "function") {
+      onProgress(allResults.length);
+    }
+    if (data.length < batchSize) break;
+    from += batchSize;
+  }
+  return allResults;
+}
+
+// --- KONTROL PRESET BULAN CEPAT DI TAB LOG ---
+function onQuickBulanChange(val) {
+  const now = new Date();
+  const year = now.getFullYear();
+  let startStr = "";
+  let endStr = "";
+
+  if (val === "YTD") {
+    // 1 Januari tahun berjalan s/d hari ini
+    startStr = `${year}-01-01`;
+    endStr = toLocalISO(now).split("T")[0];
+  } else if (val === "FULL_YEAR") {
+    // 1 Januari s/d 31 Desember
+    startStr = `${year}-01-01`;
+    endStr = `${year}-12-31`;
+  } else if (val === "INI") {
+    // Bulan berjalan
+    const firstDay = new Date(year, now.getMonth(), 1);
+    const lastDay = new Date(year, now.getMonth() + 1, 0);
+    startStr = toLocalISO(firstDay).split("T")[0];
+    endStr = toLocalISO(lastDay).split("T")[0];
+  } else if (val === "LALU") {
+    // Bulan lalu
+    const firstDay = new Date(year, now.getMonth() - 1, 1);
+    const lastDay = new Date(year, now.getMonth(), 0);
+    startStr = toLocalISO(firstDay).split("T")[0];
+    endStr = toLocalISO(lastDay).split("T")[0];
+  } else if (val === "CUSTOM") {
+    document.getElementById("exportTglMulai")?.focus();
+    return;
+  } else if (!isNaN(val)) {
+    // Pilihan Bulan 1 s/d 12
+    const m = parseInt(val, 10);
+    const firstDay = new Date(year, m - 1, 1);
+    const lastDay = new Date(year, m, 0);
+    startStr = `${year}-${String(m).padStart(2, "0")}-01`;
+    endStr = `${year}-${String(m).padStart(2, "0")}-${String(lastDay.getDate()).padStart(2, "0")}`;
   }
 
-  // Filter pencarian nama karyawan jika sedang berada di tab Log Absensi
-  const searchInputRaw = (document.getElementById("logSearchInput")?.value || "").trim();
-  const searchKeyword = isLogTab ? searchInputRaw.toLowerCase() : "";
+  const expMulai = document.getElementById("exportTglMulai");
+  const expSelesai = document.getElementById("exportTglSelesai");
+  if (expMulai) expMulai.value = startStr;
+  if (expSelesai) expSelesai.value = endStr;
 
-  const activeLogs = getFilteredLogs();
-  const activeKaryawan = getFilteredKaryawan();
-  if (activeLogs.length === 0 && activeKaryawan.length === 0) return alert("Belum ada data untuk di-export!");
+  const logMulai = document.getElementById("logFilterTglMulai");
+  const logSelesai = document.getElementById("logFilterTglSelesai");
+  if (logMulai) logMulai.value = startStr;
+  if (logSelesai) logSelesai.value = endStr;
+}
+
+function syncExportDatesToFilter() {
+  const m = document.getElementById("exportTglMulai")?.value;
+  const s = document.getElementById("exportTglSelesai")?.value;
+  if (m && document.getElementById("logFilterTglMulai")) document.getElementById("logFilterTglMulai").value = m;
+  if (s && document.getElementById("logFilterTglSelesai")) document.getElementById("logFilterTglSelesai").value = s;
+}
+
+async function terapkanPeriodeKeTabel() {
+  const m = document.getElementById("exportTglMulai")?.value;
+  const s = document.getElementById("exportTglSelesai")?.value;
+  if (!m || !s) return alert("Pilih tanggal mulai dan selesai terlebih dahulu!");
+  
+  if (document.getElementById("logFilterTglMulai")) document.getElementById("logFilterTglMulai").value = m;
+  if (document.getElementById("logFilterTglSelesai")) document.getElementById("logFilterTglSelesai").value = s;
+  
+  showToast(`Menerapkan filter tabel: ${m} s/d ${s}...`, "info");
+  await syncData();
+}
+
+// --- MODAL TARIKAN EXCEL LENGKAP ---
+function bukaModalTarikanExcel() {
+  const modal = document.getElementById("modalExportExcel");
+  if (!modal) return;
+
+  const now = new Date();
+  const year = now.getFullYear();
+  const expMulai = document.getElementById("exportTglMulai")?.value || `${year}-01-01`;
+  const expSelesai = document.getElementById("exportTglSelesai")?.value || toLocalISO(now).split("T")[0];
+
+  const modalStart = document.getElementById("modalExpTglMulai");
+  const modalEnd = document.getElementById("modalExpTglSelesai");
+  if (modalStart) modalStart.value = expMulai;
+  if (modalEnd) modalEnd.value = expSelesai;
+
+  const modalComp = document.getElementById("modalExpCompany");
+  if (modalComp) {
+    if (ADMIN_USER?.company_access && ADMIN_USER.company_access !== "ALL") {
+      modalComp.value = ADMIN_USER.company_access;
+      modalComp.disabled = true;
+    } else {
+      modalComp.value = ACTIVE_COMPANY || "ALL";
+      modalComp.disabled = false;
+    }
+  }
+
+  // Populate Karyawan Select
+  const selKar = document.getElementById("modalExpKaryawan");
+  if (selKar) {
+    let options = `<option value="ALL">👥 Semua Karyawan</option>`;
+    const targetKar = getFilteredKaryawan();
+    targetKar.forEach(k => {
+      options += `<option value="${k.id}">${k.nama} (${k.nik || '-'}) - ${k.dept || '-'}</option>`;
+    });
+    selKar.innerHTML = options;
+  }
+
+  const pBox = document.getElementById("modalExpProgressBox");
+  if (pBox) pBox.style.display = "none";
+
+  modal.style.display = "flex";
+  lucide.createIcons();
+}
+
+function tutupModalTarikanExcel() {
+  const modal = document.getElementById("modalExportExcel");
+  if (modal) modal.style.display = "none";
+}
+
+function setModalExpPreset(preset) {
+  const now = new Date();
+  const year = now.getFullYear();
+  let startStr = "";
+  let endStr = "";
+
+  if (preset === "ytd") {
+    startStr = `${year}-01-01`;
+    endStr = toLocalISO(now).split("T")[0];
+  } else if (preset === "full") {
+    startStr = `${year}-01-01`;
+    endStr = `${year}-12-31`;
+  } else if (preset === "ini") {
+    const firstDay = new Date(year, now.getMonth(), 1);
+    const lastDay = new Date(year, now.getMonth() + 1, 0);
+    startStr = toLocalISO(firstDay).split("T")[0];
+    endStr = toLocalISO(lastDay).split("T")[0];
+  } else if (preset === "lalu") {
+    const firstDay = new Date(year, now.getMonth() - 1, 1);
+    const lastDay = new Date(year, now.getMonth(), 0);
+    startStr = toLocalISO(firstDay).split("T")[0];
+    endStr = toLocalISO(lastDay).split("T")[0];
+  }
+
+  const modalStart = document.getElementById("modalExpTglMulai");
+  const modalEnd = document.getElementById("modalExpTglSelesai");
+  if (modalStart) modalStart.value = startStr;
+  if (modalEnd) modalEnd.value = endStr;
+}
+
+function jalankanTarikanExcelDariModal() {
+  const tglMulai = document.getElementById("modalExpTglMulai")?.value;
+  const tglSelesai = document.getElementById("modalExpTglSelesai")?.value;
+  const company = document.getElementById("modalExpCompany")?.value || "ALL";
+  const karyawanId = document.getElementById("modalExpKaryawan")?.value || "ALL";
+
+  const includeSummary = document.getElementById("chkSheetSummary")?.checked !== false;
+  const includeLogs = document.getElementById("chkSheetLogs")?.checked !== false;
+  const includeMonthly = document.getElementById("chkSheetMonthly")?.checked !== false;
+  const includeTimesheet = document.getElementById("chkSheetTimesheet")?.checked !== false;
+
+  jalankanTarikanExcel({
+    tglMulai,
+    tglSelesai,
+    company,
+    karyawanId,
+    includeSummary,
+    includeLogs,
+    includeMonthly,
+    includeTimesheet,
+    isFromModal: true
+  });
+}
+
+// --- FUNGSI EKSEKUSI TARIKAN EXCEL UTAMA ---
+async function jalankanTarikanExcel(customParams = {}) {
+  const now = new Date();
+  const year = now.getFullYear();
+  const todayStr = toLocalISO(now).split("T")[0];
+
+  const tglMulai = customParams.tglMulai || 
+    document.getElementById("exportTglMulai")?.value || 
+    document.getElementById("logFilterTglMulai")?.value || 
+    `${year}-01-01`;
+
+  const tglSelesai = customParams.tglSelesai || 
+    document.getElementById("exportTglSelesai")?.value || 
+    document.getElementById("logFilterTglSelesai")?.value || 
+    todayStr;
+
+  let targetCompany = customParams.company || 
+    document.getElementById("exportSelectCompany")?.value || 
+    ACTIVE_COMPANY || "ALL";
+
+  if (ADMIN_USER?.company_access && ADMIN_USER.company_access !== "ALL") {
+    targetCompany = ADMIN_USER.company_access;
+  }
+
+  const selectedKaryawanId = customParams.karyawanId || "ALL";
+  const searchInputRaw = (document.getElementById("logSearchInput")?.value || "").trim();
+  const isLogTab = document.getElementById("tabLog")?.style.display !== "none";
+  const searchKeyword = (!customParams.isFromModal && isLogTab) ? searchInputRaw.toLowerCase() : "";
+
+  // Update progress feedback
+  const pBox = document.getElementById("modalExpProgressBox");
+  const pText = document.getElementById("modalExpProgressText");
+  if (pBox && pText) {
+    pBox.style.display = "block";
+    pText.innerText = `Menghubungi server... Mengambil data dari ${tglMulai} s/d ${tglSelesai}`;
+  }
 
   showLoading(true);
+  showToast(`Sedang menarik data absensi (${tglMulai} s/d ${tglSelesai})...`, "info");
 
-  // --- FILTER KARYAWAN UNTUK SHEET 1 (Rekap Gaji & Lembur) ---
-  let targetKaryawan = activeKaryawan;
-  if (searchKeyword) {
-    targetKaryawan = activeKaryawan.filter(k => 
-      (k.nama || "").toLowerCase().includes(searchKeyword) ||
-      (k.nik || "").toLowerCase().includes(searchKeyword)
-    );
-
-    // Jika di master targetKaryawan tidak ditemukan, cari dari nama unik di logs
-    if (targetKaryawan.length === 0) {
-      const matchingLogNames = [...new Set(
-        activeLogs
-          .filter(l => (l.nama || "").toLowerCase().includes(searchKeyword))
-          .map(l => (l.nama || "").trim())
-      )];
-      targetKaryawan = matchingLogNames.map(name => {
-        const existingK = KARYAWAN.find(x => x.nama.trim().toLowerCase() === name.toLowerCase());
-        return existingK || { nama: name, nik: "-", jabatan: "-", dept: "-", gaji: 0, perusahaan: ACTIVE_COMPANY !== 'ALL' ? ACTIVE_COMPANY : '-' };
-      });
-    }
-  }
-
-  // --- SHEET 1: REKAP GAJI & LEMBUR (Summary per Employee) ---
-  const dataSummary = targetKaryawan.map(k => {
-    const d = hitungDetailGaji(k.gaji || 0, k.nama, tglMulai, tglSelesai);
-    return {
-      "PERUSAHAAN": getCompanyOfKaryawan(k),
-      "NAMA KARYAWAN": k.nama,
-      "NIK": k.nik || "-",
-      "JABATAN/DEPT": k.jabatan || k.dept,
-      "REKENING": k.rekening || "-",
-      "HARI HADIR": d.hadir,
-      "TOTAL JAM LEMBUR": parseFloat(d.totalLembur),
-      "UANG LEMBUR (RP)": d.uangLembur,
-      "GAJI POKOK (RP)": k.gaji || 0,
-      "INCENTIVE (RP)": d.incentive || 0,
-      "INCENTIVE LUAR (RP)": d.incentiveLuar || 0,
-      "POTONGAN (RP)": Math.floor(d.totalPotongan || d.pinjaman || 0),
-      "TOTAL GAJI BERSIH / THP (RP)": Math.floor(d.thp)
-    };
-  });
-
-  // --- SHEET 2: DETAIL LOG ABSENSI (Filtered by Period & Search) ---
-  let filteredLogs = activeLogs;
-  if (tglMulai && tglSelesai) {
-    const start = new Date(tglMulai + "T00:00:00");
-    const end = new Date(tglSelesai + "T23:59:59");
-    filteredLogs = activeLogs.filter(l => {
-      const w = new Date(l.waktu);
-      return w >= start && w <= end;
+  try {
+    // 1. Tarik seluruh log dari Supabase tanpa batasan 1.000 baris
+    const fetchedLogs = await fetchAllLogsInRange(tglMulai, tglSelesai, (count) => {
+      const msg = `Mengambil data dari server... (${count.toLocaleString("id-ID")} log terambil)`;
+      if (pText) pText.innerText = msg;
+      showLoading(msg);
     });
-  }
 
-  // Filter pencarian nama karyawan pada Sheet 2
-  if (searchKeyword) {
-    filteredLogs = filteredLogs.filter(l => 
-      (l.nama || "").toLowerCase().includes(searchKeyword)
-    );
-  }
+    if (!fetchedLogs || fetchedLogs.length === 0) {
+      showLoading(false);
+      if (pBox) pBox.style.display = "none";
+      return alert(`Tidak ditemukan data absensi pada periode ${tglMulai} s/d ${tglSelesai}!`);
+    }
 
-  if (searchKeyword && filteredLogs.length === 0 && dataSummary.length === 0) {
-    showLoading(false);
-    return alert(`Tidak ditemukan data absensi untuk "${searchInputRaw}" pada periode ini!`);
-  }
+    if (pText) pText.innerText = `Mengkalkulasi kehadiran & payroll untuk ${KARYAWAN.length} karyawan...`;
 
-  const logGroups = {};
-  // Buffer 4 jam (BUKAN 5) - harus sama dengan getShiftDateStr() yang dipakai
-  // hitungDetailGaji() untuk hariHadir, supaya kolom "TANGGAL SHIFT" di sheet
-  // detail log tidak pernah beda tanggal dengan rekap hari hadir di sheet lain
-  // untuk baris log yang sama (dulu 5 jam di sini vs 4 jam di sana).
-  const getShiftDateStrExport = (dateObj) => {
-    const d = new Date(dateObj.getTime() - 4 * 3600000);
-    return d.toLocaleDateString("id-ID");
-  };
+    // 2. Tentukan target karyawan
+    let targetKaryawanList = KARYAWAN;
+    if (targetCompany && targetCompany !== "ALL") {
+      targetKaryawanList = targetKaryawanList.filter(k => getCompanyOfKaryawan(k) === targetCompany);
+    }
 
-  filteredLogs.forEach(l => {
-    const norm = (l.nama || '').trim().toLowerCase();
-    if (!logGroups[norm]) logGroups[norm] = [];
-    logGroups[norm].push(l);
-  });
+    if (selectedKaryawanId && selectedKaryawanId !== "ALL") {
+      targetKaryawanList = targetKaryawanList.filter(k => String(k.id) === String(selectedKaryawanId));
+    }
 
-  const dataLogs = [];
-  Object.keys(logGroups).forEach(normKey => {
-    const userLogs = logGroups[normKey].sort((a, b) => new Date(a.waktu) - new Date(b.waktu));
-    let i = 0;
-    while (i < userLogs.length) {
-      const l = userLogs[i];
-      const waktu = new Date(l.waktu);
-      let jamLembur = 0;
-      const statusUpper = l.status.toUpperCase();
+    if (searchKeyword) {
+      targetKaryawanList = targetKaryawanList.filter(k => 
+        (k.nama || "").toLowerCase().includes(searchKeyword) ||
+        (k.nik || "").toLowerCase().includes(searchKeyword)
+      );
 
-      // Cari data karyawan untuk cek apakah Admin & perusahaan
-      const karObj = KARYAWAN.find(x => (x.nama || '').trim().toLowerCase() === (l.nama || '').trim().toLowerCase());
-      const compName = karObj ? getCompanyOfKaryawan(karObj) : (ACTIVE_COMPANY !== 'ALL' ? ACTIVE_COMPANY : '-');
-
-      if (statusUpper === 'MASUK' || statusUpper === 'BERANGKAT') {
-        const actualMasuk = waktu;
-        const thresholdMasuk = getWIBThreshold(actualMasuk, STANDAR_MASUK);
-
-        const isAdminRole = karObj && (
-          (karObj.jabatan || '').toUpperCase().includes('ADMIN') ||
-          (karObj.dept || '').toUpperCase().includes('ADMIN')
-        );
-        const isOffice = karObj && (
-          (karObj.dept && (karObj.dept.toUpperCase().includes("OFFICE") || karObj.dept.toUpperCase().includes("FINANCE"))) ||
-          isAdminRole
-        );
-        const currentStdPulangExport = isOffice ? 18 : 17;
-
-        // Cari index PULANG terakhir untuk shift ini
-        let j = i + 1;
-        while (j < userLogs.length && userLogs[j].status.toUpperCase() === 'PULANG') {
-          j++;
-        }
-
-        if (actualMasuk < thresholdMasuk) {
-          jamLembur = (thresholdMasuk - actualMasuk) / (1000 * 60 * 60);
-        }
-
-        let jamSore = 0;
-        let lastPulangIdx = -1;
-        for (let k = i + 1; k < j; k++) {
-          if (k === j - 1) {
-            const lp = userLogs[k];
-            const wp = new Date(lp.waktu);
-            const thresholdPulang = getWIBThreshold(actualMasuk, currentStdPulangExport);
-            const diffSore = (wp - thresholdPulang) / (1000 * 60 * 60);
-            if (diffSore > 0) jamSore = diffSore;
-            lastPulangIdx = k;
-          }
-        }
-
-        let lemburPagiVal = jamLembur > 0 ? jamLembur : 0;
-        let lemburSoreVal = jamSore > 0 ? jamSore : 0;
-        let totalShiftLembur = lemburPagiVal + lemburSoreVal;
-
-        // Capping untuk Admin: maksimal 1 jam per hari
-        if (isAdminRole && totalShiftLembur > 1) {
-          if (lemburPagiVal >= 1) {
-            lemburPagiVal = 1;
-            lemburSoreVal = 0;
-          } else {
-            lemburSoreVal = 1 - lemburPagiVal;
-          }
-        }
-
-        dataLogs.push({
-          "PERUSAHAAN": compName,
-          "NAMA": l.nama,
-          "TANGGAL SHIFT": getShiftDateStrExport(waktu),
-          "WAKTU": waktu.toLocaleString("id-ID"),
-          "STATUS": l.status,
-          "TELAT": l.isLate || l.is_late ? "YA" : "TIDAK",
-          "JAM LEMBUR": lemburPagiVal > 0 ? lemburPagiVal.toFixed(2) : 0
+      if (targetKaryawanList.length === 0) {
+        const matchingLogNames = [...new Set(
+          fetchedLogs
+            .filter(l => (l.nama || "").toLowerCase().includes(searchKeyword))
+            .map(l => (l.nama || "").trim())
+        )];
+        targetKaryawanList = matchingLogNames.map(name => {
+          const existingK = KARYAWAN.find(x => x.nama.trim().toLowerCase() === name.toLowerCase());
+          return existingK || { nama: name, nik: "-", jabatan: "-", dept: "-", gaji: 0, perusahaan: targetCompany !== "ALL" ? targetCompany : "-" };
         });
-
-        // Proses PULANG-nya
-        for (let k = i + 1; k < j; k++) {
-          const lp = userLogs[k];
-          const wp = new Date(lp.waktu);
-          const lemburRow = (k === lastPulangIdx) ? lemburSoreVal : 0;
-          dataLogs.push({
-            "PERUSAHAAN": compName,
-            "NAMA": lp.nama,
-            "TANGGAL SHIFT": getShiftDateStrExport(wp),
-            "WAKTU": wp.toLocaleString("id-ID"),
-            "STATUS": lp.status,
-            "TELAT": "-",
-            "JAM LEMBUR": lemburRow > 0 ? lemburRow.toFixed(2) : 0
-          });
-        }
-        i = j;
-      } else {
-        dataLogs.push({
-          "PERUSAHAAN": compName,
-          "NAMA": l.nama,
-          "TANGGAL SHIFT": getShiftDateStrExport(waktu),
-          "WAKTU": waktu.toLocaleString("id-ID"),
-          "STATUS": l.status,
-          "TELAT": "-",
-          "JAM LEMBUR": 0
-        });
-        i++;
       }
     }
-  });
 
-  // --- CREATE WORKBOOK ---
-  const wb = XLSX.utils.book_new();
-  const wsSummary = XLSX.utils.json_to_sheet(dataSummary);
-  const wsLogs = XLSX.utils.json_to_sheet(dataLogs);
+    const totalHariKerja = hitungHariKerjaEfektif(tglMulai, tglSelesai);
 
-  XLSX.utils.book_append_sheet(wb, wsSummary, "Rekap Gaji & Lembur");
-  XLSX.utils.book_append_sheet(wb, wsLogs, "Detail Log Absensi");
+    // --- SHEET 1: REKAPITULASI PAYROLL & KEHADIRAN ---
+    const dataSummary = targetKaryawanList.map((k, idx) => {
+      const d = hitungDetailGaji(k.gaji || 0, k.nama, tglMulai, tglSelesai, fetchedLogs);
+      const persentaseHadir = totalHariKerja > 0 ? ((d.hadir / totalHariKerja) * 100).toFixed(1) + "%" : "0%";
+      return {
+        "NO": idx + 1,
+        "PERUSAHAAN": getCompanyOfKaryawan(k),
+        "NIK": k.nik || "-",
+        "NAMA KARYAWAN": k.nama,
+        "JABATAN": k.jabatan || "-",
+        "DEPARTEMEN": k.dept || "-",
+        "NO. REKENING": k.rekening || "-",
+        "PERIODE LAPORAN": `${tglMulai} s/d ${tglSelesai}`,
+        "HARI KERJA EFEKTIF": totalHariKerja,
+        "HARI HADIR": d.hadir,
+        "% KEHADIRAN": persentaseHadir,
+        "TOTAL JAM LEMBUR": parseFloat(d.totalLembur) || 0,
+        "UANG LEMBUR (RP)": d.uangLembur || 0,
+        "GAJI POKOK (RP)": k.gaji || 0,
+        "INCENTIVE CEO (RP)": d.incentive || 0,
+        "INCENTIVE LUAR (RP)": d.incentiveLuar || 0,
+        "POTONGAN PINJAMAN (RP)": Math.floor(d.totalPotongan || d.pinjaman || 0),
+        "TOTAL GAJI BERSIH / THP (RP)": Math.floor(d.thp || 0)
+      };
+    });
 
-  const dateStr = new Date().toLocaleDateString("id-ID").replace(/\//g, "-");
-  const compSuffix = (ACTIVE_COMPANY && ACTIVE_COMPANY !== "ALL") ? `_${ACTIVE_COMPANY.replace(/[^a-zA-Z0-9]/g, '_')}` : "";
-  const cleanNameSuffix = searchKeyword ? `_${searchInputRaw.toUpperCase().replace(/\s+/g, '_')}` : "";
-  let fileName = `Payroll_Report${compSuffix}${cleanNameSuffix}_${dateStr}.xlsx`;
-  if (tglMulai && tglSelesai) {
-    fileName = `Payroll_Report${compSuffix}${cleanNameSuffix}_${tglMulai}_to_${tglSelesai}.xlsx`;
+    // --- SHEET 2: DETAIL LOG ABSENSI LENGKAP ---
+    const allowedEmployeeNames = new Set(targetKaryawanList.map(k => (k.nama || "").trim().toLowerCase()));
+    const filteredLogsForExport = fetchedLogs.filter(l => {
+      const norm = (l.nama || "").trim().toLowerCase();
+      return allowedEmployeeNames.has(norm);
+    });
+
+    const getShiftDateStrExport = (dateObj) => {
+      const d = new Date(dateObj.getTime() - 4 * 3600000);
+      return d.toLocaleDateString("id-ID");
+    };
+
+    const getHariIndonesia = (dateObj) => {
+      const hari = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+      return hari[dateObj.getDay()];
+    };
+
+    const logGroups = {};
+    filteredLogsForExport.forEach(l => {
+      const norm = (l.nama || "").trim().toLowerCase();
+      if (!logGroups[norm]) logGroups[norm] = [];
+      logGroups[norm].push(l);
+    });
+
+    const dataLogs = [];
+    let logSeq = 1;
+
+    Object.keys(logGroups).forEach(normKey => {
+      const userLogs = logGroups[normKey].sort((a, b) => new Date(a.waktu) - new Date(b.waktu));
+      let i = 0;
+      while (i < userLogs.length) {
+        const l = userLogs[i];
+        const waktu = new Date(l.waktu);
+        let jamLembur = 0;
+        const statusUpper = l.status.toUpperCase();
+
+        const karObj = KARYAWAN.find(x => (x.nama || "").trim().toLowerCase() === (l.nama || "").trim().toLowerCase());
+        const compName = karObj ? getCompanyOfKaryawan(karObj) : (targetCompany !== "ALL" ? targetCompany : "-");
+        const nikKar = karObj?.nik || "-";
+
+        if (statusUpper.startsWith("MASUK") || statusUpper.startsWith("BERANGKAT") || statusUpper.startsWith("DINAS LUAR")) {
+          const actualMasuk = waktu;
+          const thresholdMasuk = getWIBThreshold(actualMasuk, STANDAR_MASUK);
+
+          const isAdminRole = karObj && (
+            (karObj.jabatan || "").toUpperCase().includes("ADMIN") ||
+            (karObj.dept || "").toUpperCase().includes("ADMIN")
+          );
+          const isOffice = karObj && (
+            (karObj.dept && (karObj.dept.toUpperCase().includes("OFFICE") || karObj.dept.toUpperCase().includes("FINANCE"))) ||
+            isAdminRole
+          );
+          const currentStdPulangExport = isOffice ? 18 : 17;
+
+          let j = i + 1;
+          while (j < userLogs.length && userLogs[j].status.toUpperCase().startsWith("PULANG")) {
+            j++;
+          }
+
+          if (actualMasuk < thresholdMasuk) {
+            jamLembur = (thresholdMasuk - actualMasuk) / (1000 * 60 * 60);
+          }
+
+          let jamSore = 0;
+          let lastPulangIdx = -1;
+          for (let k = i + 1; k < j; k++) {
+            if (k === j - 1) {
+              const lp = userLogs[k];
+              const wp = new Date(lp.waktu);
+              const thresholdPulang = getWIBThreshold(actualMasuk, currentStdPulangExport);
+              const diffSore = (wp - thresholdPulang) / (1000 * 60 * 60);
+              if (diffSore > 0) jamSore = diffSore;
+              lastPulangIdx = k;
+            }
+          }
+
+          let lemburPagiVal = jamLembur > 0 ? jamLembur : 0;
+          let lemburSoreVal = jamSore > 0 ? jamSore : 0;
+          let totalShiftLembur = lemburPagiVal + lemburSoreVal;
+
+          if (isAdminRole && totalShiftLembur > 1) {
+            if (lemburPagiVal >= 1) {
+              lemburPagiVal = 1;
+              lemburSoreVal = 0;
+            } else {
+              lemburSoreVal = 1 - lemburPagiVal;
+            }
+          }
+
+          dataLogs.push({
+            "NO": logSeq++,
+            "PERUSAHAAN": compName,
+            "NIK": nikKar,
+            "NAMA KARYAWAN": l.nama,
+            "TANGGAL SHIFT": getShiftDateStrExport(waktu),
+            "HARI": getHariIndonesia(waktu),
+            "WAKTU ABSEN": waktu.toLocaleString("id-ID"),
+            "STATUS": l.status,
+            "TERLAMBAT": (l.isLate || l.is_late) ? "YA" : "TIDAK",
+            "JAM LEMBUR": lemburPagiVal > 0 ? parseFloat(lemburPagiVal.toFixed(2)) : 0,
+            "KETERANGAN / NOTE": l.keterangan || "-"
+          });
+
+          for (let k = i + 1; k < j; k++) {
+            const lp = userLogs[k];
+            const wp = new Date(lp.waktu);
+            const lemburRow = (k === lastPulangIdx) ? lemburSoreVal : 0;
+            dataLogs.push({
+              "NO": logSeq++,
+              "PERUSAHAAN": compName,
+              "NIK": nikKar,
+              "NAMA KARYAWAN": lp.nama,
+              "TANGGAL SHIFT": getShiftDateStrExport(wp),
+              "HARI": getHariIndonesia(wp),
+              "WAKTU ABSEN": wp.toLocaleString("id-ID"),
+              "STATUS": lp.status,
+              "TERLAMBAT": "-",
+              "JAM LEMBUR": lemburRow > 0 ? parseFloat(lemburRow.toFixed(2)) : 0,
+              "KETERANGAN / NOTE": lp.keterangan || "-"
+            });
+          }
+          i = j;
+        } else {
+          dataLogs.push({
+            "NO": logSeq++,
+            "PERUSAHAAN": compName,
+            "NIK": nikKar,
+            "NAMA KARYAWAN": l.nama,
+            "TANGGAL SHIFT": getShiftDateStrExport(waktu),
+            "HARI": getHariIndonesia(waktu),
+            "WAKTU ABSEN": waktu.toLocaleString("id-ID"),
+            "STATUS": l.status,
+            "TERLAMBAT": "-",
+            "JAM LEMBUR": 0,
+            "KETERANGAN / NOTE": l.keterangan || "-"
+          });
+          i++;
+        }
+      }
+    });
+
+    // --- SHEET 3: BREAKDOWN BULANAN (Januari - Seterusnya) ---
+    const dataMonthlyBreakdown = [];
+    const namaBulanIndo = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+    const uniqueYearMonths = [...new Set(fetchedLogs.map(l => (l.waktu || "").slice(0, 7)).filter(Boolean))].sort();
+
+    targetKaryawanList.forEach(k => {
+      const compName = getCompanyOfKaryawan(k);
+      uniqueYearMonths.forEach(ym => {
+        const [y, mStr] = ym.split("-");
+        const mIdx = parseInt(mStr, 10) - 1;
+        const bulanNama = namaBulanIndo[mIdx] || ym;
+
+        const logsBulanIni = fetchedLogs.filter(l => (l.waktu || "").startsWith(ym) && (l.nama || "").trim().toLowerCase() === k.nama.trim().toLowerCase());
+        const startBulan = `${ym}-01`;
+        const lastDateObj = new Date(parseInt(y, 10), mIdx + 1, 0);
+        const endBulan = `${ym}-${String(lastDateObj.getDate()).padStart(2, "0")}`;
+
+        const d = hitungDetailGaji(k.gaji || 0, k.nama, startBulan, endBulan, logsBulanIni);
+        if (d.hadir > 0 || logsBulanIni.length > 0) {
+          dataMonthlyBreakdown.push({
+            "PERUSAHAAN": compName,
+            "NIK": k.nik || "-",
+            "NAMA KARYAWAN": k.nama,
+            "BULAN": `${bulanNama} ${y}`,
+            "HARI HADIR": d.hadir,
+            "TOTAL JAM LEMBUR": parseFloat(d.totalLembur) || 0,
+            "UANG LEMBUR (RP)": d.uangLembur || 0,
+            "GAJI POKOK (RP)": k.gaji || 0,
+            "ESTIMASI THP BULAN INI (RP)": Math.floor(d.thp || 0)
+          });
+        }
+      });
+    });
+
+    // --- SHEET 4: TIMESHEET MATRIKS KEHADIRAN (1 s/d 31) ---
+    const dataTimesheet = targetKaryawanList.map(k => {
+      const row = {
+        "PERUSAHAAN": getCompanyOfKaryawan(k),
+        "NIK": k.nik || "-",
+        "NAMA KARYAWAN": k.nama,
+        "DEPARTEMEN": k.dept || "-"
+      };
+      const userLogs = fetchedLogs.filter(l => (l.nama || "").trim().toLowerCase() === k.nama.trim().toLowerCase());
+      const presentDays = new Set(
+        userLogs
+          .filter(l => isMasukStatus(l.status))
+          .map(l => {
+            const d = new Date(new Date(l.waktu).getTime() - 4 * 3600000);
+            return toLocalISO(d).split("T")[0];
+          })
+      );
+
+      for (let day = 1; day <= 31; day++) {
+        row[`TGL_${String(day).padStart(2, "0")}`] = "-";
+      }
+
+      presentDays.forEach(pDate => {
+        const parts = pDate.split("-");
+        if (parts.length === 3) {
+          const dNum = parseInt(parts[2], 10);
+          if (dNum >= 1 && dNum <= 31) {
+            row[`TGL_${String(dNum).padStart(2, "0")}`] = "H";
+          }
+        }
+      });
+
+      return row;
+    });
+
+    // --- CREATE EXCEL WORKBOOK ---
+    if (pText) pText.innerText = "Menyusun lembar kerja Excel...";
+
+    const wb = XLSX.utils.book_new();
+
+    const incSummary = customParams.includeSummary !== false;
+    const incLogs = customParams.includeLogs !== false;
+    const incMonthly = customParams.includeMonthly !== false;
+    const incTimesheet = customParams.includeTimesheet !== false;
+
+    if (incSummary) {
+      const wsSummary = XLSX.utils.json_to_sheet(dataSummary);
+      XLSX.utils.book_append_sheet(wb, wsSummary, "Rekap Payroll & Kehadiran");
+    }
+
+    if (incLogs) {
+      const wsLogs = XLSX.utils.json_to_sheet(dataLogs);
+      XLSX.utils.book_append_sheet(wb, wsLogs, "Detail Log Absensi");
+    }
+
+    if (incMonthly && dataMonthlyBreakdown.length > 0) {
+      const wsMonthly = XLSX.utils.json_to_sheet(dataMonthlyBreakdown);
+      XLSX.utils.book_append_sheet(wb, wsMonthly, "Breakdown Bulanan");
+    }
+
+    if (incTimesheet && dataTimesheet.length > 0) {
+      const wsTimesheet = XLSX.utils.json_to_sheet(dataTimesheet);
+      XLSX.utils.book_append_sheet(wb, wsTimesheet, "Matriks Kehadiran");
+    }
+
+    const compLabel = (targetCompany && targetCompany !== "ALL") 
+      ? targetCompany.replace(/[^a-zA-Z0-9]/g, "_") 
+      : "SEMUA_PT";
+    const cleanNameSuffix = searchKeyword ? `_${searchKeyword.toUpperCase().replace(/\s+/g, "_")}` : "";
+    const fileName = `Laporan_Absensi_Payroll_${compLabel}${cleanNameSuffix}_${tglMulai}_sd_${tglSelesai}.xlsx`;
+
+    XLSX.writeFile(wb, fileName);
+
+    showLoading(false);
+    if (pBox) pBox.style.display = "none";
+    showToast(`Laporan Excel Berhasil Diunduh! (${fetchedLogs.length.toLocaleString("id-ID")} log dari ${tglMulai} s/d ${tglSelesai})`, "success");
+
+    if (customParams.isFromModal) {
+      tutupModalTarikanExcel();
+    }
+  } catch (err) {
+    showLoading(false);
+    if (pBox) pBox.style.display = "none";
+    console.error("Tarikan Excel Error:", err);
+    alert("Gagal melakukan tarikan Excel: " + err.message);
   }
+}
 
-  XLSX.writeFile(wb, fileName);
-
-  showLoading(false);
-  if (searchKeyword) {
-    showToast(`Data "${searchInputRaw.toUpperCase()}" Berhasil Diunduh (${filteredLogs.length} Log)`, "success");
-  } else {
-    showToast("Payroll Report Berhasil Diunduh", "success");
-  }
+function exportData() {
+  jalankanTarikanExcel();
 }
 
 async function hapusSemuaLog() {
@@ -2547,13 +2915,50 @@ function setPeriodeSemingguTerakhir() {
   document.getElementById("filterTglSelesai").value = endDate.toISOString().split('T')[0];
 }
 
-function setPeriodeLog() {
+function setPeriodeLog(mode = 'ini') {
   const now = new Date();
-  const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
-  const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  const year = now.getFullYear();
+  let startStr = "";
+  let endStr = "";
 
-  document.getElementById("logFilterTglMulai").value = firstDay.toISOString().split('T')[0];
-  document.getElementById("logFilterTglSelesai").value = lastDay.toISOString().split('T')[0];
+  if (mode === "ytd" || mode === "jan") {
+    // 1 Januari tahun berjalan s/d hari ini
+    startStr = `${year}-01-01`;
+    endStr = toLocalISO(now).split("T")[0];
+  } else if (mode === "lalu") {
+    // Bulan lalu
+    const firstDay = new Date(year, now.getMonth() - 1, 1);
+    const lastDay = new Date(year, now.getMonth(), 0);
+    startStr = toLocalISO(firstDay).split("T")[0];
+    endStr = toLocalISO(lastDay).split("T")[0];
+  } else if (mode === "full" || mode === "tahun") {
+    // 1 Tahun Penuh (01 Jan s/d 31 Des)
+    startStr = `${year}-01-01`;
+    endStr = `${year}-12-31`;
+  } else if (!isNaN(mode) && Number(mode) >= 1 && Number(mode) <= 12) {
+    const m = parseInt(mode, 10);
+    const firstDay = new Date(year, m - 1, 1);
+    const lastDay = new Date(year, m, 0);
+    startStr = `${year}-${String(m).padStart(2, "0")}-01`;
+    endStr = `${year}-${String(m).padStart(2, "0")}-${String(lastDay.getDate()).padStart(2, "0")}`;
+  } else {
+    // Bulan ini
+    const firstDay = new Date(year, now.getMonth(), 1);
+    const lastDay = new Date(year, now.getMonth() + 1, 0);
+    startStr = toLocalISO(firstDay).split("T")[0];
+    endStr = toLocalISO(lastDay).split("T")[0];
+  }
+
+  const logMulai = document.getElementById("logFilterTglMulai");
+  const logSelesai = document.getElementById("logFilterTglSelesai");
+  if (logMulai) logMulai.value = startStr;
+  if (logSelesai) logSelesai.value = endStr;
+
+  const expMulai = document.getElementById("exportTglMulai");
+  const expSelesai = document.getElementById("exportTglSelesai");
+  if (expMulai) expMulai.value = startStr;
+  if (expSelesai) expSelesai.value = endStr;
+
   syncData();
 }
 
