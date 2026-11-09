@@ -1177,8 +1177,8 @@ function renderKaryawanTable() {
           <div style="font-size: 0.65rem; color: var(--text-muted); font-weight: 500;" title="${escapeHtml(d.keteranganTarifLembur)}">@Rp ${d.tarifLembur.toLocaleString("id-ID")}/jam</div>
         </td>
         <td>
-          <div style="font-weight: 800; color: var(--sidebar-bg);">Rp ${(k.gaji || 0).toLocaleString("id-ID")}</div>
-          <div style="font-size: 0.65rem; color: var(--text-muted);">${k.rekening || "No Acc"}</div>
+          <div style="font-weight: 800; color: var(--sidebar-bg);">Rp ${Math.floor(d.gapok).toLocaleString("id-ID")}</div>
+          <div style="font-size: 0.65rem; color: var(--text-muted);">${d.keteranganGapok ? `<span style="color:#4f46e5; font-weight:700;">${escapeHtml(d.keteranganGapok)}</span><br>` : ''}${k.rekening || "No Acc"}</div>
         </td>
         <td style="color: var(--success); font-weight: 900; font-size: 1rem; letter-spacing: -0.5px;">
           Rp ${Math.floor(d.thp).toLocaleString("id-ID")}
@@ -1411,6 +1411,26 @@ function hitungDetailKeterlambatan(log) {
   }
 }
 
+// Fungsi penentu skema gaji mingguan vs bulanan
+function isGajiMingguan(k) {
+  if (!k) return false;
+  const dept = (k.dept || "").toUpperCase();
+  const jabatan = (k.jabatan || "").toUpperCase();
+  const gaji = parseFloat(k.gaji) || 0;
+
+  // 1. Departemen Operasional (Driver, Helper, Lapangan, Gudang Operasional)
+  if (dept.includes("OPERASIONAL") || jabatan.includes("DRIVER") || jabatan.includes("HELPER")) {
+    return true;
+  }
+
+  // 2. Karyawan dengan nominal gaji mingguan (di bawah Rp 2.000.000) dan bukan Direktur/Head
+  if (gaji > 0 && gaji < 2000000 && !jabatan.includes("DIREKTUR")) {
+    return true;
+  }
+
+  return false;
+}
+
 function hitungDetailGaji(gapok, namaKaryawan, customStart = null, customEnd = null, customLogs = null) {
   const targetNama = namaKaryawan.trim().toLowerCase();
   const k = KARYAWAN.find(item => item.nama.trim().toLowerCase() === targetNama);
@@ -1421,6 +1441,25 @@ function hitungDetailGaji(gapok, namaKaryawan, customStart = null, customEnd = n
 
   const g = parseFloat(gapok) || 0;
   const hkeRate = k ? (parseFloat(k.hke_rate) || 50000) : 50000;
+
+  // OPSI A: Skalasi Gaji Pokok untuk Karyawan Bergaji Mingguan (Operasional)
+  // Bila difilter lebih dari 10 hari (misal 2 minggu, 3 minggu, atau 1 bulan penuh),
+  // Gaji Pokok mingguan otomatis dikalikan dengan jumlah minggu efektif dalam periode tersebut.
+  const weeklyScheme = isGajiMingguan(k);
+  let jumlahMinggu = 1;
+  if (weeklyScheme && tglMulai && tglSelesai) {
+    const startD = new Date(tglMulai + "T00:00:00");
+    const endD = new Date(tglSelesai + "T23:59:59");
+    const diffDays = Math.max(1, Math.round((endD.getTime() - startD.getTime()) / (1000 * 60 * 60 * 24)) + 1);
+
+    if (diffDays >= 11) {
+      jumlahMinggu = Math.max(1, Math.round(diffDays / 7));
+    } else {
+      jumlahMinggu = 1;
+    }
+  }
+
+  const gapokEfektif = weeklyScheme ? (g * jumlahMinggu) : g;
 
   // Otoritas CEO Per Karyawan (Gunakan Nominal yang disetujui CEO)
   const isApproved = k ? (k.is_incentive_approved === true) : false;
@@ -1554,10 +1593,19 @@ function hitungDetailGaji(gapok, namaKaryawan, customStart = null, customEnd = n
 
   // --- TOTAL SALARY ---
   const uangHKE = hariHadir * hkeRate;
-  const thp = g + uangHKE + incentive + incentiveLuar + uangLembur - pinjaman - pph21;
+  const thp = gapokEfektif + uangHKE + incentive + incentiveLuar + uangLembur - pinjaman - pph21;
+
+  let keteranganGapok = "";
+  if (weeklyScheme && jumlahMinggu > 1) {
+    keteranganGapok = `${jumlahMinggu} minggu (@Rp ${Math.floor(g).toLocaleString("id-ID")})`;
+  }
 
   return {
-    gapok: g,
+    gapok: gapokEfektif,
+    gapokAsli: g,
+    jumlahMinggu,
+    keteranganGapok,
+    isWeeklyScheme: weeklyScheme,
     hkeRate,
     uangHKE,
     hadir: hariHadir,
@@ -1701,7 +1749,7 @@ function cetakSlip(idOrIndex) {
         <section class="salary-grid">
           <div class="salary-col">
             <h3>Penerimaan (Earnings)</h3>
-            <div class="row"><span class="label">GAJI POKOK</span><span class="val">Rp ${Math.floor(d.gapok).toLocaleString('id-ID')}</span></div>
+            <div class="row"><span class="label">GAJI POKOK ${d.keteranganGapok ? `(${escapeHtml(d.keteranganGapok)})` : ''}</span><span class="val">Rp ${Math.floor(d.gapok).toLocaleString('id-ID')}</span></div>
             <div class="row"><span class="label">HKE (${d.hadir} hari)</span><span class="val">Rp ${Math.floor(d.uangHKE).toLocaleString('id-ID')}</span></div>
             <div class="row"><span class="label">INCENTIVE</span><span class="val">Rp ${Math.floor(d.incentive || 0).toLocaleString('id-ID')}</span></div>
             <div class="row"><span class="label">INCENTIVE (LK/NGINAP)</span><span class="val">Rp ${Math.floor(d.incentiveLuar || 0).toLocaleString('id-ID')}</span></div>
@@ -1837,7 +1885,7 @@ async function generateSlipGajiBlob(k, d, periodeTampil) {
         <section class="salary-grid">
           <div class="salary-col">
             <h3>Penerimaan (Earnings)</h3>
-            <div class="row"><span class="label">GAJI POKOK</span><span class="val">Rp ${Math.floor(d.gapok).toLocaleString('id-ID')}</span></div>
+            <div class="row"><span class="label">GAJI POKOK ${d.keteranganGapok ? `(${escapeHtml(d.keteranganGapok)})` : ''}</span><span class="val">Rp ${Math.floor(d.gapok).toLocaleString('id-ID')}</span></div>
             <div class="row"><span class="label">HKE (${d.hadir} hari)</span><span class="val">Rp ${Math.floor(d.uangHKE).toLocaleString('id-ID')}</span></div>
             <div class="row"><span class="label">INCENTIVE</span><span class="val">Rp ${Math.floor(d.incentive || 0).toLocaleString('id-ID')}</span></div>
             <div class="row"><span class="label">INCENTIVE (LK/NGINAP)</span><span class="val">Rp ${Math.floor(d.incentiveLuar || 0).toLocaleString('id-ID')}</span></div>
@@ -2914,7 +2962,8 @@ async function jalankanTarikanExcel(customParams = {}) {
         "TARIF LEMBUR / JAM (RP)": d.tarifLembur || 0,
         "DASAR RUMUS LEMBUR": d.keteranganTarifLembur || "-",
         "UANG LEMBUR (RP)": d.uangLembur || 0,
-        "GAJI POKOK (RP)": k.gaji || 0,
+        "GAJI POKOK (RP)": Math.floor(d.gapok || 0),
+        "KETERANGAN SKEMA GAJI": d.keteranganGapok || (d.isWeeklyScheme ? "Mingguan" : "Bulanan"),
         "INCENTIVE CEO (RP)": d.incentive || 0,
         "INCENTIVE LUAR (RP)": d.incentiveLuar || 0,
         "POTONGAN PINJAMAN (RP)": Math.floor(d.totalPotongan || d.pinjaman || 0),
@@ -3135,7 +3184,8 @@ async function jalankanTarikanExcel(customParams = {}) {
             "TOTAL JAM LEMBUR": parseFloat(d.totalLembur) || 0,
             "TARIF LEMBUR / JAM (RP)": d.tarifLembur || 0,
             "UANG LEMBUR (RP)": d.uangLembur || 0,
-            "GAJI POKOK (RP)": k.gaji || 0,
+            "GAJI POKOK (RP)": Math.floor(d.gapok || 0),
+            "KETERANGAN SKEMA": d.keteranganGapok || (d.isWeeklyScheme ? "Mingguan" : "Bulanan"),
             "ESTIMASI THP BULAN INI (RP)": Math.floor(d.thp || 0)
           });
         }
