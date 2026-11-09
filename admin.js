@@ -2785,11 +2785,17 @@ function bukaModalTarikanExcel() {
     selKar.innerHTML = options;
   }
 
+  // Sync state kartu sheet
+  syncSheetCard("chkSheetSummary", "cardSheetSummary");
+  syncSheetCard("chkSheetLogs", "cardSheetLogs");
+  syncSheetCard("chkSheetMonthly", "cardSheetMonthly");
+  syncSheetCard("chkSheetTimesheet", "cardSheetTimesheet");
+
   const pBox = document.getElementById("modalExpProgressBox");
   if (pBox) pBox.style.display = "none";
 
   modal.style.display = "flex";
-  lucide.createIcons();
+  if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
 function tutupModalTarikanExcel() {
@@ -2797,7 +2803,7 @@ function tutupModalTarikanExcel() {
   if (modal) modal.style.display = "none";
 }
 
-function setModalExpPreset(preset) {
+function setModalExpPreset(preset, btn = null) {
   const now = new Date();
   const year = now.getFullYear();
   let startStr = "";
@@ -2825,6 +2831,30 @@ function setModalExpPreset(preset) {
   const modalEnd = document.getElementById("modalExpTglSelesai");
   if (modalStart) modalStart.value = startStr;
   if (modalEnd) modalEnd.value = endStr;
+
+  // Update visual state tombol preset
+  document.querySelectorAll(".exp-preset-btn").forEach(b => b.classList.remove("active"));
+  if (btn) {
+    btn.classList.add("active");
+  } else {
+    const match = document.querySelector(`.exp-preset-btn[data-preset="${preset}"]`);
+    if (match) match.classList.add("active");
+  }
+}
+
+function toggleSheetCard(chkId, cardId) {
+  const chk = document.getElementById(chkId);
+  if (!chk) return;
+  chk.checked = !chk.checked;
+  syncSheetCard(chkId, cardId);
+}
+
+function syncSheetCard(chkId, cardId) {
+  const chk = document.getElementById(chkId);
+  const card = document.getElementById(cardId);
+  if (card && chk) {
+    card.classList.toggle("selected", chk.checked);
+  }
 }
 
 function jalankanTarikanExcelDariModal() {
