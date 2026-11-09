@@ -2790,6 +2790,7 @@ function bukaModalTarikanExcel() {
   syncSheetCard("chkSheetLogs", "cardSheetLogs");
   syncSheetCard("chkSheetMonthly", "cardSheetMonthly");
   syncSheetCard("chkSheetTimesheet", "cardSheetTimesheet");
+  syncSheetCard("chkSheetAbsence", "cardSheetAbsence");
 
   const pBox = document.getElementById("modalExpProgressBox");
   if (pBox) pBox.style.display = "none";
@@ -2867,6 +2868,7 @@ function jalankanTarikanExcelDariModal() {
   const includeLogs = document.getElementById("chkSheetLogs")?.checked !== false;
   const includeMonthly = document.getElementById("chkSheetMonthly")?.checked !== false;
   const includeTimesheet = document.getElementById("chkSheetTimesheet")?.checked !== false;
+  const includeAbsence = document.getElementById("chkSheetAbsence")?.checked !== false;
 
   jalankanTarikanExcel({
     tglMulai,
@@ -2877,7 +2879,22 @@ function jalankanTarikanExcelDariModal() {
     includeLogs,
     includeMonthly,
     includeTimesheet,
+    includeAbsence,
     isFromModal: true
+  });
+}
+
+function cetakLaporanDariModal() {
+  const tglMulai = document.getElementById("modalExpTglMulai")?.value;
+  const tglSelesai = document.getElementById("modalExpTglSelesai")?.value;
+  const company = document.getElementById("modalExpCompany")?.value || "ALL";
+  const karyawanId = document.getElementById("modalExpKaryawan")?.value || "ALL";
+
+  cetakLaporanRekapitulasi({
+    tglMulai,
+    tglSelesai,
+    company,
+    karyawanId
   });
 }
 
@@ -3294,6 +3311,72 @@ async function jalankanTarikanExcel(customParams = {}) {
       return row;
     });
 
+    // --- SHEET 5: DAFTAR KETIDAKHADIRAN (ALPHA / IZIN / SAKIT / CUTI) ---
+    const dataKetidakhadiran = [];
+    let noAbsenSeq = 1;
+
+    targetKaryawanList.forEach(k => {
+      const normName = (k.nama || "").trim().toLowerCase();
+      const userLogs = fetchedLogs.filter(l => (l.nama || "").trim().toLowerCase() === normName);
+
+      const presentDays = new Set(
+        userLogs
+          .filter(l => isMasukStatus(l.status))
+          .map(l => {
+            const d = new Date(new Date(l.waktu).getTime() - 4 * 3600000);
+            return toLocalISO(d).split("T")[0];
+          })
+      );
+
+      const explicitAbsenceLogs = {};
+      userLogs.forEach(l => {
+        const s = (l.status || "").toUpperCase();
+        if (s.includes("TIDAK MASUK") || s.includes("ALPHA") || s.includes("IZIN") || s.includes("SAKIT") || s.includes("CUTI")) {
+          const d = new Date(new Date(l.waktu).getTime() - 4 * 3600000);
+          explicitAbsenceLogs[toLocalISO(d).split("T")[0]] = l;
+        }
+      });
+
+      let cur = new Date(tglMulai + "T00:00:00");
+      const endD = new Date(tglSelesai + "T23:59:59");
+      const todayDateOnlyStr = toLocalISO(new Date()).split("T")[0];
+
+      while (cur <= endD) {
+        const curDateStr = toLocalISO(cur).split("T")[0];
+        if (cur.getDay() !== 0 && curDateStr <= todayDateOnlyStr) {
+          if (!presentDays.has(curDateStr)) {
+            const exp = explicitAbsenceLogs[curDateStr];
+            let statusKetidakhadiran = "TIDAK MASUK (ALPHA)";
+            let keterangan = "Tidak melakukan presensi masuk / dinas luar";
+
+            if (exp) {
+              const su = (exp.status || "").toUpperCase();
+              if (su.includes("SAKIT")) statusKetidakhadiran = "SAKIT";
+              else if (su.includes("IZIN")) statusKetidakhadiran = "IZIN";
+              else if (su.includes("CUTI")) statusKetidakhadiran = "CUTI";
+              else statusKetidakhadiran = "TIDAK MASUK (ALPHA)";
+              keterangan = exp.keterangan || exp.status || "-";
+            }
+
+            const [yy, mm, dd] = curDateStr.split("-");
+            dataKetidakhadiran.push({
+              "NO": noAbsenSeq++,
+              "PERUSAHAAN": getCompanyOfKaryawan(k),
+              "NIK": k.nik || "-",
+              "NAMA KARYAWAN": k.nama,
+              "JABATAN": k.jabatan || "-",
+              "DEPARTEMEN": k.dept || "-",
+              "TANGGAL TIDAK MASUK": `${dd}/${mm}/${yy}`,
+              "HARI": getHariIndonesia(cur),
+              "STATUS KETIDAKHADIRAN": statusKetidakhadiran,
+              "KETERANGAN / ALASAN": keterangan
+            });
+          }
+        }
+        cur.setDate(cur.getDate() + 1);
+      }
+    });
+
     // --- CREATE EXCEL WORKBOOK ---
     if (pText) pText.innerText = "Menyusun lembar kerja Excel...";
 
@@ -3303,6 +3386,7 @@ async function jalankanTarikanExcel(customParams = {}) {
     const incLogs = customParams.includeLogs !== false;
     const incMonthly = customParams.includeMonthly !== false;
     const incTimesheet = customParams.includeTimesheet !== false;
+    const incAbsence = customParams.includeAbsence !== false;
 
     if (incSummary) {
       const wsSummary = XLSX.utils.json_to_sheet(dataSummary);
@@ -3322,6 +3406,11 @@ async function jalankanTarikanExcel(customParams = {}) {
     if (incTimesheet && dataTimesheet.length > 0) {
       const wsTimesheet = XLSX.utils.json_to_sheet(dataTimesheet);
       XLSX.utils.book_append_sheet(wb, wsTimesheet, "Matriks Kehadiran");
+    }
+
+    if (incAbsence && dataKetidakhadiran.length > 0) {
+      const wsAbsence = XLSX.utils.json_to_sheet(dataKetidakhadiran);
+      XLSX.utils.book_append_sheet(wb, wsAbsence, "Daftar Ketidakhadiran");
     }
 
     const compLabel = (targetCompany && targetCompany !== "ALL") 
@@ -3349,6 +3438,605 @@ async function jalankanTarikanExcel(customParams = {}) {
 
 function exportData() {
   jalankanTarikanExcel();
+}
+
+// --- FUNGSI CETAK LAPORAN REKAPITULASI PRESENSI, KETIDAKHADIRAN & PAYROLL (PRINT / PDF) ---
+async function cetakLaporanRekapitulasi(customParams = {}) {
+  const now = new Date();
+  const year = now.getFullYear();
+  const todayStr = toLocalISO(now).split("T")[0];
+
+  const tglMulai = customParams.tglMulai ||
+    (document.getElementById("modalExportExcel")?.style.display === "flex" ? document.getElementById("modalExpTglMulai")?.value : null) ||
+    document.getElementById("filterTglMulai")?.value ||
+    document.getElementById("logFilterTglMulai")?.value ||
+    `${year}-01-01`;
+
+  const tglSelesai = customParams.tglSelesai ||
+    (document.getElementById("modalExportExcel")?.style.display === "flex" ? document.getElementById("modalExpTglSelesai")?.value : null) ||
+    document.getElementById("filterTglSelesai")?.value ||
+    document.getElementById("logFilterTglSelesai")?.value ||
+    todayStr;
+
+  let targetCompany = customParams.company ||
+    (document.getElementById("modalExportExcel")?.style.display === "flex" ? document.getElementById("modalExpCompany")?.value : null) ||
+    document.getElementById("selectActiveCompany")?.value ||
+    ACTIVE_COMPANY || "ALL";
+
+  if (ADMIN_USER?.company_access && ADMIN_USER.company_access !== "ALL") {
+    targetCompany = ADMIN_USER.company_access;
+  }
+
+  showLoading("Menyiapkan dokumen cetak...");
+  try {
+    // Tarik data fresh dari server untuk rentang periode terpilih
+    const todayStrFull = toLocalISO(new Date()).split('T')[0];
+    const tglSelesaiEfektif = tglSelesai < todayStrFull ? todayStrFull : tglSelesai;
+    const fetchedLogs = await fetchAllLogsInRange(tglMulai, tglSelesaiEfektif);
+
+    let targetKar = KARYAWAN;
+    if (targetCompany && targetCompany !== "ALL") {
+      targetKar = targetKar.filter(k => getCompanyOfKaryawan(k) === targetCompany);
+    }
+
+    if (!targetKar || targetKar.length === 0) {
+      showLoading(false);
+      return alert("Tidak ada data karyawan untuk dicetak!");
+    }
+
+    const totalHariKerja = hitungHariKerjaEfektif(tglMulai, tglSelesai);
+    const todayDateOnlyStr = toLocalISO(new Date()).split("T")[0];
+
+    let totalBiayaGapok = 0;
+    let totalBiayaLembur = 0;
+    let totalBiayaIncentive = 0;
+    let totalBiayaPotongan = 0;
+    let totalBiayaTHP = 0;
+    let grandTotalHadir = 0;
+    let grandTotalAlpha = 0;
+    let grandTotalJamLembur = 0;
+
+    const dataRows = [];
+    const detailKetidakhadiran = [];
+    let noAbsenSeq = 1;
+
+    targetKar.forEach((k, idx) => {
+      const d = hitungDetailGaji(k.gaji || 0, k.nama, tglMulai, tglSelesai, fetchedLogs);
+      const hariTidakMasuk = Math.max(0, totalHariKerja - (d.hadir || 0));
+
+      totalBiayaGapok += (d.gapok || 0);
+      totalBiayaLembur += (d.uangLembur || 0);
+      totalBiayaIncentive += (d.incentive || 0);
+      totalBiayaPotongan += (d.totalPotongan || d.pinjaman || 0);
+      totalBiayaTHP += (d.thp || 0);
+      grandTotalHadir += (d.hadir || 0);
+      grandTotalAlpha += hariTidakMasuk;
+      grandTotalJamLembur += (parseFloat(d.totalLembur) || 0);
+
+      dataRows.push({
+        no: idx + 1,
+        nama: k.nama,
+        nik: k.nik || "-",
+        perusahaan: getCompanyOfKaryawan(k),
+        jabatan: k.jabatan || k.dept || "-",
+        dept: k.dept || "-",
+        hadir: d.hadir || 0,
+        tidakMasuk: hariTidakMasuk,
+        telat: d.telat || 0,
+        totalLembur: d.totalLembur || "0.0",
+        uangLembur: d.uangLembur || 0,
+        gapok: d.gapok || 0,
+        incentive: d.incentive || 0,
+        potongan: d.totalPotongan || d.pinjaman || 0,
+        thp: d.thp || 0
+      });
+
+      // Rincian Ketidakhadiran Riil
+      const normName = (k.nama || "").trim().toLowerCase();
+      const userLogs = fetchedLogs.filter(l => (l.nama || "").trim().toLowerCase() === normName);
+
+      const presentDays = new Set(
+        userLogs
+          .filter(l => isMasukStatus(l.status))
+          .map(l => {
+            const dt = new Date(new Date(l.waktu).getTime() - 4 * 3600000);
+            return toLocalISO(dt).split("T")[0];
+          })
+      );
+
+      const explicitAbsenceLogs = {};
+      userLogs.forEach(l => {
+        const s = (l.status || "").toUpperCase();
+        if (s.includes("TIDAK MASUK") || s.includes("ALPHA") || s.includes("IZIN") || s.includes("SAKIT") || s.includes("CUTI")) {
+          const dt = new Date(new Date(l.waktu).getTime() - 4 * 3600000);
+          explicitAbsenceLogs[toLocalISO(dt).split("T")[0]] = l;
+        }
+      });
+
+      let cur = new Date(tglMulai + "T00:00:00");
+      const endD = new Date(tglSelesai + "T23:59:59");
+      while (cur <= endD) {
+        const curDateStr = toLocalISO(cur).split("T")[0];
+        if (cur.getDay() !== 0 && curDateStr <= todayDateOnlyStr) {
+          if (!presentDays.has(curDateStr)) {
+            const exp = explicitAbsenceLogs[curDateStr];
+            let statusBadge = "ALPHA";
+            let statusClass = "badge-alpha";
+            let ket = "Tidak melakukan presensi masuk / dinas luar";
+
+            if (exp) {
+              const su = (exp.status || "").toUpperCase();
+              if (su.includes("SAKIT")) { statusBadge = "SAKIT"; statusClass = "badge-sakit"; }
+              else if (su.includes("IZIN")) { statusBadge = "IZIN"; statusClass = "badge-izin"; }
+              else if (su.includes("CUTI")) { statusBadge = "CUTI"; statusClass = "badge-cuti"; }
+              ket = exp.keterangan || exp.status || "-";
+            }
+
+            const [yy, mm, dd] = curDateStr.split("-");
+            detailKetidakhadiran.push({
+              no: noAbsenSeq++,
+              nama: k.nama,
+              nik: k.nik || "-",
+              perusahaan: getCompanyOfKaryawan(k),
+              dept: k.dept || "-",
+              tanggal: `${dd}/${mm}/${yy}`,
+              hari: getHariIndonesia(cur),
+              status: statusBadge,
+              statusClass,
+              keterangan: ket
+            });
+          }
+        }
+        cur.setDate(cur.getDate() + 1);
+      }
+    });
+
+    const avgKehadiran = (targetKar.length * totalHariKerja) > 0
+      ? ((grandTotalHadir / (targetKar.length * totalHariKerja)) * 100).toFixed(1)
+      : "0";
+
+    const compTitle = (targetCompany && targetCompany !== "ALL")
+      ? targetCompany.toUpperCase()
+      : "HOLDING (SELURUH PERUSAHAAN)";
+
+    const fmtTgl = (t) => t ? t.split("-").reverse().join("/") : "-";
+    const tanggalCetakStr = new Date().toLocaleDateString("id-ID", {
+      weekday: "long", year: "numeric", month: "long", day: "numeric",
+      hour: "2-digit", minute: "2-digit"
+    });
+
+    // Template Cetak Landscape A4 Resmi
+    const printHtml = `<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Laporan Rekapitulasi Presensi & Payroll - ${compTitle}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    @page {
+      size: A4 landscape;
+      margin: 10mm 12mm;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+      color: #0f172a;
+      background: #f8fafc;
+      font-size: 11px;
+      line-height: 1.35;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .print-toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: #0f172a;
+      color: white;
+      padding: 12px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+    @media print {
+      .print-toolbar { display: none !important; }
+      body { background: white; padding: 0; font-size: 10px; }
+      .sheet-container { box-shadow: none !important; border: none !important; padding: 0 !important; max-width: 100% !important; margin: 0 !important; }
+      .page-break { page-break-before: always; }
+      tr { page-break-inside: avoid; }
+    }
+    .sheet-container {
+      max-width: 1140px;
+      margin: 20px auto;
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+      border: 1px solid #e2e8f0;
+    }
+    .header-kop {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 16px;
+      border-bottom: 2.5px solid #0f172a;
+      margin-bottom: 18px;
+    }
+    .brand-section {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .brand-section img {
+      width: 50px;
+      height: 50px;
+      border-radius: 10px;
+      object-fit: contain;
+    }
+    .doc-title h1 {
+      font-size: 16px;
+      font-weight: 900;
+      color: #0f172a;
+      letter-spacing: -0.3px;
+      text-transform: uppercase;
+    }
+    .doc-title p {
+      font-size: 11px;
+      color: #475569;
+      font-weight: 600;
+      margin-top: 2px;
+    }
+    .meta-box {
+      text-align: right;
+      font-size: 10.5px;
+      color: #334155;
+    }
+    .summary-cards {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+    .summary-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 10px 12px;
+      text-align: center;
+    }
+    .summary-card .val {
+      font-size: 14px;
+      font-weight: 900;
+      color: #0f172a;
+    }
+    .summary-card .lbl {
+      font-size: 9px;
+      font-weight: 700;
+      color: #64748b;
+      text-transform: uppercase;
+      margin-top: 2px;
+    }
+    .section-title {
+      font-size: 12.5px;
+      font-weight: 800;
+      color: #0f172a;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #cbd5e1;
+      padding-bottom: 4px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+      font-size: 10px;
+    }
+    th, td {
+      border: 1px solid #cbd5e1;
+      padding: 6px 8px;
+      vertical-align: middle;
+    }
+    th {
+      background: #f1f5f9;
+      color: #1e293b;
+      font-weight: 800;
+      text-transform: uppercase;
+      font-size: 9px;
+      letter-spacing: 0.3px;
+      text-align: center;
+    }
+    tr:nth-child(even) { background: #fafafa; }
+    .text-center { text-align: center; }
+    .text-right { text-align: right; }
+    .font-bold { font-weight: 700; }
+    .badge-alpha {
+      background: #fee2e2;
+      color: #b91c1c;
+      font-weight: 800;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 8.5px;
+      display: inline-block;
+    }
+    .badge-izin {
+      background: #e0f2fe;
+      color: #0369a1;
+      font-weight: 800;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 8.5px;
+      display: inline-block;
+    }
+    .badge-sakit {
+      background: #fef3c7;
+      color: #b45309;
+      font-weight: 800;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 8.5px;
+      display: inline-block;
+    }
+    .badge-cuti {
+      background: #e0e7ff;
+      color: #4338ca;
+      font-weight: 800;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 8.5px;
+      display: inline-block;
+    }
+    .signatures {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 30px;
+      margin-top: 30px;
+      page-break-inside: avoid;
+    }
+    .sign-box {
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 12px;
+      text-align: center;
+      background: #fafafa;
+    }
+    .sign-box .role {
+      font-size: 9.5px;
+      font-weight: 700;
+      color: #64748b;
+      text-transform: uppercase;
+      margin-bottom: 50px;
+    }
+    .sign-box .name {
+      font-size: 11px;
+      font-weight: 800;
+      color: #0f172a;
+      border-top: 1px dashed #94a3b8;
+      padding-top: 4px;
+      display: inline-block;
+      min-width: 140px;
+    }
+    .btn-action {
+      background: #10b981;
+      color: white;
+      border: none;
+      padding: 7px 16px;
+      border-radius: 8px;
+      font-weight: 800;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .btn-action:hover { background: #059669; }
+    .btn-close {
+      background: rgba(255,255,255,0.15);
+      color: white;
+      border: 1px solid rgba(255,255,255,0.3);
+      padding: 7px 14px;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .btn-close:hover { background: rgba(255,255,255,0.3); }
+  </style>
+</head>
+<body>
+  <div class="print-toolbar">
+    <div style="display:flex; align-items:center; gap:10px;">
+      <span style="font-size:14px; font-weight:800;">KOBOI HRIS - Pratinjau Dokumen Cetak</span>
+      <span style="font-size:11px; opacity:0.8;">| Periode: ${fmtTgl(tglMulai)} s/d ${fmtTgl(tglSelesai)}</span>
+    </div>
+    <div style="display:flex; gap:10px;">
+      <button class="btn-action" onclick="window.print()">🖨️ Cetak / Print Sekarang</button>
+      <button class="btn-close" onclick="window.close()">✕ Tutup</button>
+    </div>
+  </div>
+
+  <div class="sheet-container">
+    <!-- KOP LAPORAN -->
+    <div class="header-kop">
+      <div class="brand-section">
+        <img src="logokoboi.png" alt="Logo Perusahaan" onerror="this.style.display='none'">
+        <div class="doc-title">
+          <h1>Laporan Rekapitulasi Presensi, Ketidakhadiran & Payroll</h1>
+          <p>${compTitle}</p>
+        </div>
+      </div>
+      <div class="meta-box">
+        <div><strong>Periode:</strong> ${fmtTgl(tglMulai)} s/d ${fmtTgl(tglSelesai)} (${totalHariKerja} Hari Kerja)</div>
+        <div><strong>Dicetak Pada:</strong> ${tanggalCetakStr}</div>
+        <div><strong>Dicetak Oleh:</strong> ${escapeHtml(ADMIN_USER?.nama || "Admin HRD")}</div>
+      </div>
+    </div>
+
+    <!-- SUMMARY METRICS -->
+    <div class="summary-cards">
+      <div class="summary-card">
+        <div class="val">${targetKar.length} Orang</div>
+        <div class="lbl">Total Karyawan</div>
+      </div>
+      <div class="summary-card">
+        <div class="val">${totalHariKerja} Hari</div>
+        <div class="lbl">Hari Kerja Efektif</div>
+      </div>
+      <div class="summary-card">
+        <div class="val" style="color:#059669;">${avgKehadiran}%</div>
+        <div class="lbl">Tingkat Hadir</div>
+      </div>
+      <div class="summary-card">
+        <div class="val" style="color:#dc2626;">${grandTotalAlpha} Hari</div>
+        <div class="lbl">Total Tidak Masuk</div>
+      </div>
+      <div class="summary-card">
+        <div class="val">${grandTotalJamLembur.toFixed(1)} Jam</div>
+        <div class="lbl">Total Jam Lembur</div>
+      </div>
+      <div class="summary-card">
+        <div class="val" style="color:#4f46e5;">Rp ${Math.floor(totalBiayaTHP).toLocaleString('id-ID')}</div>
+        <div class="lbl">Total Payroll (THP)</div>
+      </div>
+    </div>
+
+    <!-- TABEL 1: REKAPITULASI PAYROLL & KEHADIRAN -->
+    <div class="section-title">
+      <span>1. Rekapitulasi Kehadiran & Payroll Karyawan</span>
+      <span style="font-size:10px; font-weight:600; color:#64748b;">Total: ${dataRows.length} Karyawan</span>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 25px;">No</th>
+          <th>Nama Karyawan</th>
+          <th>ID / NIK</th>
+          <th>Perusahaan</th>
+          <th>Jabatan</th>
+          <th>Hadir</th>
+          <th>Tidak Masuk</th>
+          <th>Telat</th>
+          <th>Lembur</th>
+          <th>Gaji Pokok</th>
+          <th>Uang Lembur</th>
+          <th>Insentif</th>
+          <th>Potongan</th>
+          <th>Gaji Bersih (THP)</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${dataRows.map(r => `
+          <tr>
+            <td class="text-center">${r.no}</td>
+            <td class="font-bold">${escapeHtml(r.nama)}</td>
+            <td class="text-center">${escapeHtml(r.nik)}</td>
+            <td style="font-size:8.5px;">${escapeHtml(r.perusahaan)}</td>
+            <td>${escapeHtml(r.jabatan)}</td>
+            <td class="text-center font-bold" style="color:#059669;">${r.hadir}</td>
+            <td class="text-center font-bold" style="${r.tidakMasuk > 0 ? 'color:#dc2626; background:#fee2e2;' : 'color:#64748b;'}">${r.tidakMasuk}</td>
+            <td class="text-center" style="${r.telat > 0 ? 'color:#d97706;' : ''}">${r.telat}</td>
+            <td class="text-center">${r.totalLembur} Jam</td>
+            <td class="text-right">Rp ${Math.floor(r.gapok).toLocaleString('id-ID')}</td>
+            <td class="text-right">Rp ${Math.floor(r.uangLembur).toLocaleString('id-ID')}</td>
+            <td class="text-right">Rp ${Math.floor(r.incentive).toLocaleString('id-ID')}</td>
+            <td class="text-right">Rp ${Math.floor(r.potongan).toLocaleString('id-ID')}</td>
+            <td class="text-right font-bold" style="color:#059669; font-size:10.5px;">Rp ${Math.floor(r.thp).toLocaleString('id-ID')}</td>
+          </tr>
+        `).join('')}
+        <tr style="background:#f1f5f9; font-weight:900;">
+          <td colspan="5" class="text-center" style="font-weight:900; letter-spacing:0.5px;">TOTAL KESELURUHAN</td>
+          <td class="text-center" style="color:#059669;">${grandTotalHadir}</td>
+          <td class="text-center" style="color:#dc2626;">${grandTotalAlpha}</td>
+          <td class="text-center">-</td>
+          <td class="text-center">${grandTotalJamLembur.toFixed(1)} Jam</td>
+          <td class="text-right">Rp ${Math.floor(totalBiayaGapok).toLocaleString('id-ID')}</td>
+          <td class="text-right">Rp ${Math.floor(totalBiayaLembur).toLocaleString('id-ID')}</td>
+          <td class="text-right">Rp ${Math.floor(totalBiayaIncentive).toLocaleString('id-ID')}</td>
+          <td class="text-right">Rp ${Math.floor(totalBiayaPotongan).toLocaleString('id-ID')}</td>
+          <td class="text-right" style="color:#059669; font-size:11px;">Rp ${Math.floor(totalBiayaTHP).toLocaleString('id-ID')}</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- TABEL 2: DETAIL DAFTAR TIDAK MASUK (KETIDAKHADIRAN) -->
+    <div class="section-title page-break" style="margin-top: 25px;">
+      <span>2. Rincian Karyawan Tidak Masuk (Daftar Ketidakhadiran Riil)</span>
+      <span style="font-size:10px; font-weight:600; color:#dc2626;">Total: ${detailKetidakhadiran.length} Kejadian Tidak Masuk</span>
+    </div>
+    ${detailKetidakhadiran.length === 0 ? `
+      <div style="background:#f0fdf4; border:1px solid #86efac; border-radius:8px; padding:15px; text-align:center; color:#15803d; font-weight:700; margin-bottom:20px;">
+        🎉 Seluruh karyawan tercatat hadir lengkap pada periode ini (0 Ketidakhadiran).
+      </div>
+    ` : `
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 25px;">No</th>
+            <th>Tanggal</th>
+            <th>Hari</th>
+            <th>Nama Karyawan</th>
+            <th>ID / NIK</th>
+            <th>Perusahaan</th>
+            <th>Departemen</th>
+            <th>Status Ketidakhadiran</th>
+            <th>Alasan / Keterangan</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${detailKetidakhadiran.map(ktd => `
+            <tr>
+              <td class="text-center">${ktd.no}</td>
+              <td class="text-center font-bold">${ktd.tanggal}</td>
+              <td class="text-center">${ktd.hari}</td>
+              <td class="font-bold">${escapeHtml(ktd.nama)}</td>
+              <td class="text-center">${escapeHtml(ktd.nik)}</td>
+              <td>${escapeHtml(ktd.perusahaan)}</td>
+              <td>${escapeHtml(ktd.dept)}</td>
+              <td class="text-center"><span class="${ktd.statusClass}">${ktd.status}</span></td>
+              <td style="color:#475569;">${escapeHtml(ktd.keterangan)}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `}
+
+    <!-- LEMBAR PENGESAHAN / TANDA TANGAN -->
+    <div class="signatures">
+      <div class="sign-box">
+        <div class="role">Dibuat Oleh (HRD / Presensi)</div>
+        <div class="name">${escapeHtml(ADMIN_USER?.nama || "Admin HRD")}</div>
+      </div>
+      <div class="sign-box">
+        <div class="role">Diperiksa Oleh (Finance & Payroll)</div>
+        <div class="name">Admin Finance</div>
+      </div>
+      <div class="sign-box">
+        <div class="role">Disetujui Oleh (Direksi / CEO)</div>
+        <div class="name">Direktur Utama</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    window.addEventListener('load', () => {
+      setTimeout(() => { window.print(); }, 400);
+    });
+  </script>
+</body>
+</html>`;
+
+    showLoading(false);
+    const win = window.open('', '_blank');
+    if (!win) {
+      alert("Popup browser diblokir. Izinkan popup browser untuk membuka pratinjau cetak laporan.");
+      return;
+    }
+    win.document.write(printHtml);
+    win.document.close();
+  } catch (err) {
+    showLoading(false);
+    console.error("Gagal mencetak laporan:", err);
+    alert("Gagal mencetak laporan: " + err.message);
+  }
 }
 
 async function hapusSemuaLog() {
