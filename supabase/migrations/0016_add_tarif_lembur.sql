@@ -5,3 +5,4 @@
 
 alter table public.karyawan
   add column if not exists tarif_lembur numeric default null;
+
