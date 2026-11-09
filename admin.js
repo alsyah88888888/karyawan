@@ -692,7 +692,7 @@ function switchTab(tab) {
     });
   }
 
-  if (tab === "tabLog") syncData();
+  if (tab === "tabLog" || tab === "tabKaryawan") syncData();
   if (tab === "tabLeave") fetchLeaveRequests();
   if (tab === "tabPerformance") { fetchReviews(); loadKpiRollup("weekly"); }
   if (tab === "tabCalendar") renderCalendar();
@@ -3391,7 +3391,7 @@ function setPeriodeIni() {
 
   document.getElementById("filterTglMulai").value = firstDay.toISOString().split('T')[0];
   document.getElementById("filterTglSelesai").value = lastDay.toISOString().split('T')[0];
-  refreshUI();
+  syncData();
 }
 
 function setPeriodeSemingguTerakhir() {
