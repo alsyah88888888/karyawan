@@ -909,6 +909,8 @@ function renderLogTable() {
 
     const tgl = new Date(l.waktu);
     const initials = l.nama.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase();
+    const lateInfo = hitungDetailKeterlambatan(l);
+    const isMasuk = isMasukStatus(l.status);
 
     let displayStatus = l.status;
     let gpsLink = "";
@@ -922,7 +924,7 @@ function renderLogTable() {
     }
 
     htmlRows += `
-      <tr class="${isLate ? 'row-late' : ''}">
+      <tr class="${lateInfo.isLate ? 'row-late' : ''}">
         <td>
           <div class="emp-info">
             <div class="emp-avatar">${escapeHtml(initials)}</div>
@@ -946,9 +948,26 @@ function renderLogTable() {
           <div class="log-date">${tgl.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</div>
         </td>
         <td>
-          ${isLate ?
-        '<div style="display:flex; align-items:center; gap:6px; color:var(--danger); font-size:0.75rem; font-weight:800;"><i data-lucide="alert-circle" style="width:14px;"></i> TERLAMBAT</div>' :
-        '<div style="display:flex; align-items:center; gap:6px; color:var(--success); font-size:0.75rem; font-weight:700;"><i data-lucide="check-circle" style="width:14px;"></i> TEPAT WAKTU</div>'}
+          ${lateInfo.isLate ? `
+            <div style="display:flex; align-items:center; gap:6px; color:var(--danger); font-size:0.75rem; font-weight:800;">
+              <i data-lucide="alert-circle" style="width:14px; height:14px; flex-shrink:0;"></i> ${escapeHtml(lateInfo.ringkasan)}
+            </div>
+            <div style="font-size:0.72rem; color:#dc2626; font-weight:600; margin-top:3px; line-height:1.3;">
+              ${escapeHtml(lateInfo.detail)}
+            </div>
+          ` : (isMasuk ? `
+            <div style="display:flex; align-items:center; gap:6px; color:var(--success); font-size:0.75rem; font-weight:700;">
+              <i data-lucide="check-circle" style="width:14px; height:14px; flex-shrink:0;"></i> TEPAT WAKTU
+            </div>
+            <div style="font-size:0.7rem; color:var(--text-muted); margin-top:2px;">
+              ${escapeHtml(lateInfo.detail)}
+            </div>
+          ` : `
+            <div style="display:flex; align-items:center; gap:6px; color:var(--text-muted); font-size:0.75rem; font-weight:600;">
+              <i data-lucide="check" style="width:12px; height:12px;"></i> Selesai Shift
+            </div>
+            ${l.keterangan ? `<div style="font-size:0.7rem; color:var(--text-muted); font-style:italic; margin-top:2px;">"${escapeHtml(l.keterangan)}"</div>` : ''}
+          `)}
         </td>
         <td>
           <div style="display: flex; gap: 8px;">
@@ -1021,6 +1040,7 @@ function renderKaryawanTable() {
         <td>
           <div style="font-weight: 700; color: var(--sidebar-bg);">${d.totalLembur} <small>Hrs</small></div>
           <div style="font-size: 0.7rem; color: var(--success); font-weight: 700;">+Rp ${Math.floor(d.uangLembur).toLocaleString("id-ID")}</div>
+          <div style="font-size: 0.65rem; color: var(--text-muted); font-weight: 500;" title="${escapeHtml(d.keteranganTarifLembur)}">@Rp ${d.tarifLembur.toLocaleString("id-ID")}/jam</div>
         </td>
         <td>
           <div style="font-weight: 800; color: var(--sidebar-bg);">Rp ${(k.gaji || 0).toLocaleString("id-ID")}</div>
@@ -1105,6 +1125,135 @@ function hitungHariKerjaEfektif(startStr, endStr) {
     cur.setDate(cur.getDate() + 1);
   }
   return count;
+}
+
+/**
+ * Menghitung tarif lembur per jam spesifik untuk setiap karyawan:
+ * 1. Admin: Rp 10.000 / jam (maksimal 1 jam per hari) sesuai instruksi khusus manajemen.
+ * 2. Non-Admin (Driver, Helper, Operasional, Staff, Gudang, Sales):
+ *    Dihitung proporsional SESUAI GAJI POKOK mengikuti standar regulasi Ketenagakerjaan (PP 35/2021):
+ *    Tarif Lembur per Jam = Upah Pokok / 173 jam kerja per bulan.
+ * 3. Kustom: Jika profil karyawan memiliki tarif_lembur kustom, gunakan nilai tersebut.
+ * Minimal tarif lembur adalah Rp 10.000 / jam.
+ */
+function getTarifLemburKaryawan(k) {
+  if (!k) return 10000;
+
+  // 1. Cek jika ada custom tarif_lembur yang diset di profil karyawan
+  if (k.tarif_lembur && parseFloat(k.tarif_lembur) > 0) {
+    return Math.round(parseFloat(k.tarif_lembur));
+  }
+
+  // 2. Deteksi Jabatan Admin
+  const isAdminRole = (
+    (k.jabatan || '').toUpperCase().includes('ADMIN') ||
+    (k.dept || '').toUpperCase().includes('ADMIN')
+  );
+
+  if (isAdminRole) {
+    return 10000; // Kebijakan khusus Admin: Rp 10.000/jam (dibatasi 1 jam/hari)
+  }
+
+  // 3. Untuk Non-Admin (Operasional, Driver, Helper, Gudang, Sales, dll.)
+  // Dihitung SESUAI GAJI POKOK (Rumus Resmi Depnaker: Upah / 173)
+  const gapok = parseFloat(k.gaji) || 0;
+  if (gapok > 0) {
+    const tarifDepnaker = Math.round(gapok / 173);
+    return Math.max(tarifDepnaker, 10000);
+  }
+
+  // Jika gaji belum terisi (0), fallback ke standar operasional awal (Rp 20.000/jam)
+  return 20000;
+}
+
+function getKeteranganTarifLembur(k, tarif) {
+  if (!k) return `Tarif Standar: Rp ${(tarif || 10000).toLocaleString('id-ID')}/jam`;
+
+  if (k.tarif_lembur && parseFloat(k.tarif_lembur) > 0) {
+    return `Tarif Kustom Profil: Rp ${tarif.toLocaleString('id-ID')}/jam`;
+  }
+
+  const isAdminRole = (
+    (k.jabatan || '').toUpperCase().includes('ADMIN') ||
+    (k.dept || '').toUpperCase().includes('ADMIN')
+  );
+
+  if (isAdminRole) {
+    return `Khusus Admin: Rp 10.000/jam (Maks 1 Jam/Hari)`;
+  }
+
+  const gapok = parseFloat(k.gaji) || 0;
+  if (gapok > 0) {
+    return `Sesuai Gaji Pokok (1/173 × Rp ${gapok.toLocaleString('id-ID')} = Rp ${tarif.toLocaleString('id-ID')}/jam)`;
+  }
+
+  return `Tarif Standar Operasional: Rp 20.000/jam`;
+}
+
+/**
+ * Menghitung detail keterlambatan log absensi:
+ * Menghitung selisih menit dari jam masuk standar (09:00 WIB),
+ * menyertakan catatan/note karyawan dan toleransi (09:15 WIB).
+ */
+function hitungDetailKeterlambatan(log) {
+  if (!log) return { isLate: false, menitTelat: 0, durasiStr: "-", ringkasan: "-", detail: "-" };
+
+  const isLate = log.isLate === true || log.isLate === "true" || log.is_late === true;
+  const statusUpper = (log.status || "").toUpperCase();
+  const isMasukType = statusUpper.startsWith("MASUK") || statusUpper.startsWith("DINAS LUAR") || statusUpper.startsWith("BERANGKAT");
+
+  if (!isMasukType) {
+    return {
+      isLate: false,
+      menitTelat: 0,
+      durasiStr: "-",
+      ringkasan: "-",
+      detail: log.keterangan || "-"
+    };
+  }
+
+  const waktuAbsen = new Date(log.waktu);
+  // Jam masuk standar adalah 09:00 WIB
+  const thresholdMasuk = getWIBThreshold(waktuAbsen, STANDAR_MASUK);
+  const diffMs = waktuAbsen.getTime() - thresholdMasuk.getTime();
+  const menitTelat = Math.max(1, Math.round(diffMs / 60000));
+  const jamMenitStr = waktuAbsen.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
+
+  if (isLate) {
+    let durasiStr = "";
+    if (menitTelat < 60) {
+      durasiStr = `${menitTelat} menit`;
+    } else {
+      const jam = Math.floor(menitTelat / 60);
+      const sisaM = menitTelat % 60;
+      durasiStr = sisaM > 0 ? `${jam} jam ${sisaM} menit` : `${jam} jam`;
+    }
+
+    let detailStr = `Terlambat ${durasiStr} (Masuk ${jamMenitStr} WIB, Batas: 09:00 WIB, Toleransi: 09:15 WIB)`;
+    if (log.keterangan && log.keterangan.trim()) {
+      detailStr += ` | Note: ${log.keterangan.trim()}`;
+    }
+
+    return {
+      isLate: true,
+      menitTelat,
+      durasiStr,
+      ringkasan: `TERLAMBAT (+${durasiStr})`,
+      detail: detailStr
+    };
+  } else {
+    let detailStr = `Tepat Waktu (Masuk ${jamMenitStr} WIB)`;
+    if (log.keterangan && log.keterangan.trim()) {
+      detailStr += ` | Note: ${log.keterangan.trim()}`;
+    }
+    return {
+      isLate: false,
+      menitTelat: 0,
+      durasiStr: "0 menit",
+      ringkasan: "TEPAT WAKTU",
+      detail: detailStr
+    };
+  }
 }
 
 function hitungDetailGaji(gapok, namaKaryawan, customStart = null, customEnd = null, customLogs = null) {
@@ -1214,7 +1363,7 @@ function hitungDetailGaji(gapok, namaKaryawan, customStart = null, customEnd = n
     } else { i++; }
   }
 
-  // --- LOGIKA LEMBUR (Hardcoded: Pembulatan 0.1 Jam) ---
+  // --- LOGIKA LEMBUR SESUAI GAJI & JABATAN (Pembulatan 0.1 Jam) ---
   let uangLembur = 0;
   const adjJam = k ? (parseFloat(k.lembur_adj) || 0) : 0;
   let jamLemburFinal = totalLembur + adjJam; // Terapkan penyesuaian manual
@@ -1224,9 +1373,15 @@ function hitungDetailGaji(gapok, namaKaryawan, customStart = null, customEnd = n
   // Jabatan Admin sekarang mendapatkan lemburan (otomatis aktif & dibatasi 1 jam per hari)
   const isLemburAktif = isAdminRole ? true : (k ? (k.is_lembur !== false) : true);
 
+  // Hitung tarif lembur per jam spesifik untuk karyawan ini:
+  // Admin: Rp 10.000 / jam (max 1 jam/hari)
+  // Non-Admin: Sesuai gaji pokok (1/173 x Gaji) atau tarif_lembur kustom
+  const tarifLembur = getTarifLemburKaryawan(k);
+  const keteranganTarifLembur = getKeteranganTarifLembur(k, tarifLembur);
+
   if (isLemburAktif) {
     jamLemburBulat = Math.round(jamLemburFinal * 10) / 10;
-    uangLembur = jamLemburBulat * TARIF_LEMBUR;
+    uangLembur = Math.round(jamLemburBulat * tarifLembur);
   } else {
     uangLembur = 0;
     jamLemburBulat = 0;
@@ -1255,6 +1410,8 @@ function hitungDetailGaji(gapok, namaKaryawan, customStart = null, customEnd = n
     totalHariKerja,
     totalJamKerja: Math.round(totalJamKerja * 10) / 10, // Dibulatkan 1 desimal
     totalLembur: jamLemburBulat.toFixed(1),
+    tarifLembur,
+    keteranganTarifLembur,
     uangLembur,
     incentive,
     incentiveLuar,
@@ -1393,7 +1550,7 @@ function cetakSlip(idOrIndex) {
             <div class="row"><span class="label">HKE (${d.hadir} hari)</span><span class="val">Rp ${Math.floor(d.uangHKE).toLocaleString('id-ID')}</span></div>
             <div class="row"><span class="label">INCENTIVE</span><span class="val">Rp ${Math.floor(d.incentive || 0).toLocaleString('id-ID')}</span></div>
             <div class="row"><span class="label">INCENTIVE (LK/NGINAP)</span><span class="val">Rp ${Math.floor(d.incentiveLuar || 0).toLocaleString('id-ID')}</span></div>
-            <div class="row"><span class="label">OVERTIME (${d.totalLembur} jam)</span><span class="val">Rp ${Math.floor(d.uangLembur).toLocaleString('id-ID')}</span></div>
+            <div class="row"><span class="label">OVERTIME (${d.totalLembur} jam @ Rp ${d.tarifLembur.toLocaleString('id-ID')})</span><span class="val">Rp ${Math.floor(d.uangLembur).toLocaleString('id-ID')}</span></div>
           </div>
           <div class="salary-col">
             <h3>Potongan (Deductions)</h3>
@@ -1529,7 +1686,7 @@ async function generateSlipGajiBlob(k, d, periodeTampil) {
             <div class="row"><span class="label">HKE (${d.hadir} hari)</span><span class="val">Rp ${Math.floor(d.uangHKE).toLocaleString('id-ID')}</span></div>
             <div class="row"><span class="label">INCENTIVE</span><span class="val">Rp ${Math.floor(d.incentive || 0).toLocaleString('id-ID')}</span></div>
             <div class="row"><span class="label">INCENTIVE (LK/NGINAP)</span><span class="val">Rp ${Math.floor(d.incentiveLuar || 0).toLocaleString('id-ID')}</span></div>
-            <div class="row"><span class="label">OVERTIME (${d.totalLembur} jam)</span><span class="val">Rp ${Math.floor(d.uangLembur).toLocaleString('id-ID')}</span></div>
+            <div class="row"><span class="label">OVERTIME (${d.totalLembur} jam @ Rp ${d.tarifLembur.toLocaleString('id-ID')})</span><span class="val">Rp ${Math.floor(d.uangLembur).toLocaleString('id-ID')}</span></div>
           </div>
           <div class="salary-col">
             <h3>Potongan (Deductions)</h3>
@@ -1829,7 +1986,7 @@ function notifikasiCEOPayroll(deptFilter = "ALL") {
     rincianKaryawan += `   - HKE (${d.hadir} hari): Rp ${Math.floor(d.uangHKE).toLocaleString('id-ID')}\n`;
     rincianKaryawan += `   - INCENTIVE: Rp ${insentifVal.toLocaleString('id-ID')} ${isApproved ? '✅' : '❌'}\n`;
     rincianKaryawan += `   - INCENTIVE (LK/NGINAP): Rp ${Math.floor(d.incentiveLuar || 0).toLocaleString('id-ID')}\n`;
-    rincianKaryawan += `   - OVERTIME (${d.totalLembur} jam): Rp ${Math.floor(d.uangLembur).toLocaleString('id-ID')}\n`;
+    rincianKaryawan += `   - OVERTIME (${d.totalLembur} jam @ Rp ${d.tarifLembur.toLocaleString('id-ID')}): Rp ${Math.floor(d.uangLembur).toLocaleString('id-ID')}\n`;
     rincianKaryawan += `   - *Total THP: Rp ${Math.floor(d.thp).toLocaleString('id-ID')}*\n\n`;
   });
 
@@ -1856,7 +2013,7 @@ function showModal() {
   document.getElementById("btnSimpanKaryawan").innerText = "Simpan Master Data";
 
   // Reset Form
-  const fields = ["inpNama", "inpNikKtp", "inpWa", "inpJabatan", "inpCuti", "inpNikKbi", "inpIsLembur", "inpLemburAdj", "inpPin", "inpGaji", "inpHkeRate", "inpIncentive", "inpIncentiveLuar", "inpRekening", "inpNpwp", "inpPinjaman", "inpPph21"];
+  const fields = ["inpNama", "inpNikKtp", "inpWa", "inpJabatan", "inpCuti", "inpNikKbi", "inpIsLembur", "inpTarifLembur", "inpLemburAdj", "inpPin", "inpGaji", "inpHkeRate", "inpIncentive", "inpIncentiveLuar", "inpRekening", "inpNpwp", "inpPinjaman", "inpPph21"];
   fields.forEach(f => {
     const el = document.getElementById(f);
     if (el) {
@@ -1904,6 +2061,8 @@ function previewFotoKaryawanInput(event) {
 async function simpanKaryawan() {
   const id = document.getElementById("editKaryawanId").value;
   const targetPerusahaan = document.getElementById("inpPerusahaan")?.value || "PT. Kola Borasi Indonesia";
+  const customTarifLembur = parseFloat(document.getElementById("inpTarifLembur")?.value);
+
   const data = {
     nama: document.getElementById("inpNama").value.toUpperCase(),
     nik_ktp: document.getElementById("inpNikKtp").value,
@@ -1927,6 +2086,10 @@ async function simpanKaryawan() {
     pph21: parseFloat(document.getElementById("inpPph21").value) || 0
   };
 
+  if (!isNaN(customTarifLembur) && customTarifLembur > 0) {
+    data.tarif_lembur = customTarifLembur;
+  }
+
   if (!data.nama || !data.gaji) return alert("Harap isi Nama dan Gaji Pokok!");
 
   showLoading(true);
@@ -1944,8 +2107,12 @@ async function simpanKaryawan() {
     }
 
     if (id) {
-      const { error } = await supabaseClient.from("karyawan").update(data).eq("id", id);
-      if (error) throw error;
+      let updateRes = await supabaseClient.from("karyawan").update(data).eq("id", id);
+      if (updateRes.error && updateRes.error.message && updateRes.error.message.includes("tarif_lembur")) {
+        delete data.tarif_lembur;
+        updateRes = await supabaseClient.from("karyawan").update(data).eq("id", id);
+      }
+      if (updateRes.error) throw updateRes.error;
       showToast("Data karyawan berhasil diperbarui", "success");
       logAudit("Edit Karyawan", `Mengubah data karyawan: ${data.nama} (${data.perusahaan})`);
     } else {
@@ -1955,8 +2122,12 @@ async function simpanKaryawan() {
         else if (data.perusahaan === "Mitra Belanja") prefix = "MB-";
         data.nik = prefix + Date.now().toString().slice(-6);
       }
-      const { error } = await supabaseClient.from("karyawan").insert([data]);
-      if (error) throw error;
+      let insertRes = await supabaseClient.from("karyawan").insert([data]);
+      if (insertRes.error && insertRes.error.message && insertRes.error.message.includes("tarif_lembur")) {
+        delete data.tarif_lembur;
+        insertRes = await supabaseClient.from("karyawan").insert([data]);
+      }
+      if (insertRes.error) throw insertRes.error;
       showToast("Karyawan baru berhasil ditambahkan", "success");
       logAudit("Tambah Karyawan", `Menambahkan karyawan baru: ${data.nama} (${data.perusahaan})`);
     }
@@ -2002,6 +2173,11 @@ function bukaModalEditKaryawan(idOrIndex) {
   document.getElementById("inpNpwp").value = k.npwp || "";
   document.getElementById("inpPinjaman").value = k.pinjaman || 0;
   document.getElementById("inpPph21").value = k.pph21 || 0;
+
+  const inpTarifLembur = document.getElementById("inpTarifLembur");
+  if (inpTarifLembur) {
+    inpTarifLembur.value = (k.tarif_lembur && parseFloat(k.tarif_lembur) > 0) ? k.tarif_lembur : "";
+  }
 
   const inpPerusahaan = document.getElementById("inpPerusahaan");
   if (inpPerusahaan) {
@@ -2211,6 +2387,8 @@ function bukaModalEdit(id) {
   document.getElementById("editNama").value = log.nama;
   document.getElementById("editStatus").value = log.status;
   document.getElementById("editWaktu").value = new Date(log.waktu).toISOString().slice(0, 16);
+  const editKet = document.getElementById("editKeterangan");
+  if (editKet) editKet.value = log.keterangan || "";
   document.getElementById("modalEditAbsen").style.display = "flex";
 }
 
@@ -2220,16 +2398,32 @@ async function simpanPerubahanAbsen() {
   const id = document.getElementById("editLogId").value;
   const status = document.getElementById("editStatus").value;
   const waktuBaru = document.getElementById("editWaktu").value;
+  const keteranganBaru = document.getElementById("editKeterangan")?.value?.trim() || null;
   let telat = false;
   const tglBaru = new Date(waktuBaru);
-  // Gunakan toleransi 09:15 untuk manual edit
-  if (status === "MASUK") {
+  // Gunakan toleransi 09:15 untuk status masuk / dinas luar / berangkat
+  const statusUpper = (status || "").toUpperCase();
+  if (statusUpper.startsWith("MASUK") || statusUpper.startsWith("DINAS LUAR") || statusUpper.startsWith("BERANGKAT")) {
     const hh = tglBaru.getHours();
     const mm = tglBaru.getMinutes();
     if (hh > STANDAR_MASUK || (hh === STANDAR_MASUK && mm > TOLERANSI_MASUK_MENIT)) telat = true;
   }
-  const { error } = await supabaseClient.from("logs").update({ status, waktu: tglBaru.toISOString(), isLate: telat }).eq("id", id);
-  if (!error) { alert("Berhasil!"); hideEditModal(); syncData(); }
+  const updatePayload = {
+    status,
+    waktu: tglBaru.toISOString(),
+    isLate: telat,
+    keterangan: keteranganBaru
+  };
+  showLoading(true);
+  const { error } = await supabaseClient.from("logs").update(updatePayload).eq("id", id);
+  showLoading(false);
+  if (!error) {
+    showToast("Log absensi berhasil diperbarui!", "success");
+    hideEditModal();
+    syncData();
+  } else {
+    showToast("Gagal menyimpan perubahan: " + error.message, "error");
+  }
 }
 
 function zoomFoto(url) {
@@ -2554,7 +2748,11 @@ async function jalankanTarikanExcel(customParams = {}) {
         "HARI KERJA EFEKTIF": totalHariKerja,
         "HARI HADIR": d.hadir,
         "% KEHADIRAN": persentaseHadir,
+        "TOTAL JAM KERJA (JAM)": d.totalJamKerja || 0,
+        "HARI TERLAMBAT": d.telat || 0,
         "TOTAL JAM LEMBUR": parseFloat(d.totalLembur) || 0,
+        "TARIF LEMBUR / JAM (RP)": d.tarifLembur || 0,
+        "DASAR RUMUS LEMBUR": d.keteranganTarifLembur || "-",
         "UANG LEMBUR (RP)": d.uangLembur || 0,
         "GAJI POKOK (RP)": k.gaji || 0,
         "INCENTIVE CEO (RP)": d.incentive || 0,
@@ -2653,17 +2851,28 @@ async function jalankanTarikanExcel(customParams = {}) {
             }
           }
 
+          const lateInfo = hitungDetailKeterlambatan(l);
+          const tarifLemburKaryawan = getTarifLemburKaryawan(karObj);
+          const uangLemburPagi = Math.round(lemburPagiVal * tarifLemburKaryawan);
+
           dataLogs.push({
             "NO": logSeq++,
             "PERUSAHAAN": compName,
             "NIK": nikKar,
             "NAMA KARYAWAN": l.nama,
+            "JABATAN": karObj?.jabatan || "-",
+            "DEPARTEMEN": karObj?.dept || l.dept || "-",
             "TANGGAL SHIFT": getShiftDateStrExport(waktu),
             "HARI": getHariIndonesia(waktu),
             "WAKTU ABSEN": waktu.toLocaleString("id-ID"),
-            "STATUS": l.status,
-            "TERLAMBAT": (l.isLate || l.is_late) ? "YA" : "TIDAK",
-            "JAM LEMBUR": lemburPagiVal > 0 ? parseFloat(lemburPagiVal.toFixed(2)) : 0,
+            "STATUS ABSEN": l.status,
+            "STATUS KEHADIRAN": lateInfo.isLate ? "TERLAMBAT" : "TEPAT WAKTU",
+            "TERLAMBAT": lateInfo.isLate ? "YA" : "TIDAK",
+            "MENIT TERLAMBAT": lateInfo.isLate ? lateInfo.menitTelat : 0,
+            "KETERANGAN KETERLAMBATAN": lateInfo.detail,
+            "JAM LEMBUR (JAM)": lemburPagiVal > 0 ? parseFloat(lemburPagiVal.toFixed(2)) : 0,
+            "TARIF LEMBUR / JAM (RP)": tarifLemburKaryawan,
+            "ESTIMASI UANG LEMBUR (RP)": uangLemburPagi,
             "KETERANGAN / NOTE": l.keterangan || "-"
           });
 
@@ -2671,33 +2880,50 @@ async function jalankanTarikanExcel(customParams = {}) {
             const lp = userLogs[k];
             const wp = new Date(lp.waktu);
             const lemburRow = (k === lastPulangIdx) ? lemburSoreVal : 0;
+            const uangLemburSore = Math.round(lemburRow * tarifLemburKaryawan);
             dataLogs.push({
               "NO": logSeq++,
               "PERUSAHAAN": compName,
               "NIK": nikKar,
               "NAMA KARYAWAN": lp.nama,
+              "JABATAN": karObj?.jabatan || "-",
+              "DEPARTEMEN": karObj?.dept || lp.dept || "-",
               "TANGGAL SHIFT": getShiftDateStrExport(wp),
               "HARI": getHariIndonesia(wp),
               "WAKTU ABSEN": wp.toLocaleString("id-ID"),
-              "STATUS": lp.status,
+              "STATUS ABSEN": lp.status,
+              "STATUS KEHADIRAN": "PULANG",
               "TERLAMBAT": "-",
-              "JAM LEMBUR": lemburRow > 0 ? parseFloat(lemburRow.toFixed(2)) : 0,
+              "MENIT TERLAMBAT": 0,
+              "KETERANGAN KETERLAMBATAN": "-",
+              "JAM LEMBUR (JAM)": lemburRow > 0 ? parseFloat(lemburRow.toFixed(2)) : 0,
+              "TARIF LEMBUR / JAM (RP)": tarifLemburKaryawan,
+              "ESTIMASI UANG LEMBUR (RP)": uangLemburSore,
               "KETERANGAN / NOTE": lp.keterangan || "-"
             });
           }
           i = j;
         } else {
+          const lateInfo = hitungDetailKeterlambatan(l);
+          const tarifLemburKaryawan = getTarifLemburKaryawan(karObj);
           dataLogs.push({
             "NO": logSeq++,
             "PERUSAHAAN": compName,
             "NIK": nikKar,
             "NAMA KARYAWAN": l.nama,
+            "JABATAN": karObj?.jabatan || "-",
+            "DEPARTEMEN": karObj?.dept || l.dept || "-",
             "TANGGAL SHIFT": getShiftDateStrExport(waktu),
             "HARI": getHariIndonesia(waktu),
             "WAKTU ABSEN": waktu.toLocaleString("id-ID"),
-            "STATUS": l.status,
-            "TERLAMBAT": "-",
-            "JAM LEMBUR": 0,
+            "STATUS ABSEN": l.status,
+            "STATUS KEHADIRAN": lateInfo.isLate ? "TERLAMBAT" : (isMasukStatus(l.status) ? "TEPAT WAKTU" : "-"),
+            "TERLAMBAT": lateInfo.isLate ? "YA" : (isMasukStatus(l.status) ? "TIDAK" : "-"),
+            "MENIT TERLAMBAT": lateInfo.isLate ? lateInfo.menitTelat : 0,
+            "KETERANGAN KETERLAMBATAN": lateInfo.detail,
+            "JAM LEMBUR (JAM)": 0,
+            "TARIF LEMBUR / JAM (RP)": tarifLemburKaryawan,
+            "ESTIMASI UANG LEMBUR (RP)": 0,
             "KETERANGAN / NOTE": l.keterangan || "-"
           });
           i++;
@@ -2730,7 +2956,9 @@ async function jalankanTarikanExcel(customParams = {}) {
             "NAMA KARYAWAN": k.nama,
             "BULAN": `${bulanNama} ${y}`,
             "HARI HADIR": d.hadir,
+            "HARI TERLAMBAT": d.telat || 0,
             "TOTAL JAM LEMBUR": parseFloat(d.totalLembur) || 0,
+            "TARIF LEMBUR / JAM (RP)": d.tarifLembur || 0,
             "UANG LEMBUR (RP)": d.uangLembur || 0,
             "GAJI POKOK (RP)": k.gaji || 0,
             "ESTIMASI THP BULAN INI (RP)": Math.floor(d.thp || 0)
@@ -3117,7 +3345,7 @@ async function cetakSemuaSlipJPG() {
               <div style="display: flex; justify-content: space-between; padding: 6px 0; font-size: 0.8rem; border-bottom: 1px solid #f8fafc;"><span style="color: #64748b;">HKE (${d.hadir} hari)</span><span style="font-weight: 600;">Rp ${Math.floor(d.uangHKE).toLocaleString('id-ID')}</span></div>
               <div style="display: flex; justify-content: space-between; padding: 6px 0; font-size: 0.8rem; border-bottom: 1px solid #f8fafc;"><span style="color: #64748b;">INCENTIVE</span><span style="font-weight: 600;">Rp ${Math.floor(d.incentive || 0).toLocaleString('id-ID')}</span></div>
               <div style="display: flex; justify-content: space-between; padding: 6px 0; font-size: 0.8rem; border-bottom: 1px solid #f8fafc;"><span style="color: #64748b;">INCENTIVE (LK/NGINAP)</span><span style="font-weight: 600;">Rp ${Math.floor(d.incentiveLuar || 0).toLocaleString('id-ID')}</span></div>
-              <div style="display: flex; justify-content: space-between; padding: 6px 0; font-size: 0.8rem; border-bottom: 1px solid #f8fafc;"><span style="color: #64748b;">OVERTIME (${d.totalLembur} jam)</span><span style="font-weight: 600;">Rp ${Math.floor(d.uangLembur).toLocaleString('id-ID')}</span></div>
+              <div style="display: flex; justify-content: space-between; padding: 6px 0; font-size: 0.8rem; border-bottom: 1px solid #f8fafc;"><span style="color: #64748b;">OVERTIME (${d.totalLembur} jam @ Rp ${d.tarifLembur.toLocaleString('id-ID')})</span><span style="font-weight: 600;">Rp ${Math.floor(d.uangLembur).toLocaleString('id-ID')}</span></div>
             </div>
             <div>
               <h3 style="font-size: 0.85rem; font-weight: 800; text-transform: uppercase; padding-bottom: 8px; border-bottom: 2px solid #e2e8f0; margin-bottom: 12px; color: #4f46e5;">Potongan (Deductions)</h3>
