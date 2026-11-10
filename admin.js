@@ -20,6 +20,15 @@ const supabaseClient = supabase.createClient(SB_URL, SB_KEY, {
 let ADMIN_USER = null;
 let ACTIVE_COMPANY = localStorage.getItem("hris_active_company") || "ALL";
 
+function normalizeCompanyName(raw) {
+  if (!raw || typeof raw !== "string") return "";
+  const s = raw.trim();
+  if (/^pt\.?\s*fortune\s*reef/i.test(s) || /frz/i.test(s)) return "PT. Fortune Reef Zona";
+  if (/mitra\s*belanja/i.test(s) || /^mb\b/i.test(s)) return "Mitra Belanja";
+  if (/^pt\.?\s*kola\s*borasi/i.test(s) || /kbi/i.test(s)) return "PT. Kola Borasi Indonesia";
+  return s;
+}
+
 function decodeJwtPayload(token) {
   try {
     const payload = token.split(".")[1];
@@ -29,30 +38,136 @@ function decodeJwtPayload(token) {
   }
 }
 
-function updateCompanyUI() {
-  const compSelect = document.getElementById("selectActiveCompany");
-  if (compSelect) {
-    compSelect.value = ACTIVE_COMPANY;
+function syncCompanyDropdownOptions() {
+  const standardCompanies = ["PT. Kola Borasi Indonesia", "PT. Fortune Reef Zona", "Mitra Belanja"];
+  const setComps = new Set(standardCompanies);
+  if (Array.isArray(KARYAWAN)) {
+    KARYAWAN.forEach(k => {
+      const c = getCompanyOfKaryawan(k);
+      if (c && c !== "ALL") setComps.add(c);
+    });
+  }
+  const allComps = Array.from(setComps);
+
+  // Sync #selectActiveCompany
+  const selMain = document.getElementById("selectActiveCompany");
+  if (selMain) {
+    const curVal = ACTIVE_COMPANY || "ALL";
+    let html = `<option value="ALL">🌐 Semua Perusahaan (Holding)</option>`;
+    allComps.forEach(c => {
+      let icon = "🏢";
+      if (c.toLowerCase().includes("mitra")) icon = "🏪";
+      html += `<option value="${c}">${icon} ${c}</option>`;
+    });
+    selMain.innerHTML = html;
+    selMain.value = curVal;
   }
 
+  // Sync #modalExpCompany
+  const selModal = document.getElementById("modalExpCompany");
+  if (selModal) {
+    const curVal = selModal.value || ACTIVE_COMPANY || "ALL";
+    let html = `<option value="ALL">🌐 Semua Perusahaan (Holding)</option>`;
+    allComps.forEach(c => {
+      let icon = "🏢";
+      if (c.toLowerCase().includes("mitra")) icon = "🏪";
+      html += `<option value="${c}">${icon} ${c}</option>`;
+    });
+    selModal.innerHTML = html;
+    selModal.value = curVal;
+  }
+
+  // Sync #inpPerusahaan
+  const selInp = document.getElementById("inpPerusahaan");
+  if (selInp) {
+    const curVal = selInp.value;
+    let html = "";
+    allComps.forEach(c => {
+      html += `<option value="${c}">${c}</option>`;
+    });
+    selInp.innerHTML = html;
+    if (curVal) selInp.value = curVal;
+  }
+
+  // Sync #inpNewAdminCompany
+  const selAdmin = document.getElementById("inpNewAdminCompany");
+  if (selAdmin) {
+    const curVal = selAdmin.value || "ALL";
+    let html = `<option value="ALL">🌐 Semua Perusahaan (Holding)</option>`;
+    allComps.forEach(c => {
+      let icon = "🏢";
+      if (c.toLowerCase().includes("mitra")) icon = "🏪";
+      html += `<option value="${c}">${icon} ${c}</option>`;
+    });
+    selAdmin.innerHTML = html;
+    selAdmin.value = curVal;
+  }
+}
+
+function updateCompanyUI() {
+  const normActive = normalizeCompanyName(ACTIVE_COMPANY) || ACTIVE_COMPANY || "ALL";
+
+  // 1. Sinkronisasi dropdown utama
+  const compSelect = document.getElementById("selectActiveCompany");
+  if (compSelect) {
+    compSelect.value = normActive;
+  }
+
+  // 2. Update status badge & indicator di header
+  const indicator = document.getElementById("companyActiveIndicator");
+  if (indicator) {
+    indicator.className = "company-status-badge";
+    if (normActive === "PT. Kola Borasi Indonesia") {
+      indicator.innerText = "KBI";
+      indicator.classList.add("badge-kbi");
+    } else if (normActive === "PT. Fortune Reef Zona") {
+      indicator.innerText = "FRZ";
+      indicator.classList.add("badge-frz");
+    } else if (normActive === "Mitra Belanja") {
+      indicator.innerText = "MB";
+      indicator.classList.add("badge-mb");
+    } else {
+      indicator.innerText = "HOLDING";
+      indicator.classList.add("badge-holding");
+    }
+  }
+
+  // 3. Update subtitle halaman dengan feedback kontekstual
+  const subTitle = document.getElementById("pageSubtitle");
+  if (subTitle) {
+    if (normActive === "ALL") {
+      subTitle.innerText = "Pantau kehadiran dan kalkulasi payroll otomatis (Holding - Semua Perusahaan).";
+    } else {
+      const cnt = getFilteredKaryawan().length;
+      subTitle.innerText = `Menampilkan data khusus: ${normActive} (${cnt} Karyawan).`;
+    }
+  }
+
+  // 4. Update dropdown filter ekspor cepat & modal ekspor
   const expComp = document.getElementById("exportSelectCompany");
   if (expComp) {
     if (ADMIN_USER?.company_access && ADMIN_USER.company_access !== "ALL") {
       expComp.value = ADMIN_USER.company_access;
       expComp.disabled = true;
     } else {
-      expComp.value = ACTIVE_COMPANY;
+      expComp.value = normActive;
       expComp.disabled = false;
     }
   }
 
+  const modalComp = document.getElementById("modalExpCompany");
+  if (modalComp && (!ADMIN_USER?.company_access || ADMIN_USER.company_access === "ALL")) {
+    modalComp.value = normActive;
+  }
+
+  // 5. Update badge di sidebar kiri
   const badge = document.getElementById("sidebarCompanyBadge");
   if (badge) {
-    if (ACTIVE_COMPANY === "PT. Kola Borasi Indonesia") {
+    if (normActive === "PT. Kola Borasi Indonesia") {
       badge.innerText = "PT. Kola Borasi Indonesia";
-    } else if (ACTIVE_COMPANY === "PT. Fortune Reef Zona") {
+    } else if (normActive === "PT. Fortune Reef Zona") {
       badge.innerText = "PT. Fortune Reef Zona";
-    } else if (ACTIVE_COMPANY === "Mitra Belanja") {
+    } else if (normActive === "Mitra Belanja") {
       badge.innerText = "Mitra Belanja";
     } else {
       badge.innerText = "Holding (Semua PT)";
@@ -67,10 +182,17 @@ function onCompanyChange(comp) {
     updateCompanyUI();
     return;
   }
-  ACTIVE_COMPANY = comp || "ALL";
+  ACTIVE_COMPANY = normalizeCompanyName(comp) || comp || "ALL";
   localStorage.setItem("hris_active_company", ACTIVE_COMPANY);
   updateCompanyUI();
   refreshUI();
+
+  // Berikan feedback instan ke admin
+  const label = ACTIVE_COMPANY === "ALL" ? "Semua Perusahaan (Holding)" : ACTIVE_COMPANY;
+  const count = getFilteredKaryawan().length;
+  if (typeof showToast === "function") {
+    showToast(`🏢 Filter aktif: ${label} (${count} Karyawan)`, "info");
+  }
 }
 
 function checkAdminAuthOrRedirect() {
@@ -423,7 +545,7 @@ function getEmployeeAvatar(k) {
 
 function getCompanyOfKaryawan(k) {
   if (k && k.perusahaan && typeof k.perusahaan === "string" && k.perusahaan.trim()) {
-    return k.perusahaan.trim();
+    return normalizeCompanyName(k.perusahaan);
   }
   const nik = (k?.nik || "").trim().toUpperCase();
   const nama = (k?.nama || "").trim().toUpperCase();
@@ -462,15 +584,21 @@ function getFilteredKaryawan() {
   if (!ACTIVE_COMPANY || ACTIVE_COMPANY === "ALL") {
     return KARYAWAN;
   }
-  return KARYAWAN.filter(k => getCompanyOfKaryawan(k) === ACTIVE_COMPANY);
+  const targetComp = normalizeCompanyName(ACTIVE_COMPANY).toLowerCase();
+  return KARYAWAN.filter(k => normalizeCompanyName(getCompanyOfKaryawan(k)).toLowerCase() === targetComp);
 }
 
 function getFilteredLogs() {
   if (!ACTIVE_COMPANY || ACTIVE_COMPANY === "ALL") {
     return allLogs;
   }
-  const allowedNames = new Set(getFilteredKaryawan().map(k => (k.nama || "").trim().toLowerCase()));
-  return allLogs.filter(l => allowedNames.has((l.nama || "").trim().toLowerCase()));
+  const filteredK = getFilteredKaryawan();
+  const allowedIds = new Set(filteredK.map(k => String(k.id)));
+  const allowedNames = new Set(filteredK.map(k => (k.nama || "").trim().toLowerCase()));
+  return allLogs.filter(l => {
+    if (l.karyawan_id && allowedIds.has(String(l.karyawan_id))) return true;
+    return allowedNames.has((l.nama || "").trim().toLowerCase());
+  });
 }
 
 // --- CORE SYNC ---
@@ -502,6 +630,7 @@ async function syncData() {
     const { data: dataKar, error: errK } = await supabaseClient.from("karyawan").select("*").order("nama", { ascending: true });
     if (errK) throw errK;
     KARYAWAN = dataKar || [];
+    syncCompanyDropdownOptions();
 
     // OPTIMASI: Deteksi filter mana yang aktif (Global vs Log Tab)
     const isLogTab = document.getElementById("tabLog")?.style.display !== "none";
@@ -2463,14 +2592,17 @@ function exportKPIReport() {
   const fmtDate = (d) => d ? d.split('-').reverse().join('/') : '-';
   const periodeTampil = (customStart && customEnd) ? `${fmtDate(customStart)} - ${fmtDate(customEnd)}` : "Bulan Berjalan";
 
-  if (!KARYAWAN.length) return alert("Tidak ada data untuk laporan!");
+  const targetKaryawanList = getFilteredKaryawan();
+  if (!targetKaryawanList.length) return alert("Tidak ada data untuk laporan!");
 
   showLoading(true);
+
+  const compTitle = (ACTIVE_COMPANY && ACTIVE_COMPANY !== "ALL") ? ACTIVE_COMPANY.toUpperCase() : "HOLDING GROUP (SEMUA PT)";
 
   // Hitung Data Summary
   let totalRate = 0;
   let totalLemburAll = 0;
-  const listKPI = KARYAWAN.map(k => {
+  const listKPI = targetKaryawanList.map(k => {
     const d = hitungDetailGaji(k.gaji, k.nama, customStart, customEnd);
     const rate = ((d.hadir / d.totalHariKerja) * 100) || 0;
     totalRate += rate;
@@ -2497,7 +2629,7 @@ function exportKPIReport() {
     return { ...k, d, rate, lateCount, statusLabel, statusColor };
   });
 
-  const avgRate = (totalRate / KARYAWAN.length).toFixed(1);
+  const avgRate = targetKaryawanList.length > 0 ? (totalRate / targetKaryawanList.length).toFixed(1) : "0";
 
   // Template HTML untuk PDF (Ultra-Compact Executive Version)
   const element = document.createElement('div');
@@ -2507,7 +2639,7 @@ function exportKPIReport() {
       <header style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #4f46e5; padding-bottom: 10px; margin-bottom: 15px;">
         <div style="display: flex; align-items: center; gap: 10px;">
           <img src="logokoboi.png" style="width: 35px; height: 35px;">
-          <h1 style="margin: 0; font-size: 1.1rem; font-weight: 800; color: #4f46e5;">PT. KOLA BORASI INDONESIA</h1>
+          <h1 style="margin: 0; font-size: 1.1rem; font-weight: 800; color: #4f46e5;">${compTitle}</h1>
         </div>
         <div style="text-align: right;">
           <div style="font-size: 0.9rem; font-weight: 800; color: #1e293b;">KPI PERFORMANCE REPORT</div>
@@ -2519,7 +2651,7 @@ function exportKPIReport() {
       <div style="display: flex; gap: 10px; margin-bottom: 15px;">
         <div style="flex: 1; background: #f8fafc; padding: 8px; border-radius: 8px; border: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
           <span style="font-size: 0.6rem; font-weight: 800; color: #64748b; text-transform: uppercase;">Manpower</span>
-          <span style="font-size: 0.9rem; font-weight: 800;">${KARYAWAN.length}</span>
+          <span style="font-size: 0.9rem; font-weight: 800;">${targetKaryawanList.length}</span>
         </div>
         <div style="flex: 1; background: #f8fafc; padding: 8px; border-radius: 8px; border: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
           <span style="font-size: 0.6rem; font-weight: 800; color: #64748b; text-transform: uppercase;">Attendance</span>
@@ -2858,6 +2990,21 @@ function syncSheetCard(chkId, cardId) {
   }
 }
 
+function onModalExportCompanyChange(selectedCompany) {
+  const selKar = document.getElementById("modalExpKaryawan");
+  if (!selKar) return;
+  let targetKar = KARYAWAN;
+  if (selectedCompany && selectedCompany !== "ALL") {
+    const targetComp = normalizeCompanyName(selectedCompany).toLowerCase();
+    targetKar = KARYAWAN.filter(k => normalizeCompanyName(getCompanyOfKaryawan(k)).toLowerCase() === targetComp);
+  }
+  let options = `<option value="ALL">👥 Semua Karyawan</option>`;
+  targetKar.forEach(k => {
+    options += `<option value="${k.id}">${k.nama} (${k.nik || '-'}) - ${k.dept || '-'}</option>`;
+  });
+  selKar.innerHTML = options;
+}
+
 function jalankanTarikanExcelDariModal() {
   const tglMulai = document.getElementById("modalExpTglMulai")?.value;
   const tglSelesai = document.getElementById("modalExpTglSelesai")?.value;
@@ -2915,6 +3062,8 @@ async function jalankanTarikanExcel(customParams = {}) {
     todayStr;
 
   let targetCompany = customParams.company || 
+    (document.getElementById("modalExportExcel")?.style.display === "flex" ? document.getElementById("modalExpCompany")?.value : null) ||
+    document.getElementById("selectActiveCompany")?.value ||
     document.getElementById("exportSelectCompany")?.value || 
     ACTIVE_COMPANY || "ALL";
 
@@ -2952,13 +3101,14 @@ async function jalankanTarikanExcel(customParams = {}) {
       return alert(`Tidak ditemukan data absensi pada periode ${tglMulai} s/d ${tglSelesai}!`);
     }
 
-    if (pText) pText.innerText = `Mengkalkulasi kehadiran & payroll untuk ${KARYAWAN.length} karyawan...`;
-
     // 2. Tentukan target karyawan
     let targetKaryawanList = KARYAWAN;
     if (targetCompany && targetCompany !== "ALL") {
-      targetKaryawanList = targetKaryawanList.filter(k => getCompanyOfKaryawan(k) === targetCompany);
+      const normTarget = normalizeCompanyName(targetCompany).toLowerCase();
+      targetKaryawanList = targetKaryawanList.filter(k => normalizeCompanyName(getCompanyOfKaryawan(k)).toLowerCase() === normTarget);
     }
+
+    if (pText) pText.innerText = `Mengkalkulasi kehadiran & payroll untuk ${targetKaryawanList.length} karyawan...`;
 
     if (selectedKaryawanId && selectedKaryawanId !== "ALL") {
       targetKaryawanList = targetKaryawanList.filter(k => String(k.id) === String(selectedKaryawanId));
@@ -3476,7 +3626,8 @@ async function cetakLaporanRekapitulasi(customParams = {}) {
 
     let targetKar = KARYAWAN;
     if (targetCompany && targetCompany !== "ALL") {
-      targetKar = targetKar.filter(k => getCompanyOfKaryawan(k) === targetCompany);
+      const normTarget = normalizeCompanyName(targetCompany).toLowerCase();
+      targetKar = targetKar.filter(k => normalizeCompanyName(getCompanyOfKaryawan(k)).toLowerCase() === normTarget);
     }
 
     if (!targetKar || targetKar.length === 0) {
@@ -4754,11 +4905,13 @@ async function generateAIWeeklyReport() {
 
   // 1. Collect Data from UI & Current State
   let reportData = [];
-  KARYAWAN.forEach(k => {
+  const targetKaryawanList = getFilteredKaryawan();
+  targetKaryawanList.forEach(k => {
     const d = hitungDetailGaji(k.gaji, k.nama);
     reportData.push({
       nama: k.nama,
       dept: k.dept,
+      perusahaan: getCompanyOfKaryawan(k),
       hadir: d.hadir,
       lembur_jam: d.totalLembur, // hitungDetailGaji tidak punya field "jamLembur" - dulu selalu undefined
       gaji_bersih: d.thp
@@ -4766,10 +4919,11 @@ async function generateAIWeeklyReport() {
   });
 
   const totalCost = reportData.reduce((acc, curr) => acc + curr.gaji_bersih, 0);
+  const compLabel = (ACTIVE_COMPANY && ACTIVE_COMPANY !== "ALL") ? ACTIVE_COMPANY : "Holding Group (Semua Perusahaan)";
 
   // 2. Prepare Prompt for Gemini
   const prompt = `
-        Anda adalah Analis HR Senior AI untuk PT. Kola Borasi Indonesia (KOBOI).
+        Anda adalah Analis HR Senior AI untuk ${compLabel}.
         Data Penggajian Mingguan: ${JSON.stringify(reportData)}
         Total Biaya: Rp ${totalCost.toLocaleString('id-ID')}
         
@@ -5143,17 +5297,19 @@ function renderCalendar() {
     const div = document.createElement("div");
     div.className = `calendar-day ${isSunday ? 'sunday' : ''} ${isToday ? 'today' : ''} ${holiday ? 'holiday' : ''}`;
     
-    // Hitung Kehadiran Real-time untuk tanggal ini (Gunakan allLogs)
-    const hadirCount = KARYAWAN.filter(k => {
-      return allLogs.some(l => {
+    // Hitung Kehadiran Real-time untuk tanggal ini (Gunakan data terfilter sesuai perusahaan aktif)
+    const activeKarList = getFilteredKaryawan();
+    const activeLogsList = getFilteredLogs();
+    const hadirCount = activeKarList.filter(k => {
+      return activeLogsList.some(l => {
         const lDate = new Date(l.waktu);
         const logDateStr = `${lDate.getFullYear()}-${String(lDate.getMonth() + 1).padStart(2, '0')}-${String(lDate.getDate()).padStart(2, '0')}`;
-        const s = l.status.toUpperCase();
-        return l.nama === k.nama && logDateStr === dateStr && (s.includes("MASUK") || s.includes("DINAS"));
+        const s = (l.status || "").toUpperCase();
+        return (l.nama || "").trim().toLowerCase() === (k.nama || "").trim().toLowerCase() && logDateStr === dateStr && (s.includes("MASUK") || s.includes("DINAS"));
       });
     }).length;
 
-    const totalKar = KARYAWAN.length;
+    const totalKar = activeKarList.length;
     const isFuture = dateStr > todayStr;
     
     let attendanceHtml = "";

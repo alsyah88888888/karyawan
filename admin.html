@@ -98,33 +98,45 @@
             
             <!-- HEADER -->
             <header class="top-header">
-                <button class="sidebar-toggle" onclick="toggleSidebar()">
-                    <i data-lucide="menu"></i>
-                </button>
-                <div class="header-title">
-                    <h2 id="pageTitle">Manajemen Karyawan</h2>
-                    <p>Pantau kehadiran dan kalkulasi payroll otomatis.</p>
-                </div>
-
-                <!-- COMPANY SELECTOR / DEDICATED ENTITY BADGE -->
-                <div id="companySelectorContainer" style="display: flex; align-items: center; gap: 12px; background: white; padding: 8px 16px; border-radius: 16px; border: 1.5px solid var(--border); box-shadow: var(--shadow-sm);">
-                    <div style="width: 36px; height: 36px; border-radius: 10px; background: #eef2ff; color: #4f46e5; display: flex; align-items: center; justify-content: center; font-weight: 800;">
-                        <i data-lucide="building-2" style="width: 20px;"></i>
-                    </div>
-                    <div>
-                        <div style="font-size: 0.65rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Badan Usaha / Perusahaan</div>
-                        <select id="selectActiveCompany" style="font-weight: 800; color: var(--sidebar-bg); border: none; background: transparent; padding: 0; outline: none; font-size: 0.92rem; cursor: pointer;" onchange="onCompanyChange(this.value)">
-                            <option value="ALL">🌐 Semua Perusahaan (Holding)</option>
-                            <option value="PT. Kola Borasi Indonesia">🏢 PT. Kola Borasi Indonesia</option>
-                            <option value="PT. Fortune Reef Zona">🏢 PT. Fortune Reef Zona</option>
-                            <option value="Mitra Belanja">🏪 Mitra Belanja</option>
-                        </select>
+                <div class="header-left">
+                    <button class="sidebar-toggle" onclick="toggleSidebar()">
+                        <i data-lucide="menu"></i>
+                    </button>
+                    <div class="header-title">
+                        <h2 id="pageTitle">Manajemen Karyawan</h2>
+                        <p id="pageSubtitle">Pantau kehadiran dan kalkulasi payroll otomatis.</p>
                     </div>
                 </div>
 
-                <div class="header-clock" style="text-align: right; background: white; padding: 10px 20px; border-radius: 15px; border: 1px solid var(--border); box-shadow: var(--shadow-sm);">
-                    <div id="liveClockTime" style="font-size: 1.25rem; font-weight: 800; color: var(--sidebar-bg); font-family: 'JetBrains Mono', monospace; line-height: 1;">00:00:00</div>
-                    <div id="liveClockDate" style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; margin-top: 4px;">Kamis, 16 Mei 2026</div>
+                <!-- TOP HEADER RIGHT: COMPANY SELECTOR & LIVE CLOCK (GROUPED) -->
+                <div class="top-header-right">
+                    <!-- COMPANY SELECTOR / DEDICATED ENTITY BADGE -->
+                    <div id="companySelectorContainer" class="company-selector-card" title="Pilih Badan Usaha / Perusahaan untuk memfilter data">
+                        <div class="company-icon-box">
+                            <i data-lucide="building-2"></i>
+                        </div>
+                        <div class="company-info-box">
+                            <div class="company-badge-label">
+                                <span>Badan Usaha / Perusahaan</span>
+                                <span id="companyActiveIndicator" class="company-status-badge badge-holding">HOLDING</span>
+                            </div>
+                            <div class="company-select-wrapper">
+                                <select id="selectActiveCompany" onchange="onCompanyChange(this.value)">
+                                    <option value="ALL">🌐 Semua Perusahaan (Holding)</option>
+                                    <option value="PT. Kola Borasi Indonesia">🏢 PT. Kola Borasi Indonesia</option>
+                                    <option value="PT. Fortune Reef Zona">🏢 PT. Fortune Reef Zona</option>
+                                    <option value="Mitra Belanja">🏪 Mitra Belanja</option>
+                                </select>
+                                <i data-lucide="chevron-down" class="company-dropdown-icon"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- LIVE CLOCK -->
+                    <div class="header-clock">
+                        <div id="liveClockTime">00:00:00</div>
+                        <div id="liveClockDate">Kamis, 16 Mei 2026</div>
+                    </div>
                 </div>
             </header>
             
@@ -1211,7 +1223,7 @@
                         <label style="display: flex; align-items: center; gap: 4px; font-size: 0.75rem; font-weight: 700; color: #475569;">
                             <i data-lucide="building-2" style="width: 13px; color: #64748b;"></i> Perusahaan / Entitas
                         </label>
-                        <select id="modalExpCompany" class="form-input" style="padding: 0.65rem 0.85rem; font-size: 0.88rem; font-weight: 600;">
+                        <select id="modalExpCompany" class="form-input" style="padding: 0.65rem 0.85rem; font-size: 0.88rem; font-weight: 600;" onchange="onModalExportCompanyChange(this.value)">
                             <option value="ALL">🌐 Semua Perusahaan (Holding)</option>
                             <option value="PT. Kola Borasi Indonesia">🏢 PT. Kola Borasi Indonesia</option>
                             <option value="PT. Fortune Reef Zona">🏢 PT. Fortune Reef Zona</option>
