@@ -2887,13 +2887,28 @@ function bukaModalTarikanExcel() {
 
   const now = new Date();
   const year = now.getFullYear();
-  const expMulai = document.getElementById("exportTglMulai")?.value || `${year}-01-01`;
-  const expSelesai = document.getElementById("exportTglSelesai")?.value || toLocalISO(now).split("T")[0];
+
+  // Prefill periode default dari filter yang sedang diterapkan di layar aktif
+  const isKaryawanTab = document.getElementById("tabKaryawan")?.style.display !== "none";
+  const activeStart = isKaryawanTab 
+    ? (document.getElementById("filterTglMulai")?.value || document.getElementById("logFilterTglMulai")?.value)
+    : (document.getElementById("logFilterTglMulai")?.value || document.getElementById("filterTglMulai")?.value);
+  const activeEnd = isKaryawanTab 
+    ? (document.getElementById("filterTglSelesai")?.value || document.getElementById("logFilterTglSelesai")?.value)
+    : (document.getElementById("logFilterTglSelesai")?.value || document.getElementById("filterTglSelesai")?.value);
+
+  const expMulai = activeStart || `${year}-01-01`;
+  const expSelesai = activeEnd || toLocalISO(now).split("T")[0];
 
   const modalStart = document.getElementById("modalExpTglMulai");
   const modalEnd = document.getElementById("modalExpTglSelesai");
   if (modalStart) modalStart.value = expMulai;
   if (modalEnd) modalEnd.value = expSelesai;
+
+  // Aktifkan preset tombol 'applied' jika ada periode aktif
+  document.querySelectorAll(".exp-preset-btn").forEach(b => b.classList.remove("active"));
+  const appliedBtn = document.querySelector(`.exp-preset-btn[data-preset="applied"]`);
+  if (appliedBtn) appliedBtn.classList.add("active");
 
   const modalComp = document.getElementById("modalExpCompany");
   if (modalComp) {
@@ -2942,7 +2957,17 @@ function setModalExpPreset(preset, btn = null) {
   let startStr = "";
   let endStr = "";
 
-  if (preset === "ytd") {
+  if (preset === "applied") {
+    const isKaryawanTab = document.getElementById("tabKaryawan")?.style.display !== "none";
+    startStr = isKaryawanTab 
+      ? (document.getElementById("filterTglMulai")?.value || document.getElementById("logFilterTglMulai")?.value)
+      : (document.getElementById("logFilterTglMulai")?.value || document.getElementById("filterTglMulai")?.value);
+    endStr = isKaryawanTab 
+      ? (document.getElementById("filterTglSelesai")?.value || document.getElementById("logFilterTglSelesai")?.value)
+      : (document.getElementById("logFilterTglSelesai")?.value || document.getElementById("filterTglSelesai")?.value);
+    if (!startStr) startStr = `${year}-01-01`;
+    if (!endStr) endStr = toLocalISO(now).split("T")[0];
+  } else if (preset === "ytd") {
     startStr = `${year}-01-01`;
     endStr = toLocalISO(now).split("T")[0];
   } else if (preset === "full") {
@@ -3051,18 +3076,39 @@ async function jalankanTarikanExcel(customParams = {}) {
   const year = now.getFullYear();
   const todayStr = toLocalISO(now).split("T")[0];
 
+  // Deteksi filter tanggal yang sedang aktif diterapkan di layar
+  const isModalOpen = document.getElementById("modalExportExcel")?.style.display === "flex";
+  const isKaryawanTab = document.getElementById("tabKaryawan")?.style.display !== "none";
+  const isLogTab = document.getElementById("tabLog")?.style.display !== "none";
+
+  let activeStart = "";
+  let activeEnd = "";
+
+  if (isModalOpen) {
+    activeStart = document.getElementById("modalExpTglMulai")?.value;
+    activeEnd = document.getElementById("modalExpTglSelesai")?.value;
+  } else if (isKaryawanTab) {
+    activeStart = document.getElementById("filterTglMulai")?.value;
+    activeEnd = document.getElementById("filterTglSelesai")?.value;
+  } else if (isLogTab) {
+    activeStart = document.getElementById("logFilterTglMulai")?.value;
+    activeEnd = document.getElementById("logFilterTglSelesai")?.value;
+  }
+
   const tglMulai = customParams.tglMulai || 
-    document.getElementById("exportTglMulai")?.value || 
+    activeStart || 
+    document.getElementById("filterTglMulai")?.value || 
     document.getElementById("logFilterTglMulai")?.value || 
-    `${year}-01-01`;
+    todayStr;
 
   const tglSelesai = customParams.tglSelesai || 
-    document.getElementById("exportTglSelesai")?.value || 
+    activeEnd || 
+    document.getElementById("filterTglSelesai")?.value || 
     document.getElementById("logFilterTglSelesai")?.value || 
     todayStr;
 
   let targetCompany = customParams.company || 
-    (document.getElementById("modalExportExcel")?.style.display === "flex" ? document.getElementById("modalExpCompany")?.value : null) ||
+    (isModalOpen ? document.getElementById("modalExpCompany")?.value : null) ||
     document.getElementById("selectActiveCompany")?.value ||
     document.getElementById("exportSelectCompany")?.value || 
     ACTIVE_COMPANY || "ALL";
@@ -3073,7 +3119,6 @@ async function jalankanTarikanExcel(customParams = {}) {
 
   const selectedKaryawanId = customParams.karyawanId || "ALL";
   const searchInputRaw = (document.getElementById("logSearchInput")?.value || "").trim();
-  const isLogTab = document.getElementById("tabLog")?.style.display !== "none";
   const searchKeyword = (!customParams.isFromModal && isLogTab) ? searchInputRaw.toLowerCase() : "";
 
   // Update progress feedback
@@ -3587,7 +3632,24 @@ async function jalankanTarikanExcel(customParams = {}) {
 }
 
 function exportData() {
-  jalankanTarikanExcel();
+  const isKaryawanTab = document.getElementById("tabKaryawan")?.style.display !== "none";
+  const tglMulai = isKaryawanTab 
+    ? (document.getElementById("filterTglMulai")?.value || document.getElementById("logFilterTglMulai")?.value)
+    : (document.getElementById("logFilterTglMulai")?.value || document.getElementById("filterTglMulai")?.value);
+  const tglSelesai = isKaryawanTab 
+    ? (document.getElementById("filterTglSelesai")?.value || document.getElementById("logFilterTglSelesai")?.value)
+    : (document.getElementById("logFilterTglSelesai")?.value || document.getElementById("filterTglSelesai")?.value);
+
+  let targetCompany = ACTIVE_COMPANY || "ALL";
+  if (ADMIN_USER?.company_access && ADMIN_USER.company_access !== "ALL") {
+    targetCompany = ADMIN_USER.company_access;
+  }
+
+  jalankanTarikanExcel({
+    tglMulai,
+    tglSelesai,
+    company: targetCompany
+  });
 }
 
 // --- FUNGSI CETAK LAPORAN REKAPITULASI PRESENSI, KETIDAKHADIRAN & PAYROLL (PRINT / PDF) ---
@@ -3596,20 +3658,38 @@ async function cetakLaporanRekapitulasi(customParams = {}) {
   const year = now.getFullYear();
   const todayStr = toLocalISO(now).split("T")[0];
 
+  const isModalOpen = document.getElementById("modalExportExcel")?.style.display === "flex";
+  const isKaryawanTab = document.getElementById("tabKaryawan")?.style.display !== "none";
+  const isLogTab = document.getElementById("tabLog")?.style.display !== "none";
+
+  let activeStart = "";
+  let activeEnd = "";
+
+  if (isModalOpen) {
+    activeStart = document.getElementById("modalExpTglMulai")?.value;
+    activeEnd = document.getElementById("modalExpTglSelesai")?.value;
+  } else if (isKaryawanTab) {
+    activeStart = document.getElementById("filterTglMulai")?.value;
+    activeEnd = document.getElementById("filterTglSelesai")?.value;
+  } else if (isLogTab) {
+    activeStart = document.getElementById("logFilterTglMulai")?.value;
+    activeEnd = document.getElementById("logFilterTglSelesai")?.value;
+  }
+
   const tglMulai = customParams.tglMulai ||
-    (document.getElementById("modalExportExcel")?.style.display === "flex" ? document.getElementById("modalExpTglMulai")?.value : null) ||
+    activeStart ||
     document.getElementById("filterTglMulai")?.value ||
     document.getElementById("logFilterTglMulai")?.value ||
-    `${year}-01-01`;
+    todayStr;
 
   const tglSelesai = customParams.tglSelesai ||
-    (document.getElementById("modalExportExcel")?.style.display === "flex" ? document.getElementById("modalExpTglSelesai")?.value : null) ||
+    activeEnd ||
     document.getElementById("filterTglSelesai")?.value ||
     document.getElementById("logFilterTglSelesai")?.value ||
     todayStr;
 
   let targetCompany = customParams.company ||
-    (document.getElementById("modalExportExcel")?.style.display === "flex" ? document.getElementById("modalExpCompany")?.value : null) ||
+    (isModalOpen ? document.getElementById("modalExpCompany")?.value : null) ||
     document.getElementById("selectActiveCompany")?.value ||
     ACTIVE_COMPANY || "ALL";
 
