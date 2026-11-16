@@ -1,4 +1,4 @@
-const CACHE_NAME = 'koboi-hris-v5'; // Naikkan versi ke v5 (Fix WiFi & Geofence GPS drift)
+const CACHE_NAME = 'koboi-hris-v6'; // Naikkan versi ke v6 (Bebas Absen Pulang di luar WiFi)
 const urlsToCache = [
   './',
   './index.html',

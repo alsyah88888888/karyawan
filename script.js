@@ -268,10 +268,12 @@ async function syncOfflineData() {
 // --- ATTENDANCE PROCESS ---
 async function prosesAbsen(tipe) {
   const isDinas = (tipe === 'DINAS LUAR' || tipe === 'PULANG DINAS');
+  const isPulang = (tipe === 'PULANG' || tipe === 'PULANG DINAS');
   const isWifiVerified = isNetworkValid || bypassWiFi;
 
-  // Jika bukan dinas dan belum terverifikasi WiFi, tapi perangkat offline dan tidak terhubung ke apapun
-  if (!isWifiVerified && !isDinas && !navigator.onLine) {
+  // Absen Pulang dibebaskan dari kewajiban WiFi kantor (bisa absen pulang dari mana saja).
+  // Untuk absen Masuk reguler, jika bukan dinas dan belum terverifikasi WiFi, tapi perangkat offline dan tidak terhubung ke apapun
+  if (!isPulang && !isDinas && !isWifiVerified && !navigator.onLine) {
     return showModernAlert("SECURITY WARNING: Jaringan Anda belum terverifikasi! Gunakan WiFi Kantor.", "error");
   }
 
@@ -351,14 +353,16 @@ async function prosesAbsen(tipe) {
       }
 
       // Verifikasi Saling Melengkapi (Hybrid):
-      // 1. Jika terhubung ke WiFi Kantor Resmi / Bypass: Kehadiran fisik telah terkonfirmasi via router kantor.
-      //    Drift GPS dalam ruangan (seperti 1-2 km akibat sinyal BTS) TIDAK MEMBLOKIR absensi.
-      // 2. Jika menggunakan koneksi seluler: Perangkat wajib berada dalam radius GPS Kantor (MAX_RADIUS_METERS).
-      if (!isWifiVerified && !isGpsInRange) {
+      // A. ABSEN PULANG (tipe === 'PULANG'):
+      //    Dibebaskan dari pembatasan jarak & WiFi (karyawan bisa absen pulang dari mana saja).
+      //    Koordinat GPS tetap dicatat jika tersedia untuk audit transparansi admin.
+      // B. ABSEN MASUK (tipe === 'MASUK'):
+      //    Wajib terverifikasi di kantor (terhubung ke WiFi Kantor Resmi / Bypass ATAU berada dalam radius GPS Kantor 2.500m).
+      if (!isPulang && !isWifiVerified && !isGpsInRange) {
         if (jarakMeters !== null) {
           throw new Error(`Anda berada di luar jangkauan kantor!\nJarak Anda: ${Math.round(jarakMeters)} meter\n(Maksimal: ${MAX_RADIUS_METERS} meter) dan tidak terhubung ke WiFi Kantor.`);
         } else {
-          throw new Error("Verifikasi lokasi gagal!\nHarap hubungkan ke WiFi Kantor resmi atau aktifkan izin GPS.");
+          throw new Error("Verifikasi lokasi masuk gagal!\nHarap hubungkan ke WiFi Kantor resmi atau aktifkan izin GPS.");
         }
       }
     }
