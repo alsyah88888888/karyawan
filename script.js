@@ -9,7 +9,15 @@ const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
 
 // Tambahkan IP baru ke dalam daftar (Array) agar lebih fleksibel
-const OFFICE_IPS = ["103.108.130.46", "103.108.130.45", "103.108.130.43", "124.158.189.235", "114.124.238.252", "202.51.197.78"];
+const OFFICE_IPS = [
+  "103.108.130.46",
+  "103.108.130.45",
+  "103.108.130.44",
+  "103.108.130.43",
+  "124.158.189.235",
+  "114.124.238.252",
+  "202.51.197.78"
+];
 let KARYAWAN = [];
 let allLogs = [];
 let bypassWiFi = false;
@@ -19,7 +27,7 @@ let isNetworkValid = false;
 // Diperbarui dari kode Embed Google Maps (Iframe)
 const OFFICE_LAT = -6.487233033247547;
 const OFFICE_LNG = 106.8489703644372;
-const MAX_RADIUS_METERS = 500; // Jarak maksimal diperluas menjadi 500 meter (toleransi drift GPS perangkat di dalam gedung/gudang)
+const MAX_RADIUS_METERS = 2500; // Toleransi radius diperluas (2.500 meter) untuk mengakomodasi drift GPS BTS dalam ruangan & klaster kantor/gudang
 
 function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
   const R = 6371e3;
@@ -260,8 +268,10 @@ async function syncOfflineData() {
 // --- ATTENDANCE PROCESS ---
 async function prosesAbsen(tipe) {
   const isDinas = (tipe === 'DINAS LUAR' || tipe === 'PULANG DINAS');
+  const isWifiVerified = isNetworkValid || bypassWiFi;
 
-  if (!isNetworkValid && !isDinas) {
+  // Jika bukan dinas dan belum terverifikasi WiFi, tapi perangkat offline dan tidak terhubung ke apapun
+  if (!isWifiVerified && !isDinas && !navigator.onLine) {
     return showModernAlert("SECURITY WARNING: Jaringan Anda belum terverifikasi! Gunakan WiFi Kantor.", "error");
   }
 
@@ -286,13 +296,14 @@ async function prosesAbsen(tipe) {
   }
 
   let finalTipe = tipe;
+  let lat = null;
+  let lng = null;
 
   try {
     if (isDinas) {
       if (!navigator.geolocation) {
         throw new Error("Browser Anda tidak mendukung fitur GPS/Lokasi.");
       }
-      let lat, lng;
       try {
         const position = await new Promise((resolve, reject) => {
           navigator.geolocation.getCurrentPosition(resolve, reject, {
@@ -310,32 +321,45 @@ async function prosesAbsen(tipe) {
       if (!lokasi || lokasi.trim() === "") return;
       finalTipe = `${tipe} - ${lokasi.trim().toUpperCase()} [GPS: ${lat}, ${lng}]`;
     } else {
-      // --- VALIDASI GPS UNTUK ABSEN KANTOR (NON-DINAS) ---
-      if (!navigator.geolocation) {
-        throw new Error("Browser Anda tidak mendukung fitur GPS/Lokasi.");
-      }
+      // --- VALIDASI LOKASI UNTUK ABSEN KANTOR (NON-DINAS) ---
+      let accuracy = 0;
+      let jarakMeters = null;
+      let isGpsInRange = false;
 
-      let lat, lng, accuracy = 0;
-      try {
-        const position = await new Promise((resolve, reject) => {
-          navigator.geolocation.getCurrentPosition(resolve, reject, {
-            enableHighAccuracy: true,
-            timeout: 10000,
-            maximumAge: 0
+      // Coba ambil koordinat GPS perangkat
+      if (navigator.geolocation) {
+        try {
+          const position = await new Promise((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, {
+              enableHighAccuracy: true,
+              timeout: 6000,
+              maximumAge: 30000
+            });
           });
-        });
-        lat = position.coords.latitude;
-        lng = position.coords.longitude;
-        accuracy = position.coords.accuracy || 0;
-      } catch (err) {
-        throw new Error("Izin lokasi (GPS) wajib diaktifkan & diizinkan di browser untuk absen!");
+          lat = position.coords.latitude;
+          lng = position.coords.longitude;
+          accuracy = position.coords.accuracy || 0;
+
+          jarakMeters = getDistanceFromLatLonInMeters(lat, lng, OFFICE_LAT, OFFICE_LNG);
+          const jarakEfektif = Math.max(0, jarakMeters - Math.min(accuracy, 150));
+          if (jarakEfektif <= MAX_RADIUS_METERS) {
+            isGpsInRange = true;
+          }
+        } catch (gpsErr) {
+          console.warn("GPS tidak dapat diperoleh:", gpsErr.message);
+        }
       }
 
-      const jarak = getDistanceFromLatLonInMeters(lat, lng, OFFICE_LAT, OFFICE_LNG);
-      // Toleransi deviasi akurasi GPS HP di dalam ruangan/gudang
-      const jarakEfektif = Math.max(0, jarak - Math.min(accuracy, 150));
-      if (jarakEfektif > MAX_RADIUS_METERS) {
-        throw new Error(`Anda berada di luar jangkauan kantor!\nJarak Anda: ${Math.round(jarak)} meter\n(Maksimal: ${MAX_RADIUS_METERS} meter)`);
+      // Verifikasi Saling Melengkapi (Hybrid):
+      // 1. Jika terhubung ke WiFi Kantor Resmi / Bypass: Kehadiran fisik telah terkonfirmasi via router kantor.
+      //    Drift GPS dalam ruangan (seperti 1-2 km akibat sinyal BTS) TIDAK MEMBLOKIR absensi.
+      // 2. Jika menggunakan koneksi seluler: Perangkat wajib berada dalam radius GPS Kantor (MAX_RADIUS_METERS).
+      if (!isWifiVerified && !isGpsInRange) {
+        if (jarakMeters !== null) {
+          throw new Error(`Anda berada di luar jangkauan kantor!\nJarak Anda: ${Math.round(jarakMeters)} meter\n(Maksimal: ${MAX_RADIUS_METERS} meter) dan tidak terhubung ke WiFi Kantor.`);
+        } else {
+          throw new Error("Verifikasi lokasi gagal!\nHarap hubungkan ke WiFi Kantor resmi atau aktifkan izin GPS.");
+        }
       }
     }
 
@@ -403,6 +427,10 @@ async function prosesAbsen(tipe) {
       foto: imageBase64,
       isLate: telat,
     };
+    if (lat !== null && lng !== null) {
+      newLog.latitude = lat;
+      newLog.longitude = lng;
+    }
 
     // 3. Jika offline, langsung simpan lokal
     if (!navigator.onLine) {
